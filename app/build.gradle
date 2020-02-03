@@ -1,0 +1,47 @@
+apply plugin: 'com.android.application'
+
+apply plugin: 'kotlin-android'
+
+apply plugin: 'kotlin-android-extensions'
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.2"
+    defaultConfig {
+        applicationId "com.example.loomoapp"
+        minSdkVersion 22
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'androidx.core:core-ktx:1.1.0'
+
+    //loomo dependencies
+    implementation 'com.segway.robot:visionsdk:0.6.874'
+    implementation 'com.segway.robot:speech-sdk:0.5.327'
+    implementation 'com.segway.robot:headsdk:0.6.999'
+    implementation 'com.segway.robot:basesdk:0.6.999'
+    implementation 'com.segway.robot:sensorsdk:0.6.999'
+    implementation 'com.segway.robot:robot-connectivity-sdk:0.5.104'
+    implementation 'com.segway.robot:mobile-connectivity-sdk:0.5.104'
+    implementation 'com.segway.robot:emoji:0.1.28'
+    implementation 'com.segway.robot:support-lib:1.1.2'
+
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    testImplementation 'junit:junit:4.13'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+}
