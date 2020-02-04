@@ -5,10 +5,8 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 
-class ViewModel(app:Application):AndroidViewModel(app){
+class ASDFViewModel(app:Application):AndroidViewModel(app){
 
-
-    private  val viewModelJob = SupervisorJob()
     val text=  MutableLiveData<String>()
 
     init {
