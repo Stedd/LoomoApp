@@ -22,6 +22,7 @@ class ValueReader : Service() {
 
     override fun onBind(intent: Intent): IBinder {
         Log.i("asd", "Service bound")
+
         return myBinder
         TODO("Return the communication channel to the service.")
     }
@@ -30,11 +31,7 @@ class ValueReader : Service() {
         var index = 0
         super.onCreate()
         Log.i("asd", "Service created")
-//        viewModel.text.value = "moo"
 
-//        val intent = Intent (this, MainActivity::class.java)
-//        intent.putExtra("serviceText", "moo")
-//        bindService(intent,conn, Context.BIND_IMPORTANT)
 
     }
 
@@ -44,7 +41,7 @@ class ValueReader : Service() {
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        return super.onUnbind(intent)
         Log.i("asd", "Service Unbound")
+        return super.onUnbind(intent)
     }
 }

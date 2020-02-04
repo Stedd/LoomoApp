@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity() {
     var myService : ValueReader? = null
     var isBound = false
 
-    private var myConnection = object : ServiceConnection {
+    var myConnection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName,
                                                     service: IBinder) {
             val binder = service as ValueReader.LocalBinder
@@ -65,15 +65,16 @@ class MainActivity : AppCompatActivity() {
     private fun startService(){
         Log.i("asd", "Service start command")
         val intent = Intent(this, ValueReader::class.java)
-        startService(intent)
-//        bindService(intent, myConnection, Context.BIND_AUTO_CREATE)
+//        startService(intent)
+        bindService(intent, myConnection, Context.BIND_AUTO_CREATE)
 
     }
 
     private fun stopService (){
-        Log.i("asd", "Service stop command")
-        val intent = Intent(this, ValueReader::class.java)
-        stopService(intent)
+        if (isBound){
+            Log.i("asd", "Service stop command")
+        unbindService(myConnection)
+        }
 //        textView.text= "service stopped"
     }
 }
