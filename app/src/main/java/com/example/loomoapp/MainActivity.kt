@@ -7,13 +7,11 @@ import android.content.ServiceConnection
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
-import android.renderscript.Sampler
 import android.util.Log
 import android.widget.TextView
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.example.loomoapp.viewModel.ASDFViewModel
-import com.segway.robot.sdk.base.bind.ServiceBinder
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -60,6 +58,9 @@ class MainActivity : AppCompatActivity() {
         viewModel.text.observe(this, Observer {
             textView.text= it
         })
+
+        viewModel.text.value = "Service not started"
+
     }
 
     private fun startService(){
@@ -67,16 +68,23 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(this, ValueReader::class.java)
 //        startService(intent)
         bindService(intent, myConnection, Context.BIND_AUTO_CREATE)
+        updateDisplay()
 
     }
 
     private fun stopService (){
-        if (isBound){
+        if (myService?.isBound == true){
             Log.i("asd", "Service stop command")
-        unbindService(myConnection)
+            unbindService(myConnection)
+            updateDisplay()
         }
 //        textView.text= "service stopped"
     }
+
+    fun updateDisplay(){
+        viewModel.text.value = myService?.message
+    }
+
 }
 
 

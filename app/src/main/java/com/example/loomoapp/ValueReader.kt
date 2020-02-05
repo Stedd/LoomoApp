@@ -1,16 +1,22 @@
 package com.example.loomoapp
 
 import android.app.Service
-import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
+import android.os.AsyncTask
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
+import com.example.loomoapp.viewModel.ASDFViewModel
 import kotlin.concurrent.thread
 
-
 class ValueReader : Service() {
+
+    private lateinit var viewModel: ASDFViewModel
+
+    var isBound = false
+    var message = "asd"
+
+
 
     private val myBinder = LocalBinder()
 
@@ -22,26 +28,35 @@ class ValueReader : Service() {
 
     override fun onBind(intent: Intent): IBinder {
         Log.i("asd", "Service bound")
+        isBound = true
+//        message = "Service is bound"
+        intent.putExtra("message", "Service is bound")
+        task = AsyncTask<>
+        Asynch{
+
+        }
 
         return myBinder
+
         TODO("Return the communication channel to the service.")
     }
 
     override fun onCreate() {
-        var index = 0
-        super.onCreate()
         Log.i("asd", "Service created")
-
-
+        super.onCreate()
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         Log.i("asd", "Service destroyed")
+        super.onDestroy()
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
         Log.i("asd", "Service Unbound")
+        isBound = false
+        viewModel.text.value="asdf"
+//        intent?.putExtra("message", "Service is unbound")
         return super.onUnbind(intent)
     }
+
 }

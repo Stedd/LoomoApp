@@ -7,7 +7,7 @@ import androidx.lifecycle.MutableLiveData
 
 class ASDFViewModel(app:Application):AndroidViewModel(app){
 
-    val text=  MutableLiveData<String>()
+    var text =  MutableLiveData<String>()
 
     init {
         Log.i("asd", "ViewModel created")
