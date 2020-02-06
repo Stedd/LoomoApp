@@ -2,21 +2,18 @@ package com.example.loomoapp
 
 import android.app.Service
 import android.content.Intent
-import android.os.AsyncTask
-import android.os.Binder
-import android.os.IBinder
+import android.os.*
 import android.util.Log
-import com.example.loomoapp.viewModel.ASDFViewModel
-import kotlin.concurrent.thread
+import androidx.lifecycle.ViewModelProvider
+import com.example.loomoapp.viewModel.MainActivityViewModel
 
 class ValueReader : Service() {
 
-    private lateinit var viewModel: ASDFViewModel
+    private lateinit var viewModel: MainActivityViewModel
 
     var isBound = false
     var message = "asd"
-
-
+//    val mThread = thread{}
 
     private val myBinder = LocalBinder()
 
@@ -30,20 +27,19 @@ class ValueReader : Service() {
         Log.i("asd", "Service bound")
         isBound = true
 //        message = "Service is bound"
-        intent.putExtra("message", "Service is bound")
-        task = AsyncTask<>
-        Asynch{
-
-        }
-
+//        intent.putExtra("message", "Service is bound")
+//        task = AsyncTask<>
+//        Asynch{
+//        }
         return myBinder
-
-        TODO("Return the communication channel to the service.")
     }
 
     override fun onCreate() {
         Log.i("asd", "Service created")
+//        viewModel = ViewModelProvider(this)
+//            .get(MainActivityViewModel::class.java)
         super.onCreate()
+
     }
 
     override fun onDestroy() {

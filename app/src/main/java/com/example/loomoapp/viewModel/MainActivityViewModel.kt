@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 
-class ASDFViewModel(app:Application):AndroidViewModel(app){
+class MainActivityViewModel(app:Application):AndroidViewModel(app){
 
     var text =  MutableLiveData<String>()
 
