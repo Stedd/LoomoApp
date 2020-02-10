@@ -12,14 +12,13 @@ class IncrementValueRunnable:Runnable{
 //
     var index = 0
     override fun run() {
-
-
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
-        while (true){
+
             index++
             Log.i("asd", "Index: $index")
-//            viewModel.text.value = index.toString()
-        }
+
+            run()
     }
+
 
 }

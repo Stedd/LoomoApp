@@ -2,6 +2,7 @@ package com.example.loomoapp
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.widget.TextView
 import androidx.lifecycle.Observer
@@ -9,30 +10,18 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.loomoapp.viewModel.MainActivityViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var viewModel: MainActivityViewModel
-    private var incrementRunnable = IncrementValueRunnable()
 
     private val textView by lazy {
         findViewById<TextView>(R.id.textView)
     }
 
-//    var myService : ValueReader? = null
-//    var isBound = false
+    val mHandler = Handler()
 
-//    var myConnection = object : ServiceConnection {
-//        override fun onServiceConnected(className: ComponentName,
-//                                                    service: IBinder) {
-//            val binder = service as ValueReader.LocalBinder
-//            myService = binder.getService()
-//            isBound = true
-//        }
-//
-//        override fun onServiceDisconnected(className: ComponentName) {
-//            isBound = false
-//        }
-//    }
+    var index = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,36 +52,25 @@ class MainActivity : AppCompatActivity() {
 
     private fun startService(){
         Log.i("asd", "Service start command")
-//        val intent = Intent(this, ValueReader::class.java)
-//        startService(intent)
-//        bindService(intent, myConnection, Context.BIND_AUTO_CREATE)
-        startThread(true)
-//        updateDisplay()
+        index = 0
+        mToastRunnable.run()
     }
 
     private fun stopService (){
-//        if (myService?.isBound == true){
-//            Log.i("asd", "Service stop command")
-//            unbindService(myConnection)
-//            updateDisplay()
-//        }
-        startThread(false)
-//        textView.text= "service stopped"
+        Log.i("asd", "Service stop command")
+        mHandler.removeCallbacks(mToastRunnable)
+        viewModel.text.value = "Service stopped"
     }
 
-    fun startThread(bool:Boolean){
-        if (bool){
-            incrementRunnable.run()
+
+    val mToastRunnable: Runnable = object : Runnable {
+        override fun run() {
+            index++
+            Log.i("asd", "Index: $index. Looping on Thread: ${mHandler.looper.thread}")
+            viewModel.text.value = "Index: $index"
+            mHandler.post(this)
         }
     }
-
-
-//    fun updateDisplay(){
-//        viewModel.text.value = myService?.message
-//    }
-
-
-
 }
 
 
