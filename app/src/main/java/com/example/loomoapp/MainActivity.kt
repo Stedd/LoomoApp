@@ -98,7 +98,6 @@ class MainActivity : AppCompatActivity() {
 
     class ExampleRunnable:Runnable{
 
-
         var runThread = false
         var value = 0
 
