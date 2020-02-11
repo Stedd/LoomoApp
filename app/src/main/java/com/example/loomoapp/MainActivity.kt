@@ -1,10 +1,8 @@
 package com.example.loomoapp
 
-import android.annotation.SuppressLint
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.Message
 import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -13,31 +11,22 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.loomoapp.viewModel.MainActivityViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 
+//Variables
+private lateinit var viewModel: MainActivityViewModel
 
 class MainActivity : AppCompatActivity() {
-
-    private lateinit var viewModel: MainActivityViewModel
 
     private val textView by lazy {
         findViewById<TextView>(R.id.textView)
     }
 
-//    val mRun
+    private val mRunnable = ExampleRunnable()
 
-
-
-    val mRunnable = ExampleRunnable()
-
-    private val mThread  = Thread(mRunnable,"CalcThread")
-
-//    val mThread = ExampleThread()
-//    val mHandler = Handler(mThread)
-    var index = 0
+    private val mThread = Thread(mRunnable, "CalcThread")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         Log.i("asd", "Activity created")
 
         viewModel = ViewModelProvider(this)
@@ -49,20 +38,13 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.text.value = "Service not started"
 
-//        val mThread2 = Thread(mRunnable2).start()
-//        Log.i("asd", "Thread State Debug2: ${mThread2.}")
-
-//        mThread.start()
-//        mLooper.start()
-//
         if (mThread.isAlive) {
             Log.i("asd", "Thread started")
             viewModel.text.value = "Thread started"
         } else {
-            Log.i("asd", "Thread did not start")
-            viewModel.text.value = "Thread did not start"
+            Log.i("asd", "Thread not started")
+            viewModel.text.value = "Thread not started"
         }
-//        Log.i("asd", "Thread State Debug2: ${mLooper.state}")
 
         btnStartService.setOnClickListener {
             startService()
@@ -70,24 +52,19 @@ class MainActivity : AppCompatActivity() {
         btnStopService.setOnClickListener {
             stopService()
         }
-
     }
 
-
     private fun startService() {
-        if (mThread.isAlive){
+        if (mThread.isAlive) {
             Log.i("asd", "Thread start command")
-            viewModel.text.value = "Thread started"
+//            viewModel.text.value = "Thread started"
             mRunnable.runThread = true
-        }else{
+        } else {
             Log.i("asd", "Thread is dead, starting")
             mThread.start()
             startService()
         }
-
-
         viewModel.text.value = "Thread started: ${mRunnable.value}"
-
     }
 
     private fun stopService() {
@@ -96,45 +73,45 @@ class MainActivity : AppCompatActivity() {
         viewModel.text.value = "Thread stopped"
     }
 
-    class ExampleRunnable:Runnable{
+    class ExampleRunnable : Runnable {
 
         var runThread = false
         var value = 0
+        private val threadHandler = Handler(Looper.getMainLooper())
 
         override fun run() {
             if (runThread) {
-                for (i in 0..3000) {
-                    Thread.sleep(5)
-                    value ++
-                    Log.i("asd", "Index: $value. Looping on ${Thread.currentThread()}")
-//                    viewModel.text.value = "Thread started: ${mRunnable.value}"
-                    if (!runThread){
+                threadHandler.post {
+                    Log.i("asd", "Thread Running")
+                    viewModel.text.value = "Thread Running"
+                }
+
+                for (i in 0..10) {
+                    Thread.sleep(250)
+                    value++
+
+                    threadHandler.post {
+                            Log.i("asd", "Index: $value. Looping on ${Thread.currentThread()}")
+                            viewModel.text.value = "Index: $value"
+                    }
+
+                    if (!runThread) {
                         break
                     }
                 }
                 runThread = false
                 value = 0
+                threadHandler.post {
+                    Log.i("asd", "Thread Finished")
+                    viewModel.text.value = "Thread finished"
+//                            textView.text = "Thread started: $value"
+                }
                 run()
-            }
-            else{
+            } else {
                 Thread.sleep(250)
                 Log.i("asd", "Keeping ${Thread.currentThread()} alive")
                 run()
             }
         }
     }
-
-//    internal class LooperThread : Thread() {
-//        var mHandler: Handler? = null
-//        override fun run() {
-//            Looper.prepare()
-//            mHandler = @SuppressLint("HandlerLeak")
-//            object : Handler() {
-//                override fun handleMessage(msg: Message?) { // process incoming messages here
-//                }
-//            }
-//            Looper.loop()
-//        }
-//    }
-
 }
