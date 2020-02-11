@@ -1,18 +1,17 @@
 package com.example.loomoapp
 
-import android.os.AsyncTask
-import androidx.appcompat.app.AppCompatActivity
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Message
 import android.util.Log
 import android.widget.TextView
-import androidx.core.os.postDelayed
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.example.loomoapp.viewModel.MainActivityViewModel
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlin.concurrent.thread
 
 
 class MainActivity : AppCompatActivity() {
@@ -32,7 +31,7 @@ class MainActivity : AppCompatActivity() {
     private val mThread  = Thread(mRunnable,"CalcThread")
 
 //    val mThread = ExampleThread()
-    val mHandler = Handler()
+//    val mHandler = Handler(mThread)
     var index = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,7 +52,7 @@ class MainActivity : AppCompatActivity() {
 //        val mThread2 = Thread(mRunnable2).start()
 //        Log.i("asd", "Thread State Debug2: ${mThread2.}")
 
-        mThread.start()
+//        mThread.start()
 //        mLooper.start()
 //
         if (mThread.isAlive) {
@@ -76,119 +75,43 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun startService() {
-
-//        index = 0
-        //Thread testing
-
         if (mThread.isAlive){
             Log.i("asd", "Thread start command")
+            viewModel.text.value = "Thread started"
             mRunnable.runThread = true
-//            mThread.run()
         }else{
-            Log.i("asd", "Thread is dead")
+            Log.i("asd", "Thread is dead, starting")
+            mThread.start()
+            startService()
         }
 
-//        Thread(mRunnable).run()
 
-//        Thread(IncrementValueRunnable()).start()
-//        runOnUiThread(mRunnable2)
-//        mThread.run()
-
-        //Coroutine testing
-//        viewModel.startCoroutine()
-
-
-        //Runnable testing
-//        mRunnable.run()
+        viewModel.text.value = "Thread started: ${mRunnable.value}"
 
     }
 
     private fun stopService() {
         Log.i("asd", "Service stop command")
-//        mHandler.removeCallbacks(mRunnable)
-
-//        mThread.
-
-//        mThread.runThreadMainLoop = false
-//        Log.i("asd", "Thread State Debug3: ${mThread.state}")
-        viewModel.text.value = "Service stopped"
+        mRunnable.runThread = false
+        viewModel.text.value = "Thread stopped"
     }
 
-
-//    private val mRunnable: Runnable = object : Runnable {
-////
-//        override fun run() {
-//            for (i in 0..10 ) {
-//                Thread.sleep(1000)
-//                Log.i("asd", "Index: $i. Looping on Thread: ${Thread.currentThread()}")
-//            }
-//        }
-////
-////        override fun run() {
-////            index++
-//////            Log.i("asd", "Index: $index. Looping on Thread: ${mHandler.looper.thread}")
-////            viewModel.text.value = "Index: $index"
-////            mHandler.post(this)
-////        }
-//    }
-
-//        private val mLooper: Looper{
-//        override fun run() {
-//            index++
-//            Log.i("asd", "Index: $index. Looping on Thread: ${mHandler.looper.thread}")
-////            viewModel.text.value = "Index: $index"
-//            mHandler.post(this)
-//        }
-//    }
-
-
-
-//    private val mThread = object : Thread("CalcThread"){
-//
-//        var runThreadMainLoop = false
-//        override fun run() {
-//            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
-//            while (runThreadMainLoop){
-////                            index++
-//                Log.i("asd", "Index: $index. Looping on Thread: ${mHandler.looper.thread}")
-////            viewModel.text.value = "Index: $index"
-//                mHandler.postDelayed(this, 2000)
-//            }
-//            Log.i("asd", "Thread State Debug1: ${this.state}")
-//        }
-//    }
-
-
-//    private val mThread = object : Thread(object : Runnable{
-//        override fun run() {
-////            index++
-//            Log.i("asd", "Index: $index. Looping on Thread: ${mHandler.looper.thread}")
-////            viewModel.text.value = "Index: $index"
-//            mHandler.postDelayed(this,1000)
-//        }
-//    }){}
-
-//    class ExampleThread:Thread(){
-//        override fun run() {
-//            for (i in 0..10 ) {
-//                sleep(1000)
-//                Log.i("asd", "Index: $i. Looping on Thread: ${currentThread()}")
-//            }
-//            Log.i("asd", "Thread state: ${this.state}")
-//        }
-//    }
-
     class ExampleRunnable:Runnable{
+
 
         var runThread = false
         var value = 0
 
         override fun run() {
             if (runThread) {
-                for (i in 0..10) {
-                    Thread.sleep(1000)
+                for (i in 0..3000) {
+                    Thread.sleep(5)
                     value ++
-                    Log.i("asd", "Index: $value. Looping on Thread: ${Thread.currentThread()}")
+                    Log.i("asd", "Index: $value. Looping on ${Thread.currentThread()}")
+//                    viewModel.text.value = "Thread started: ${mRunnable.value}"
+                    if (!runThread){
+                        break
+                    }
                 }
                 runThread = false
                 value = 0
@@ -196,10 +119,23 @@ class MainActivity : AppCompatActivity() {
             }
             else{
                 Thread.sleep(250)
-                Log.i("asd", "Keeping thread: ${Thread.currentThread()} alive")
+                Log.i("asd", "Keeping ${Thread.currentThread()} alive")
                 run()
             }
         }
     }
+
+//    internal class LooperThread : Thread() {
+//        var mHandler: Handler? = null
+//        override fun run() {
+//            Looper.prepare()
+//            mHandler = @SuppressLint("HandlerLeak")
+//            object : Handler() {
+//                override fun handleMessage(msg: Message?) { // process incoming messages here
+//                }
+//            }
+//            Looper.loop()
+//        }
+//    }
 
 }
