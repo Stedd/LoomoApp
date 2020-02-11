@@ -2,6 +2,7 @@
   <dictionary name="toran">
     <words>
       <w>asynch</w>
+      <w>coroutine</w>
       <w>loomo</w>
     </words>
   </dictionary>

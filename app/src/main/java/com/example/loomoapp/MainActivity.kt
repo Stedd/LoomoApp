@@ -23,9 +23,13 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textView)
     }
 
-//    val mThread  = Thread("CalcThread")
+//    val mRun
 
-//    val mRunnable2 = ExampleRunnable()
+
+
+    val mRunnable = ExampleRunnable()
+
+    private val mThread  = Thread(mRunnable,"CalcThread")
 
 //    val mThread = ExampleThread()
     val mHandler = Handler()
@@ -37,27 +41,6 @@ class MainActivity : AppCompatActivity() {
 
         Log.i("asd", "Activity created")
 
-
-//        val mThread2 = Thread(mRunnable2).start()
-//        Log.i("asd", "Thread State Debug2: ${mThread2.}")
-
-//        mThread.start()
-//        mLooper.start()
-//
-//        if (mLooper.isAlive) {
-//            Log.i("asd", "Thread started")
-//        } else {
-//            Log.i("asd", "Thread did not start")
-//        }
-//        Log.i("asd", "Thread State Debug2: ${mLooper.state}")
-
-        btnStartService.setOnClickListener {
-            startService()
-        }
-        btnStopService.setOnClickListener {
-            stopService()
-        }
-
         viewModel = ViewModelProvider(this)
             .get(MainActivityViewModel::class.java)
 
@@ -67,23 +50,64 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.text.value = "Service not started"
 
+//        val mThread2 = Thread(mRunnable2).start()
+//        Log.i("asd", "Thread State Debug2: ${mThread2.}")
+
+        mThread.start()
+//        mLooper.start()
+//
+        if (mThread.isAlive) {
+            Log.i("asd", "Thread started")
+            viewModel.text.value = "Thread started"
+        } else {
+            Log.i("asd", "Thread did not start")
+            viewModel.text.value = "Thread did not start"
+        }
+//        Log.i("asd", "Thread State Debug2: ${mLooper.state}")
+
+        btnStartService.setOnClickListener {
+            startService()
+        }
+        btnStopService.setOnClickListener {
+            stopService()
+        }
+
     }
 
 
     private fun startService() {
-        Log.i("asd", "Service start command")
-        index = 0
+
+//        index = 0
+        //Thread testing
+
+        if (mThread.isAlive){
+            Log.i("asd", "Thread start command")
+            mRunnable.runThread = true
+//            mThread.run()
+        }else{
+            Log.i("asd", "Thread is dead")
+        }
+
 //        Thread(mRunnable).run()
-        Thread(mRunnable).start()
-//        newThread = Thread(mRunnable)
-//        runOnUiThread(mRunnable)
+
+//        Thread(IncrementValueRunnable()).start()
+//        runOnUiThread(mRunnable2)
 //        mThread.run()
+
+        //Coroutine testing
+//        viewModel.startCoroutine()
+
+
+        //Runnable testing
+//        mRunnable.run()
 
     }
 
     private fun stopService() {
         Log.i("asd", "Service stop command")
-        mHandler.removeCallbacks(mRunnable)
+//        mHandler.removeCallbacks(mRunnable)
+
+//        mThread.
 
 //        mThread.runThreadMainLoop = false
 //        Log.i("asd", "Thread State Debug3: ${mThread.state}")
@@ -91,16 +115,24 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private val mRunnable: Runnable = object : Runnable {
-        override fun run() {
-            index++
-            Log.i("asd", "Index: $index. Looping on Thread: ${mHandler.looper.thread}")
-//            viewModel.text.value = "Index: $index"
-            mHandler.post(this)
-        }
-    }
+//    private val mRunnable: Runnable = object : Runnable {
+////
+//        override fun run() {
+//            for (i in 0..10 ) {
+//                Thread.sleep(1000)
+//                Log.i("asd", "Index: $i. Looping on Thread: ${Thread.currentThread()}")
+//            }
+//        }
+////
+////        override fun run() {
+////            index++
+//////            Log.i("asd", "Index: $index. Looping on Thread: ${mHandler.looper.thread}")
+////            viewModel.text.value = "Index: $index"
+////            mHandler.post(this)
+////        }
+//    }
 
-//        private val mLooper: AsyncTask = object : Looper(){
+//        private val mLooper: Looper{
 //        override fun run() {
 //            index++
 //            Log.i("asd", "Index: $index. Looping on Thread: ${mHandler.looper.thread}")
@@ -136,21 +168,36 @@ class MainActivity : AppCompatActivity() {
 //        }
 //    }){}
 
-    class ExampleThread:Thread(){
-        override fun run() {
-            for (i in 0..10 ) {
-                sleep(1000)
-                Log.i("asd", "Index: $i. Looping on Thread: ${currentThread()}")
-            }
-            Log.i("asd", "Thread state: ${this.state}")
-        }
-    }
+//    class ExampleThread:Thread(){
+//        override fun run() {
+//            for (i in 0..10 ) {
+//                sleep(1000)
+//                Log.i("asd", "Index: $i. Looping on Thread: ${currentThread()}")
+//            }
+//            Log.i("asd", "Thread state: ${this.state}")
+//        }
+//    }
 
     class ExampleRunnable:Runnable{
+
+        var runThread = false
+        var value = 0
+
         override fun run() {
-            for (i in 0..10 ) {
-                Thread.sleep(1000)
-                Log.i("asd", "Index: $i. Looping on Thread: ${Thread.currentThread()}")
+            if (runThread) {
+                for (i in 0..10) {
+                    Thread.sleep(1000)
+                    value ++
+                    Log.i("asd", "Index: $value. Looping on Thread: ${Thread.currentThread()}")
+                }
+                runThread = false
+                value = 0
+                run()
+            }
+            else{
+                Thread.sleep(250)
+                Log.i("asd", "Keeping thread: ${Thread.currentThread()} alive")
+                run()
             }
         }
     }
