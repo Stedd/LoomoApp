@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textView)
     }
 
-    private val mRunnable = ExampleRunnable()
+    private val mRunnable = DistanceController()
 
     private var mThread = Thread(mRunnable, "CalcThread")
 
@@ -126,7 +126,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    class ExampleRunnable : Runnable {
+    class DistanceController : Runnable {
 
         var runThread = false
         var error: Float = 0.0F
