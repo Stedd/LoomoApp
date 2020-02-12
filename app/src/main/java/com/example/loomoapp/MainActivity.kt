@@ -1,5 +1,6 @@
 package com.example.loomoapp
 
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -13,6 +14,7 @@ import com.example.loomoapp.viewModel.MainActivityViewModel
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.locomotion.sbv.Base
 import com.segway.robot.sdk.vision.Vision
+import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
 
 //Variables
@@ -22,7 +24,7 @@ lateinit var mBase: Base
 lateinit var mVision: Vision
 lateinit var mLoomoSensor: LoomoSensor
 val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
-
+var cameraRunning: Boolean = false
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,31 +34,39 @@ class MainActivity : AppCompatActivity() {
 
     private val mDistanceController = DistanceController()
 
+
+    private val imgWidth = 320
+    private val imgHeight = 240
+    private var mImgDepth = Bitmap.createBitmap(
+        imgWidth,
+        imgHeight,
+        Bitmap.Config.RGB_565
+    ) // Depth info is in Z16 format. RGB_565 is also a 16 bit format and is compatible for storing the pixels
+
+
     private val mCamera = object : ThreadLoop() {
 
-        override val interval: Long = 500
+        override var interval: Long = 10
         override var enable = true
-
-        var asd = 0
 
         override fun main() {
             //some logic
-            asd++
+
             //post to viewModel
             threadHandler.post {
-                viewModel.text.value = "Value: $asd"
+                //                viewModel.image.setImageBitmap(mImgDepth.copy(Bitmap.Config.ARGB_8888, true))
+                camView.setImageBitmap(mImgDepth.copy(Bitmap.Config.ARGB_8888, true))
             }
         }
 
         override fun close() {
-            asd = 0
             threadHandler.post {
                 viewModel.text.value = "Thread Stopped"
             }
         }
     }
 
-//    private var mControllerThread = Thread(mDistanceController, "ControllerThread")
+    //    private var mControllerThread = Thread(mDistanceController, "ControllerThread")
     private var mControllerThread = Thread()
     private var mVisionThread = Thread()
 
@@ -78,13 +88,13 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.text.value = "Service not started"
 
-        if (mControllerThread.isAlive) {
-            Log.i(TAG, "Thread started")
-            viewModel.text.value = "Thread started"
-        } else {
-            Log.i(TAG, "Thread not started")
-            viewModel.text.value = "Thread not started"
-        }
+//        if (mControllerThread.isAlive) {
+//            Log.i(TAG, "Thread started")
+//            viewModel.text.value = "Thread started"
+//        } else {
+//            Log.i(TAG, "Thread not started")
+//            viewModel.text.value = "Thread not started"
+//        }
 
         btnStartService.setOnClickListener {
             startService()
@@ -99,7 +109,6 @@ class MainActivity : AppCompatActivity() {
             stopCamera()
         }
     }
-
 
 
     override fun onResume() {
@@ -138,8 +147,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         if (mControllerThread.isAlive) {
-            Log.i(TAG, "App paused, Thread stopping")
-            mDistanceController.enable = false
+            Log.i(TAG, "App paused, Controller thread stopping")
+//            mDistanceController.enable = false
+            stopService()
+        }
+        if (mVision.isBind) {
+            Log.i(TAG, "App paused, Camera thread stopping")
+//            mCamera.enable = false
+//            mVision.stopListenFrame(StreamType.DEPTH)
+            stopCamera()
         }
         super.onPause()
     }
@@ -159,20 +175,36 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startCamera() {
+
         if (mVision.isBind) {
-            Log.i(TAG, "Camera Thread starting")
-            mCamera.enable = true
-            mVisionThread = Thread(mCamera, "CameraThread")
-            mVisionThread.start()
-        }else{
+            if (!cameraRunning) {
+                mVision.startListenFrame(StreamType.DEPTH) { streamType, frame ->
+                    mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
+                    threadHandler.post {
+                        camView.setImageBitmap(mImgDepth.copy(Bitmap.Config.ARGB_8888, true))
+                    }
+                }
+                cameraRunning = true
+            }else{
+                Toast.makeText(this, "Dude, the camera is already activated..", Toast.LENGTH_SHORT).show()
+            }
+//            camView.setImageBitmap(mImgDepth.copy(Bitmap.Config.ARGB_8888, true))
+
+//            Log.i(TAG, "Camera Thread starting")
+//            mCamera.enable = true
+//            mCamera.interval = 5
+//            mVisionThread = Thread(mCamera, "CameraThread")
+//            mVisionThread.start()
+        } else {
             Toast.makeText(this, "Vision service not started yet", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun stopCamera() {
-        mCamera.enable = false
+        mVision.stopListenFrame(StreamType.DEPTH)
+//        mCamera.enable = false
+        cameraRunning = false
     }
-
 
 
 }

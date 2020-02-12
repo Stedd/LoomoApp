@@ -2,4 +2,6 @@
     <string name="app_name">LoomoApp</string>
     <string name="btnStringStartService">Start</string>
     <string name="btnStringStopService">Stop</string>
+    <string name="btnStringStartCamera">Start</string>
+    <string name="btnStringStopCamera">Stop</string>
 </resources>

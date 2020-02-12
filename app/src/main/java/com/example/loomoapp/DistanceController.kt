@@ -10,14 +10,15 @@ class DistanceController : Runnable {
     var turnError = 0.0F
     var startTime = currentTimeMillis()
     var dist: Float = 0.0F
-    val gain: Float = 0.002F
+    val gain: Float = 0.0009F
     var setpoint: Float = 500.0F
 
     override fun run() {
+        Log.i(TAG, "${Thread.currentThread()} Started.")
         while (enable) {
             //Logic
 
-            setpoint = 500.0F + (150.0F* sin((startTime-currentTimeMillis()).toFloat()*2E-4F))
+//            setpoint = 500.0F + (150.0F* sin((startTime-currentTimeMillis()).toFloat()*2E-4F))
 //                Log.i(TAG, "setp: ${sin((startTime-currentTimeMillis()).toFloat()*2E-4)}. ${Thread.currentThread()}")
 
             dist = mLoomoSensor.getSurroundings().UltraSonic.toFloat()
@@ -33,11 +34,11 @@ class DistanceController : Runnable {
             //Post variables to UI
             threadHandler.post {
                 viewModel.text.value =
-                        "Distance controller\n" +
-                        "setp:$setpoint\n" +
-                        "dist:$dist\n" +
-                        "Lin_Vel: $error\n" +
-                        "Ang_Vel:$turnError"
+                    "Distance controller\n" +
+                            "setp:$setpoint\n" +
+                            "dist:$dist\n" +
+                            "Lin_Vel: $error\n" +
+                            "Ang_Vel:$turnError"
             }
 
             //Thread interval
@@ -52,9 +53,6 @@ class DistanceController : Runnable {
                 break
             }
         }
-        Log.i(
-            TAG,
-            "${Thread.currentThread()} stopped."
-        )
+        Log.i(TAG, "${Thread.currentThread()} stopped.")
     }
 }

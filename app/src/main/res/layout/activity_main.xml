@@ -48,7 +48,7 @@
         app:layout_constraintTop_toTopOf="@+id/space" />
 
     <ImageView
-        android:id="@+id/imageView"
+        android:id="@+id/camView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toTopOf="@+id/space"
@@ -61,7 +61,7 @@
         android:id="@+id/btnStartCamera"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/btnStringStartService"
+        android:text="@string/btnStringStartCamera"
         app:layout_constraintBottom_toTopOf="@+id/space"
         app:layout_constraintEnd_toStartOf="@+id/space"
         app:layout_constraintStart_toStartOf="parent"
@@ -71,7 +71,7 @@
         android:id="@+id/btnStopCamera"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/btnStringStartService"
+        android:text="@string/btnStringStopCamera"
         app:layout_constraintBottom_toTopOf="@+id/space"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/space"

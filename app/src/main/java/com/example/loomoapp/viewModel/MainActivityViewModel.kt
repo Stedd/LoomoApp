@@ -2,8 +2,10 @@ package com.example.loomoapp.viewModel
 
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.core.graphics.createBitmap
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.loomoapp.R
 import com.example.loomoapp.TAG
 
 open class MainActivityViewModel : ViewModel() {
@@ -30,9 +32,9 @@ open class MainActivityViewModel : ViewModel() {
     val colorDepthBitArray = MutableLiveData<ByteArray>()
 
     var text = MutableLiveData<String>()
+    var image = MutableLiveData<Bitmap>()
 
     init {
-
         Log.i(TAG, "ViewModel created")
         text.value = "Service not started yet"
     }
