@@ -4,11 +4,13 @@ import android.util.Log
 
 open class ThreadLoop: Runnable {
 
-    open var interval: Long = 10 //Thread interval in milliseconds
+    //Thread interval in milliseconds
+    open var interval: Long = 10
 
     //Enable code execution on thread
     open var enable = false
 
+    //Don't override this
     override fun run() {
         Log.i(TAG, "${Thread.currentThread()} Started.")
         while (enable) {
@@ -22,6 +24,7 @@ open class ThreadLoop: Runnable {
         Log.i(TAG, "${Thread.currentThread()} stopped.")
     }
 
+    //Override this
     open fun main() {
         //Write Thread loop code here
 
@@ -32,6 +35,7 @@ open class ThreadLoop: Runnable {
         //}
     }
 
+    //Override this if needed
     open fun close() {
         //Instructions when stopping
         //Example:

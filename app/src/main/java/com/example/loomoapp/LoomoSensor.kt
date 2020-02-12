@@ -29,7 +29,7 @@ class LoomoSensor (context: Context) {
     init {
         mSensor.bindService(context.applicationContext, object : ServiceBinder.BindStateListener {
             override fun onBind() {
-                Log.d(TAG, "sensor onBind")
+                Log.d(TAG, "Sensor onBind")
             }
             override fun onUnbind(reason: String) {
             }
