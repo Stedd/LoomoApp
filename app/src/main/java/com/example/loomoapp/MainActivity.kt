@@ -5,24 +5,24 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.example.loomoapp.viewModel.MainActivityViewModel
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.locomotion.sbv.Base
-import com.segway.robot.sdk.perception.sensor.Sensor
 import com.segway.robot.sdk.vision.Vision
 import kotlinx.android.synthetic.main.activity_main.*
-import java.lang.System.currentTimeMillis
-import kotlin.math.sin
 
 //Variables
-private lateinit var viewModel: MainActivityViewModel
-private val TAG = "asd"
-private lateinit var mBase: Base
-private lateinit var mVision: Vision
-private lateinit var mLoomoSensor: LoomoSensor
+lateinit var viewModel: MainActivityViewModel
+const val TAG = "debugMSG"
+lateinit var mBase: Base
+lateinit var mVision: Vision
+lateinit var mLoomoSensor: LoomoSensor
+val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -30,19 +30,44 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textView)
     }
 
-    private val mRunnable = DistanceController()
+    private val mDistanceController = DistanceController()
 
-    private var mThread = Thread(mRunnable, "CalcThread")
+    private val mCamera = object : ThreadLoop() {
+
+        override val interval: Long = 500
+        override var enable = true
+
+        var asd = 0
+
+        override fun main() {
+            //some logic
+            asd++
+            //post to viewModel
+            threadHandler.post {
+                viewModel.text.value = "Value: $asd"
+            }
+        }
+
+        override fun close() {
+            asd = 0
+            threadHandler.post {
+                viewModel.text.value = "Thread Stopped"
+            }
+        }
+    }
+
+//    private var mControllerThread = Thread(mDistanceController, "ControllerThread")
+    private var mControllerThread = Thread()
+    private var mVisionThread = Thread()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        Log.i("asd", "Activity created")
+        Log.i(TAG, "Activity created")
 
         mBase = Base.getInstance()
         mVision = Vision.getInstance()
         mLoomoSensor = LoomoSensor(this)
-
 
         viewModel = ViewModelProvider(this)
             .get(MainActivityViewModel::class.java)
@@ -53,11 +78,11 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.text.value = "Service not started"
 
-        if (mThread.isAlive) {
-            Log.i("asd", "Thread started")
+        if (mControllerThread.isAlive) {
+            Log.i(TAG, "Thread started")
             viewModel.text.value = "Thread started"
         } else {
-            Log.i("asd", "Thread not started")
+            Log.i(TAG, "Thread not started")
             viewModel.text.value = "Thread not started"
         }
 
@@ -67,7 +92,15 @@ class MainActivity : AppCompatActivity() {
         btnStopService.setOnClickListener {
             stopService()
         }
+        btnStartCamera.setOnClickListener {
+            startCamera()
+        }
+        btnStopCamera.setOnClickListener {
+            stopCamera()
+        }
     }
+
+
 
     override fun onResume() {
         //Bind loomo services
@@ -95,92 +128,51 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        if (mThread.isAlive) {
-            Log.i("asd", "App destroyed, Thread stopping")
-            mRunnable.runThread = false
+        if (mControllerThread.isAlive) {
+            Log.i(TAG, "App destroyed, Thread stopping")
+            mDistanceController.enable = false
         }
         super.onDestroy()
     }
 
 
     override fun onPause() {
-        if (mThread.isAlive) {
-            Log.i("asd", "App paused, Thread stopping")
-            mRunnable.runThread = false
+        if (mControllerThread.isAlive) {
+            Log.i(TAG, "App paused, Thread stopping")
+            mDistanceController.enable = false
         }
         super.onPause()
     }
 
     private fun startService() {
-        if (!mThread.isAlive) {
-            Log.i("asd", "ControllerThread starting")
-            mRunnable.runThread = true
-            mThread = Thread(mRunnable, "ControllerThread")
-            mThread.start()
+        if (!mControllerThread.isAlive) {
+            Log.i(TAG, "ControllerThread starting")
+            mDistanceController.enable = true
+            mControllerThread = Thread(mDistanceController, "ControllerThread")
+            mControllerThread.start()
         }
     }
 
     private fun stopService() {
-        Log.i("asd", "Service stop command")
-        mRunnable.runThread = false
-
+        Log.i(TAG, "Service stop command")
+        mDistanceController.enable = false
     }
 
-    class DistanceController : Runnable {
-
-        var runThread = false
-        var error: Float = 0.0F
-        var turnError = 0.0F
-        var startTime = currentTimeMillis()
-        var dist: Float = 0.0F
-        val gain: Float = 0.002F
-        var setpoint: Float = 500.0F
-        private val threadHandler =
-            Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
-
-        override fun run() {
-            while (runThread) {
-                //Logic
-
-                setpoint = 500.0F + (150.0F* sin((startTime-currentTimeMillis()).toFloat()*2E-4F))
-//                Log.i("asd", "setp: ${sin((startTime-currentTimeMillis()).toFloat()*2E-4)}. ${Thread.currentThread()}")
-
-                dist = mLoomoSensor.getSurroundings().UltraSonic.toFloat()
-//                Log.i("asd", "Ultrasonic: $dist. ${Thread.currentThread()}")
-                error = (setpoint - dist) * gain * -1.0f
-//                turnError = (mLoomoSensor.getSurroundings().IR_Left.toFloat()-
-//                            mLoomoSensor.getSurroundings().IR_Right.toFloat())*
-//                            -0.01F
-                //Set velocity
-                mBase.setLinearVelocity(error)
-                mBase.setAngularVelocity(turnError)
-
-                //Post variables to UI
-                threadHandler.post {
-                    viewModel.text.value =
-                            "Distance controller\n" +
-                            "setp:$setpoint\n" +
-                            "dist:$dist\n" +
-                            "Lin_Vel: $error\n" +
-                            "Ang_Vel:$turnError"
-                }
-
-                //Thread interval
-                Thread.sleep(10)
-
-                //Check for stop signal
-                if (!runThread) {
-                    mBase.setLinearVelocity(0.0F)
-                    threadHandler.post {
-                        viewModel.text.value = "Thread stopped"
-                    }
-                    break
-                }
-            }
-            Log.i(
-                "asd",
-                "${Thread.currentThread()} stopped."
-            )
+    private fun startCamera() {
+        if (mVision.isBind) {
+            Log.i(TAG, "Camera Thread starting")
+            mCamera.enable = true
+            mVisionThread = Thread(mCamera, "CameraThread")
+            mVisionThread.start()
+        }else{
+            Toast.makeText(this, "Vision service not started yet", Toast.LENGTH_SHORT).show()
         }
     }
+
+    private fun stopCamera() {
+        mCamera.enable = false
+    }
+
+
+
 }

@@ -4,8 +4,9 @@ import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.loomoapp.TAG
 
-class MainActivityViewModel : ViewModel() {
+open class MainActivityViewModel : ViewModel() {
 
     //Variables
 
@@ -32,7 +33,7 @@ class MainActivityViewModel : ViewModel() {
 
     init {
 
-        Log.i("asd", "ViewModel created")
+        Log.i(TAG, "ViewModel created")
         text.value = "Service not started yet"
     }
 }

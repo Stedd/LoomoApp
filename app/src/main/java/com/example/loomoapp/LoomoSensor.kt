@@ -21,7 +21,6 @@ import com.segway.robot.sdk.perception.sensor.Sensor
 
 
 class LoomoSensor (context: Context) {
-    private val TAG = "asd"
 
     private var mSensor = Sensor.getInstance()
 
