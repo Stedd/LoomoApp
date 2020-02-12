@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
 
     private val mRunnable = ExampleRunnable()
 
-    private val mThread = Thread(mRunnable, "CalcThread")
+    private var mThread = Thread(mRunnable, "CalcThread")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +40,9 @@ class MainActivity : AppCompatActivity() {
         mBase = Base.getInstance()
         mVision = Vision.getInstance()
         mLoomoSensor = LoomoSensor(this)
+
+        //Start thread when starting up
+        mThread.start()
 
         viewModel = ViewModelProvider(this)
             .get(MainActivityViewModel::class.java)
@@ -88,29 +91,29 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-//        mSensor.bindService(this.applicationContext, object : ServiceBinder.BindStateListener {
-//            override fun onBind() {
-//                Log.d(TAG, "sensor onBind")
-//            }
-//
-//            override fun onUnbind(reason: String) {
-//            }
-//        })
-
         super.onResume()
+    }
+
+    override fun onDestroy() {
+        if (mThread.isAlive) {
+            Log.i("asd", "App closed, Thread stopping")
+            mRunnable.runThread = false
+        }
+        super.onDestroy()
     }
 
     private fun startService() {
         if (mThread.isAlive) {
-            Log.i("asd", "Thread start command")
-//            viewModel.text.value = "Thread started"
-            mRunnable.runThread = true
+//            Log.i("asd", "Thread start command")
+////            viewModel.text.value = "Thread started"
+//            mRunnable.runThread = true
+//            mThread.run()
         } else {
-            Log.i("asd", "Thread is dead, starting")
+            Log.i("asd", "Thread is not running, starting")
+            mRunnable.runThread = true
+            mThread = Thread(mRunnable, "ControllerThread")
             mThread.start()
-            startService()
         }
-//        viewModel.text.value = "Thread started: ${mLoomoSensor.getSensBaseImu().pitch}"
     }
 
     private fun stopService() {
@@ -122,30 +125,39 @@ class MainActivity : AppCompatActivity() {
     class ExampleRunnable : Runnable {
 
         var runThread = false
-        var error:Float = 0.0F
-        var dist:Float = 0.0F
-        val gain : Float = 0.001F
+        var error: Float = 0.0F
+        var dist: Float = 0.0F
+        val gain: Float = 0.001F
         val setpoint: Float = 500.0F
-        private val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
+        private val threadHandler =
+            Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
 
         override fun run() {
-            if (runThread) {
+            while (runThread) {
+                //Logic
                 dist = mLoomoSensor.getSurroundings().UltraSonic.toFloat()
-                Log.i("asd", "Ultrasonic: $dist")
-                error = (setpoint-dist)*gain*-1.0f
+//                Log.i("asd", "Ultrasonic: $dist. ${Thread.currentThread()}")
+                error = (setpoint - dist) * gain * -1.0f
                 mBase.setLinearVelocity(error)
+
+                //Check for stop signal
+                if (!runThread) {
+                    mBase.setLinearVelocity(0.0F)
+                    break
+                }
+
+                //Post variables to UI
                 threadHandler.post {
                     viewModel.text.value = "Lin_Vel: $error"
                 }
-                Thread.sleep(5)
-                run()
-            } else {
-                //Sleep thread until it is given a task
-                Thread.sleep(250)
-                mBase.setLinearVelocity(0.0F)
-                Log.i("asd", "Keeping ${Thread.currentThread()} alive")
-                run()
+
+                //Thread interval
+                Thread.sleep(10)
             }
+            Log.i(
+                "asd",
+                "${Thread.currentThread()} terminated."
+            )
         }
     }
 }
