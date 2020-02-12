@@ -14,6 +14,8 @@ import com.segway.robot.sdk.locomotion.sbv.Base
 import com.segway.robot.sdk.perception.sensor.Sensor
 import com.segway.robot.sdk.vision.Vision
 import kotlinx.android.synthetic.main.activity_main.*
+import java.lang.System.currentTimeMillis
+import kotlin.math.sin
 
 //Variables
 private lateinit var viewModel: MainActivityViewModel
@@ -41,8 +43,6 @@ class MainActivity : AppCompatActivity() {
         mVision = Vision.getInstance()
         mLoomoSensor = LoomoSensor(this)
 
-        //Start thread when starting up
-        mThread.start()
 
         viewModel = ViewModelProvider(this)
             .get(MainActivityViewModel::class.java)
@@ -96,20 +96,24 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         if (mThread.isAlive) {
-            Log.i("asd", "App closed, Thread stopping")
+            Log.i("asd", "App destroyed, Thread stopping")
             mRunnable.runThread = false
         }
         super.onDestroy()
     }
 
-    private fun startService() {
+
+    override fun onPause() {
         if (mThread.isAlive) {
-//            Log.i("asd", "Thread start command")
-////            viewModel.text.value = "Thread started"
-//            mRunnable.runThread = true
-//            mThread.run()
-        } else {
-            Log.i("asd", "Thread is not running, starting")
+            Log.i("asd", "App paused, Thread stopping")
+            mRunnable.runThread = false
+        }
+        super.onPause()
+    }
+
+    private fun startService() {
+        if (!mThread.isAlive) {
+            Log.i("asd", "ControllerThread starting")
             mRunnable.runThread = true
             mThread = Thread(mRunnable, "ControllerThread")
             mThread.start()
@@ -119,44 +123,63 @@ class MainActivity : AppCompatActivity() {
     private fun stopService() {
         Log.i("asd", "Service stop command")
         mRunnable.runThread = false
-        viewModel.text.value = "Thread stopped"
+
     }
 
     class ExampleRunnable : Runnable {
 
         var runThread = false
         var error: Float = 0.0F
+        var turnError = 0.0F
+        var startTime = currentTimeMillis()
         var dist: Float = 0.0F
-        val gain: Float = 0.001F
-        val setpoint: Float = 500.0F
+        val gain: Float = 0.002F
+        var setpoint: Float = 500.0F
         private val threadHandler =
             Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
 
         override fun run() {
             while (runThread) {
                 //Logic
+
+                setpoint = 500.0F + (150.0F* sin((startTime-currentTimeMillis()).toFloat()*2E-4F))
+//                Log.i("asd", "setp: ${sin((startTime-currentTimeMillis()).toFloat()*2E-4)}. ${Thread.currentThread()}")
+
                 dist = mLoomoSensor.getSurroundings().UltraSonic.toFloat()
 //                Log.i("asd", "Ultrasonic: $dist. ${Thread.currentThread()}")
                 error = (setpoint - dist) * gain * -1.0f
+//                turnError = (mLoomoSensor.getSurroundings().IR_Left.toFloat()-
+//                            mLoomoSensor.getSurroundings().IR_Right.toFloat())*
+//                            -0.01F
+                //Set velocity
                 mBase.setLinearVelocity(error)
-
-                //Check for stop signal
-                if (!runThread) {
-                    mBase.setLinearVelocity(0.0F)
-                    break
-                }
+                mBase.setAngularVelocity(turnError)
 
                 //Post variables to UI
                 threadHandler.post {
-                    viewModel.text.value = "Lin_Vel: $error"
+                    viewModel.text.value =
+                            "Distance controller\n" +
+                            "setp:$setpoint\n" +
+                            "dist:$dist\n" +
+                            "Lin_Vel: $error\n" +
+                            "Ang_Vel:$turnError"
                 }
 
                 //Thread interval
                 Thread.sleep(10)
+
+                //Check for stop signal
+                if (!runThread) {
+                    mBase.setLinearVelocity(0.0F)
+                    threadHandler.post {
+                        viewModel.text.value = "Thread stopped"
+                    }
+                    break
+                }
             }
             Log.i(
                 "asd",
-                "${Thread.currentThread()} terminated."
+                "${Thread.currentThread()} stopped."
             )
         }
     }
