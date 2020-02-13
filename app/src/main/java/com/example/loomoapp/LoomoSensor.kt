@@ -17,6 +17,7 @@ import android.content.Context
 import android.util.Log
 import com.example.loomoapp.viewModel.*
 import com.segway.robot.sdk.base.bind.ServiceBinder
+import com.segway.robot.sdk.perception.sensor.RobotAllSensors
 import com.segway.robot.sdk.perception.sensor.Sensor
 
 
@@ -30,6 +31,7 @@ class LoomoSensor (context: Context) {
         mSensor.bindService(context.applicationContext, object : ServiceBinder.BindStateListener {
             override fun onBind() {
                 Log.d(TAG, "Sensor onBind")
+                Log.i(TAG, "All sensors: ${mLoomoSensor.getAllSensors()}")
             }
             override fun onUnbind(reason: String) {
             }
@@ -107,6 +109,10 @@ class LoomoSensor (context: Context) {
             linearVelocity = pose2D.linearVelocity,
             angularVelocity = pose2D.angularVelocity
         )
+    }
+
+    fun getAllSensors() : RobotAllSensors{
+        return mSensor.robotAllSensors
     }
 
 }

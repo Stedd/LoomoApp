@@ -60,10 +60,13 @@ class MainActivity : AppCompatActivity() {
             textView.text = it
         })
 
+        camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
+
         viewModel.text.value = "Service not started"
 
         btnStartService.setOnClickListener {
             startController("ControllerThread start command")
+            Log.d(TAG, "${HelloWorld()}")
         }
         btnStopService.setOnClickListener {
             stopController("ControllerThread stop command")
@@ -104,7 +107,6 @@ class MainActivity : AppCompatActivity() {
         stopThreads()
         super.onDestroy()
     }
-
 
     override fun onPause() {
         stopThreads()
@@ -162,6 +164,7 @@ class MainActivity : AppCompatActivity() {
             Log.i(TAG, msg)
             mVision.stopListenFrame(StreamType.DEPTH)
             cameraRunning = false
+            camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
         }
     }
 

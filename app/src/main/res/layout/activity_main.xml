@@ -55,7 +55,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:srcCompat="@tools:sample/avatars[3]" />
+        tools:srcCompat="@drawable/ic_videocam" />
 
     <Button
         android:id="@+id/btnStartCamera"

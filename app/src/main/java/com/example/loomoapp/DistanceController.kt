@@ -5,16 +5,24 @@ import java.lang.System.currentTimeMillis
 import kotlin.math.sin
 
 class DistanceController : ThreadLoop() {
+    //Thread variables
     override var interval: Long = 10
-    override var enable = false
+    override var enable         = false
 
-    private var error: Float = 0.0F
-    private var turnError = 0.0F
-    private var startTime = currentTimeMillis()
-    private var dist: Float = 0.0F
-    private val linGain: Float = -0.0009F
-    private val angGain: Float = -0.0025F
-    private var setpoint: Float = 500.0F
+    //static parameters
+    private val startTime       = currentTimeMillis()
+    private val maxSpeed        = 0.2F
+
+    //Controller tuning
+    private val linGain         = -0.0009F
+    private val angGain         = -0.0025F
+
+    //Variables
+    private var error           = 0.0F
+    private var turnError       = 0.0F
+
+    private var dist            = 0.0F
+    private var setpoint        = 500.0F
 
     override fun main() {
         //Logic
@@ -25,22 +33,16 @@ class DistanceController : ThreadLoop() {
 //        turnError = angGain * (mLoomoSensor.getSurroundings().IR_Left.toFloat() -
 //                mLoomoSensor.getSurroundings().IR_Right.toFloat())
         //Set velocity
-        mBase.setLinearVelocity(error)
-        mBase.setAngularVelocity(0.0F)
-
+        mBase.setLinearVelocity(saturation(error,maxSpeed))
+        mBase.setAngularVelocity(saturation(turnError,0.5F))
 
         //Loggers
 //        Log.i("asd", "Ultrasonic: $dist. ${Thread.currentThread()}")
-
+        Log.i(TAG, "All sensors: ${mLoomoSensor.getSensPose2D()}")
 
         //Post variables to UI
         threadHandler.post {
-            viewModel.text.value =
-                "Distance controller\n" +
-                        "setp:$setpoint\n" +
-                        "dist:$dist\n" +
-                        "Lin_Vel: $error\n" +
-                        "Ang_Vel:$turnError"
+            viewModel.text.value = "Distance controller\nsetp:$setpoint\ndist:$dist\nLin_Vel: ${saturation(error,maxSpeed)}\nAng_Vel:$turnError"
         }
     }
 
@@ -52,4 +54,12 @@ class DistanceController : ThreadLoop() {
         }
     }
 
+    private fun saturation(speed: Float, maxSpeed:Float):Float{
+        return when {
+            speed > maxSpeed    -> {maxSpeed}
+            speed < -maxSpeed   -> {-maxSpeed}
+            else                -> {speed}
+        }
+
+    }
 }
