@@ -38,7 +38,7 @@ class DistanceController : ThreadLoop() {
 
         //Loggers
 //        Log.i("asd", "Ultrasonic: $dist. ${Thread.currentThread()}")
-        Log.i(TAG, "All sensors: ${mLoomoSensor.getSensPose2D()}")
+//        Log.i(TAG, "All sensors: ${mLoomoSensor.getSensPose2D()}")
 
         //Post variables to UI
         threadHandler.post {

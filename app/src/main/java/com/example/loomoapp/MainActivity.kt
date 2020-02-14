@@ -16,6 +16,7 @@ import com.segway.robot.sdk.locomotion.sbv.Base
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
+import org.opencv.android.OpenCVLoader
 
 //Variables
 const val TAG = "debugMSG"
@@ -36,7 +37,8 @@ class MainActivity : AppCompatActivity() {
         // Used to load the 'native-lib' library on application startup.
         init {
             System.loadLibrary("native-lib")
-//            System.loadLibrary("opencv_java4")
+            System.loadLibrary("opencv_java4")
+
         }
     }
 
@@ -60,6 +62,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
+
+        if (!OpenCVLoader.initDebug()) {
+            Log.d(TAG, "OpenCV not loaded")
+        } else {
+            Log.d(TAG, "OpenCV loaded")
+        }
 
         mBase = Base.getInstance()
         mVision = Vision.getInstance()
