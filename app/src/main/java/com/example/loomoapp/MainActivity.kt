@@ -29,6 +29,18 @@ var cameraRunning: Boolean = false
 
 class MainActivity : AppCompatActivity() {
 
+    external fun stringFromJNI(): String
+
+    companion object {
+
+        // Used to load the 'native-lib' library on application startup.
+        init {
+            System.loadLibrary("native-lib")
+//            System.loadLibrary("opencv_java4")
+        }
+    }
+
+
     private val textView by lazy {
         findViewById<TextView>(R.id.textView)
     }
@@ -66,7 +78,7 @@ class MainActivity : AppCompatActivity() {
 
         btnStartService.setOnClickListener {
             startController("ControllerThread start command")
-            Log.d(TAG, "${HelloWorld()}")
+//            Log.d(TAG, "${HelloWorld()}")
         }
         btnStopService.setOnClickListener {
             stopController("ControllerThread stop command")
@@ -77,6 +89,8 @@ class MainActivity : AppCompatActivity() {
         btnStopCamera.setOnClickListener {
             stopCamera("Camera stop command")
         }
+        sample_text.text = stringFromJNI()
+//        Log.i(TAG, "from c++ ${stringFromJNI()}")
     }
 
     override fun onResume() {
