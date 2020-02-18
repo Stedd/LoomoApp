@@ -22,7 +22,7 @@ class DistanceController : ThreadLoop() {
     private var turnError       = 0.0F
 
     private var dist            = 0.0F
-    private var setpoint        = 500.0F
+    private var setpoint        = 300.0F
 
     override fun main() {
         //Logic

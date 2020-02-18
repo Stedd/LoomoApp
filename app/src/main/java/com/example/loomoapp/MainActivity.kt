@@ -1,5 +1,6 @@
 package com.example.loomoapp
 
+import android.R.attr.src
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.Handler
@@ -20,7 +21,11 @@ import kotlinx.android.synthetic.main.activity_main.*
 import org.opencv.android.*
 import org.opencv.core.CvType
 import org.opencv.core.Mat
+import org.opencv.core.MatOfKeyPoint
+import org.opencv.features2d.Features2d
+import org.opencv.features2d.ORB
 import org.opencv.imgproc.Imgproc
+
 
 //Variables
 const val TAG = "debugMSG"
@@ -66,7 +71,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         Bitmap.Config.ALPHA_8
     ) // Depth info is in Z16 format. RGB_565 is also a 16 bit format and is compatible for storing the pixels
 
-    private var mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidth/2, imgHeight/2,false)
+    private var mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidth/3, imgHeight/3,false)
 
 
     private val mDistanceController = DistanceController()
@@ -75,6 +80,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        supportActionBar?.hide()
         Log.i(TAG, "Activity created")
 
         val mCameraView = findViewById<JavaCameraView>(R.id.javaCam)
@@ -129,7 +135,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         }
 
         sample_text.text = stringFromJNI()
-//        Log.i(TAG, "from c++ ${stringFromJNI()}")
     }
 
     override fun onResume() {
@@ -208,7 +213,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                 Log.i(TAG, msg)
                 mVision.startListenFrame(StreamType.FISH_EYE) { streamType, frame ->
                     mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
-                    mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidth/2, imgHeight/2,false)
+                    mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidth/3, imgHeight/3,false)
                     threadHandler.post {
                         camView.setImageBitmap(mImgDepthScaled.copy(Bitmap.Config.ALPHA_8, true))
                     }
@@ -239,7 +244,24 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
 //        Imgproc.blur(img, resultImg, Size(15.0, 15.0))
 //        Imgproc.GaussianBlur(img, resultImg, Size(15.0, 15.0), 1.0)
         Imgproc.Canny(img, resultImg, 0.01, 190.0)
-//        Log.i("cam", "${Thread.currentThread()}")
+
+        var matOfKeyPoint = MatOfKeyPoint()
+        var descriptor = Mat()
+
+
+        //-- Step 1: Detect the keypoints using SURF Detector
+        //-- Step 1: Detect the keypoints using SURF Detector
+        val hessianThreshold = 400
+        val nOctaves = 4F
+        val nOctaveLayers = 3
+        val extended = 0
+        val upright = 0
+        val detector: ORB =
+            ORB.create(hessianThreshold, nOctaves, nOctaveLayers, extended, upright)
+        val keypoints = MatOfKeyPoint()
+        detector.detect(img, keypoints)
+
+        Features2d.drawKeypoints(img, keypoints, resultImg)
 
         return resultImg
     }
