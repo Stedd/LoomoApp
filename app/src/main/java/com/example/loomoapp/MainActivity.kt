@@ -41,7 +41,9 @@ val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to U
 var cameraRunning: Boolean = false
 
 var img = Mat()
+var imgFisheye = Mat()
 var resultImg = Mat()
+var resultImgFisheye = Mat()
 
 class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -68,7 +70,12 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     private var mImgDepth = Bitmap.createBitmap(
         imgWidth,
         imgHeight,
-        Bitmap.Config.ALPHA_8
+        Bitmap.Config.ARGB_8888
+    ) // Depth info is in Z16 format. RGB_565 is also a 16 bit format and is compatible for storing the pixels
+    private var mImgDepthCanny = Bitmap.createBitmap(
+        imgWidth/3,
+        imgHeight/3,
+        Bitmap.Config.ARGB_8888
     ) // Depth info is in Z16 format. RGB_565 is also a 16 bit format and is compatible for storing the pixels
 
     private var mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidth/3, imgHeight/3,false)
@@ -214,8 +221,12 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                 mVision.startListenFrame(StreamType.FISH_EYE) { streamType, frame ->
                     mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
                     mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidth/3, imgHeight/3,false)
+                    Utils.bitmapToMat(mImgDepthScaled, imgFisheye)
+                    Imgproc.Canny(imgFisheye, resultImgFisheye, 0.01, 190.0)
+                    Utils.matToBitmap(resultImgFisheye ,mImgDepthCanny)
+
                     threadHandler.post {
-                        camView.setImageBitmap(mImgDepthScaled.copy(Bitmap.Config.ALPHA_8, true))
+                        camView.setImageBitmap(mImgDepth.copy(Bitmap.Config.ARGB_8888, true))
                     }
                 }
                 cameraRunning = true
@@ -243,23 +254,13 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
 //        resultImg = img
 //        Imgproc.blur(img, resultImg, Size(15.0, 15.0))
 //        Imgproc.GaussianBlur(img, resultImg, Size(15.0, 15.0), 1.0)
-        Imgproc.Canny(img, resultImg, 0.01, 190.0)
+//        Imgproc.Canny(img, resultImg, 0.01, 190.0)
 
-        var matOfKeyPoint = MatOfKeyPoint()
-        var descriptor = Mat()
-
-
-        //-- Step 1: Detect the keypoints using SURF Detector
-        //-- Step 1: Detect the keypoints using SURF Detector
-        val hessianThreshold = 400
-        val nOctaves = 4F
-        val nOctaveLayers = 3
-        val extended = 0
-        val upright = 0
-        val detector: ORB =
-            ORB.create(hessianThreshold, nOctaves, nOctaveLayers, extended, upright)
+        val detector: ORB = ORB.create(50, 1.2F)
         val keypoints = MatOfKeyPoint()
         detector.detect(img, keypoints)
+
+        Log.i("cam", "Keypoints:$keypoints")
 
         Features2d.drawKeypoints(img, keypoints, resultImg)
 
