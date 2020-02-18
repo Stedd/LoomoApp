@@ -35,6 +35,7 @@ lateinit var mLoaderCallback: BaseLoaderCallback
 val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
 var cameraRunning: Boolean = false
 
+
 //private const val width = 200
 //private const val height = 200
 
@@ -62,13 +63,16 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         findViewById<TextView>(R.id.textView)
     }
 
-    private val imgWidth = 320
-    private val imgHeight = 240
+    private val imgWidth = 640
+    private val imgHeight = 480
     private var mImgDepth = Bitmap.createBitmap(
         imgWidth,
         imgHeight,
-        Bitmap.Config.RGB_565
+        Bitmap.Config.ALPHA_8
     ) // Depth info is in Z16 format. RGB_565 is also a 16 bit format and is compatible for storing the pixels
+
+    private var mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidth/2, imgHeight/2,false)
+
 
     private val mDistanceController = DistanceController()
     private var mControllerThread = Thread()
@@ -81,7 +85,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         val mCameraView = findViewById<JavaCameraView>(R.id.javaCam)
         mCameraView.setCameraPermissionGranted()
         mCameraView.visibility = SurfaceView.INVISIBLE
-
         mCameraView.setCameraIndex(-1)
 //        mCameraView.enableFpsMeter()
         mCameraView.setCvCameraViewListener(this)
@@ -208,10 +211,11 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         if (mVision.isBind) {
             if (!cameraRunning) {
                 Log.i(TAG, msg)
-                mVision.startListenFrame(StreamType.DEPTH) { streamType, frame ->
+                mVision.startListenFrame(StreamType.FISH_EYE) { streamType, frame ->
                     mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
+                    mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidth/2, imgHeight/2,false)
                     threadHandler.post {
-                        camView.setImageBitmap(mImgDepth.copy(Bitmap.Config.ARGB_8888, true))
+                        camView.setImageBitmap(mImgDepthScaled.copy(Bitmap.Config.ALPHA_8, true))
                     }
                 }
                 cameraRunning = true
@@ -227,14 +231,14 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     private fun stopCamera(msg: String) {
         if (cameraRunning) {
             Log.i(TAG, msg)
-            mVision.stopListenFrame(StreamType.DEPTH)
+            mVision.stopListenFrame(StreamType.FISH_EYE)
             cameraRunning = false
             camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
         }
     }
 
     override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
-        Log.i("cam", "new frame")
+//        Log.i("cam", "new frame")
         img = inputFrame.gray()
 //        resultImg = img
 //        Imgproc.blur(img, resultImg, Size(15.0, 15.0))
