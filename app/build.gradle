@@ -27,6 +27,16 @@ android {
             version "3.10.2"
         }
     }
+
+    splits {
+        abi {
+            enable true
+            universalApk false
+            reset()
+            include 'armeabi-v7a' // , 'x86', 'x86_64', 'arm64-v8a'
+        }
+    }
+
 }
 
 dependencies {
@@ -55,6 +65,7 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
 
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0"
-    implementation project(path: ':opencv')
+
+    implementation project(':opencv')
 
 }

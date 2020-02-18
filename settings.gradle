@@ -1,2 +1,6 @@
-include ':app', ':opencv'
+include ':app'
 rootProject.name='LoomoApp'
+
+def opencvsdk='C:/OpenCVAndroidSDK'
+include ':opencv'
+project(':opencv').projectDir = new File(opencvsdk + '/sdk')

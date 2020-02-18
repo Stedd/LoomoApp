@@ -31,17 +31,12 @@ lateinit var mVision: Vision
 lateinit var mLoomoSensor: LoomoSensor
 lateinit var mLoaderCallback: BaseLoaderCallback
 
-//var mFeatureDetector = FeatureDetector()
+
 val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
 var cameraRunning: Boolean = false
 
-
-//private const val width = 200
-//private const val height = 200
-
 var img = Mat()
 var resultImg = Mat()
-
 
 class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
 
