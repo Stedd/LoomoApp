@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.SurfaceView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -16,7 +17,10 @@ import com.segway.robot.sdk.locomotion.sbv.Base
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
-import org.opencv.android.OpenCVLoader
+import org.opencv.android.*
+import org.opencv.core.CvType
+import org.opencv.core.Mat
+import org.opencv.imgproc.Imgproc
 
 //Variables
 const val TAG = "debugMSG"
@@ -25,23 +29,34 @@ lateinit var viewModel: MainActivityViewModel
 lateinit var mBase: Base
 lateinit var mVision: Vision
 lateinit var mLoomoSensor: LoomoSensor
+lateinit var mLoaderCallback: BaseLoaderCallback
+
+//var mFeatureDetector = FeatureDetector()
 val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
 var cameraRunning: Boolean = false
 
-class MainActivity : AppCompatActivity() {
+//private const val width = 200
+//private const val height = 200
+
+var img = Mat()
+var resultImg = Mat()
+
+
+class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
 
     external fun stringFromJNI(): String
 
-    companion object {
+    init {
+        //Load native
+        System.loadLibrary("native-lib")
 
-        // Used to load the 'native-lib' library on application startup.
-        init {
-            System.loadLibrary("native-lib")
-            System.loadLibrary("opencv_java4")
-
+        //Load OpenCV
+        if (!OpenCVLoader.initDebug()) {
+            Log.d(TAG, "OpenCV not loaded")
+        } else {
+            Log.d(TAG, "OpenCV loaded")
         }
     }
-
 
     private val textView by lazy {
         findViewById<TextView>(R.id.textView)
@@ -63,10 +78,27 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
 
-        if (!OpenCVLoader.initDebug()) {
-            Log.d(TAG, "OpenCV not loaded")
-        } else {
-            Log.d(TAG, "OpenCV loaded")
+        val mCameraView = findViewById<JavaCameraView>(R.id.javaCam)
+        mCameraView.setCameraPermissionGranted()
+        mCameraView.visibility = SurfaceView.INVISIBLE
+
+        mCameraView.setCameraIndex(-1)
+//        mCameraView.enableFpsMeter()
+        mCameraView.setCvCameraViewListener(this)
+
+        mLoaderCallback = object : BaseLoaderCallback(this) {
+            override fun onManagerConnected(status: Int) {
+                when (status) {
+                    LoaderCallbackInterface.SUCCESS -> {
+                        Log.i(TAG, "OpenCV loaded successfully, enabling camera view")
+                        mCameraView.enableView()
+                        mCameraView.visibility = SurfaceView.VISIBLE
+                    }
+                    else -> {
+                        super.onManagerConnected(status)
+                    }
+                }
+            }
         }
 
         mBase = Base.getInstance()
@@ -97,11 +129,21 @@ class MainActivity : AppCompatActivity() {
         btnStopCamera.setOnClickListener {
             stopCamera("Camera stop command")
         }
+
         sample_text.text = stringFromJNI()
 //        Log.i(TAG, "from c++ ${stringFromJNI()}")
     }
 
     override fun onResume() {
+        Log.i(TAG, "Activity resumed")
+        if (!OpenCVLoader.initDebug()) {
+            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization")
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback)
+        } else {
+            Log.d(TAG, "OpenCV library found inside package. Using it!")
+            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
+        }
+
         //Bind loomo services
         mBase.bindService(this.applicationContext, object : ServiceBinder.BindStateListener {
             override fun onBind() {
@@ -122,6 +164,7 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "Vision unBind. Reason $reason")
             }
         })
+
         super.onResume()
     }
 
@@ -148,7 +191,7 @@ class MainActivity : AppCompatActivity() {
             mDistanceController.enable = true
             mControllerThread = Thread(mDistanceController, "ControllerThread")
             mControllerThread.start()
-        }else {
+        } else {
             Toast.makeText(this, "Dude, the controller is already activated..", Toast.LENGTH_SHORT)
                 .show()
         }
@@ -190,4 +233,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
+        Log.i("cam", "new frame")
+        img = inputFrame.gray()
+//        resultImg = img
+//        Imgproc.blur(img, resultImg, Size(15.0, 15.0))
+//        Imgproc.GaussianBlur(img, resultImg, Size(15.0, 15.0), 1.0)
+        Imgproc.Canny(img, resultImg, 0.01, 190.0)
+//        Log.i("cam", "${Thread.currentThread()}")
+
+        return resultImg
+    }
+
+    override fun onCameraViewStarted(width: Int, height: Int) {
+        Log.i("cam", "camera view started. width:$width, height: $height")
+        img = Mat(width, height, CvType.CV_8UC4)
+}
+
+    override fun onCameraViewStopped() {
+        Log.i("cam", "camera view stopped")
+    }
 }

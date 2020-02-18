@@ -31,7 +31,7 @@ class LoomoSensor (context: Context) {
         mSensor.bindService(context.applicationContext, object : ServiceBinder.BindStateListener {
             override fun onBind() {
                 Log.d(TAG, "Sensor onBind")
-                Log.i(TAG, "All sensors: ${mLoomoSensor.getAllSensors()}")
+//                Log.i(TAG, "All sensors: ${mLoomoSensor.getAllSensors()}")
             }
             override fun onUnbind(reason: String) {
             }

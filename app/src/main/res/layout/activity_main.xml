@@ -6,55 +6,55 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <Space
-        android:id="@+id/space"
-        android:layout_width="100dp"
-        android:layout_height="wrap_content"
+
+    <org.opencv.android.JavaCameraView
+        android:id="@+id/javaCam"
+        android:layout_width="200dp"
+        android:layout_height="120dp"
+        android:layout_marginEnd="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.83" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/btnStartService"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/btnStringStartService"
-        app:layout_constraintBottom_toBottomOf="@+id/space"
-        app:layout_constraintEnd_toStartOf="@+id/space"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/space" />
+        app:layout_constraintBottom_toTopOf="@+id/btnStopService"
+        app:layout_constraintStart_toStartOf="@+id/btnStopService"
+        app:layout_constraintTop_toBottomOf="@+id/btnStopCamera" />
 
     <Button
         android:id="@+id/btnStopService"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
         android:text="@string/btnStringStopService"
-        app:layout_constraintBottom_toBottomOf="@+id/space"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.484"
-        app:layout_constraintStart_toEndOf="@+id/space"
-        app:layout_constraintTop_toTopOf="@+id/space" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnStartService" />
 
     <TextView
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="qwert"
-        app:layout_constraintBottom_toBottomOf="@+id/space"
-        app:layout_constraintEnd_toEndOf="@+id/space"
-        app:layout_constraintStart_toStartOf="@+id/space"
-        app:layout_constraintTop_toTopOf="@+id/space" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/camView"
+        app:layout_constraintStart_toStartOf="@+id/camView"
+        app:layout_constraintTop_toBottomOf="@+id/camView" />
 
     <ImageView
         android:id="@+id/camView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toTopOf="@+id/space"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="@+id/btnStopCamera"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.31"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/btnStartCamera"
         tools:srcCompat="@drawable/ic_videocam" />
 
     <Button
@@ -62,20 +62,19 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/btnStringStartCamera"
-        app:layout_constraintBottom_toTopOf="@+id/space"
-        app:layout_constraintEnd_toStartOf="@+id/space"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintBottom_toTopOf="@+id/btnStopCamera"
+        app:layout_constraintStart_toStartOf="@+id/btnStopCamera"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.5" />
 
     <Button
         android:id="@+id/btnStopCamera"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/btnStringStopCamera"
-        app:layout_constraintBottom_toTopOf="@+id/space"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/space"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintBottom_toTopOf="@+id/btnStartService"
+        app:layout_constraintStart_toStartOf="@+id/btnStartService"
+        app:layout_constraintTop_toBottomOf="@+id/btnStartCamera" />
 
     <TextView
         android:id="@+id/sample_text"
