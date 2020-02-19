@@ -5,7 +5,11 @@
     <string name="btnStringStartCamera">Start</string>
     <string name="btnStringStopCamera">Stop</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
+
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="checkCam">Check Cam</string>
+
+    <string name="no_wifi">Turn on Wifi and restart</string>
+    <string name="lost_client_msg">Client lost connection</string>
+    <string name="tcp_reconnect_message">Disconnected from client, awaiting new connection</string>
 </resources>

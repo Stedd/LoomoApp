@@ -47,6 +47,7 @@ var resultImgFisheye = Mat()
 class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
 
     private val mDistanceController = DistanceController()
+    private val mSender = Sender()
     private var mControllerThread = Thread()
 
     external fun stringFromJNI(): String
