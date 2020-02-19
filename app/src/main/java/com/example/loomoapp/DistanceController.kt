@@ -6,7 +6,7 @@ import kotlin.math.sin
 
 class DistanceController : ThreadLoop() {
     //Thread variables
-    override var interval: Long = 10
+    override var interval: Long = 100
     override var enable         = false
 
     //static parameters
@@ -22,7 +22,7 @@ class DistanceController : ThreadLoop() {
     private var turnError       = 0.0F
 
     private var dist            = 0.0F
-    private var setpoint        = 300.0F
+    private var setpoint        = 1100.0F
 
     override fun main() {
         //Logic
