@@ -21,7 +21,7 @@ class IpHelper {
                     (ipAddress and 0xFF).toString() + "." +
                     (ipAddress shr 8 and 0xFF) + "." +
                     (ipAddress shr 16 and 0xFF) + "." +
-                    (ipAddress shr 24 and 0xFF) + ":" + 1337.toString()
+                    (ipAddress shr 24 and 0xFF) + ":" + SOCKET_PORT.toString()
         }
     }
 }
