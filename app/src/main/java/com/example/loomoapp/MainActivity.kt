@@ -248,6 +248,8 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         }
     }
 
+
+    // Hellow Tor
     override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
 //        Log.i("cam", "new frame")
         img = inputFrame.gray()
