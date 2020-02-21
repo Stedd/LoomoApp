@@ -9,11 +9,9 @@ import android.util.Pair
 import android.view.SurfaceView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.lifecycle.*
-import androidx.lifecycle.Observer
 import com.example.loomoapp.ROS.*
-import com.example.loomoapp.viewModel.MainActivityViewModel
 import com.segway.robot.sdk.base.bind.ServiceBinder
+import com.segway.robot.sdk.base.bind.ServiceBinder.BindStateListener
 import com.segway.robot.sdk.locomotion.sbv.Base
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.stream.StreamType
@@ -68,15 +66,19 @@ var resultImg = Mat()
 var resultImgFisheye = Mat()
 
 
-
-class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")), CameraBridgeViewBase.CvCameraViewListener2 {
+class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")),
+    CameraBridgeViewBase.CvCameraViewListener2 {
 
     private val mDistanceController = DistanceController()
     private var mControllerThread = Thread()
 
+
+
+
     external fun stringFromJNI(): String
 
     init {
+
         //Load native
         System.loadLibrary("native-lib")
 
@@ -86,6 +88,39 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
         } else {
             Log.d(TAG, "OpenCV loaded")
         }
+
+
+        //ROS
+        // Keep track of timestamps when images published, so corresponding TFs can be published too
+        mDepthStamps = ConcurrentLinkedDeque<Long>()
+        mDepthRosStamps = ConcurrentLinkedDeque<Pair<Long, Time>>()
+        mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps)
+        mTFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps)
+        mSensorPublisher = SensorPublisher()
+
+        mRosBridgeConsumers = listOf(
+            mRealsensePublisher,
+            mTFPublisher,
+            mSensorPublisher
+        )
+        val mOnNodeStarted = Runnable {
+            // Node has started, so we can now tell publishers and subscribers that ROS has initialized
+            for (consumer in mRosBridgeConsumers) {
+                consumer.node_started(mBridgeNode)
+                // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
+                consumer.start()
+            }
+            // Special nodes
+// TODO: we should handle this in the generic "start()" function
+            mRealsensePublisher.start_color()
+            mRealsensePublisher.start_depth()
+        }
+
+        // TODO: shutdown consumers correctly
+        val mOnNodeShutdown = Runnable { }
+
+        // Start an instance of the LoomoRosBridgeNode
+        mBridgeNode = RosBridgeNode(mOnNodeStarted, mOnNodeShutdown)
 
     }
 
@@ -120,7 +155,6 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
         nodeConfiguration.timeProvider = ntpTimeProvider
         nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
     }
-
 
 
     private val textView by lazy {
@@ -207,7 +241,7 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
         }
 
         mBase = Base.getInstance()
-        mVision = Vision.getInstance()
+//        mVision = Vision.getInstance()
         mLoomoSensor = LoomoSensor(this)
 
 ////        viewModel = ViewModelProvider().get(MainActivityViewModel::class.java)
@@ -218,22 +252,7 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
 //        })
 
 
-        //ROS
-        // Keep track of timestamps when images published, so corresponding TFs can be published too
-        mDepthStamps = ConcurrentLinkedDeque<Long>()
-        mDepthRosStamps = ConcurrentLinkedDeque<Pair<Long, Time>>()
-        mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps)
-        mTFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps)
-        mSensorPublisher = SensorPublisher()
-        // Start an instance of the LoomoRosBridgeNode
-        mBridgeNode = RosBridgeNode(mOnNodeStarted, mOnNodeShutdown)
 
-
-        mRosBridgeConsumers = listOf(
-            mRealsensePublisher,
-            mTFPublisher,
-            mSensorPublisher
-        )
 
 
         camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
@@ -242,7 +261,6 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
 
         btnStartService.setOnClickListener {
             startController("ControllerThread start command")
-//            Log.d(TAG, "${HelloWorld()}")
         }
         btnStopService.setOnClickListener {
             stopController("ControllerThread stop command")
@@ -257,21 +275,7 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
         sample_text.text = stringFromJNI()
     }
 
-    private var mOnNodeStarted = Runnable {
-        // Node has started, so we can now tell publishers and subscribers that ROS has initialized
-        for (consumer in mRosBridgeConsumers) {
-            consumer.node_started(mBridgeNode)
-            // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
-            consumer.start()
-        }
-        // Special nodes
-// TODO: we should handle this in the generic "start()" function
-        mRealsensePublisher.start_color()
-        mRealsensePublisher.start_depth()
-    }
 
-    // TODO: shutdown consumers correctly
-    private var mOnNodeShutdown = Runnable { }
 
 
     override fun onResume() {
@@ -285,8 +289,23 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
 
+        // get Vision SDK instance
+        mVision = Vision.getInstance()
+        mVision.bindService(this, mBindVisionListener)
+
+        // get Sensor SDK instance
+//        mSensor = Sensor.getInstance()
+
+        // get Locomotion SDK instance
+//        mBase = Base.getInstance()
+
+        // get Head SDK instance
+//        mHead = Head.getInstance()
+
+
+
         //Bind loomo services
-        mBase.bindService(this.applicationContext, object : ServiceBinder.BindStateListener {
+        mBase.bindService(this.applicationContext, object : BindStateListener {
             override fun onBind() {
                 Log.d(TAG, "Base onBind")
             }
@@ -295,19 +314,43 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
                 Log.d(TAG, "Base unBind. Reason: $reason")
             }
         })
-
-        mVision.bindService(this.applicationContext, object : ServiceBinder.BindStateListener {
-            override fun onBind() {
-                Log.d(TAG, "Vision onBind")
-            }
-
-            override fun onUnbind(reason: String?) {
-                Log.d(TAG, "Vision unBind. Reason $reason")
-            }
-        })
+//
+//        mVision.bindService(this.applicationContext, object : ServiceBinder.BindStateListener {
+//            override fun onBind() {
+//                Log.d(TAG, "Vision onBind")
+//            }
+//
+//            override fun onUnbind(reason: String?) {
+//                Log.d(TAG, "Vision unBind. Reason $reason")
+//            }
+//        })
 
         super.onResume()
     }
+
+
+
+
+    private var mBindVisionListener: BindStateListener = object : BindStateListener {
+        override fun onBind() {
+            if (mVision.isBind) {
+                Log.i(TAG, "onBind() mBindVisionListener called")
+                mRealsensePublisher.loomo_started(mVision)
+                mTFPublisher.loomo_started(mVision)
+                Log.d(TAG, "bindVision enabling realsense switches.")
+
+                mTFPublisher.start()
+//                mRealsensePublisher.start_color()
+////                mRealsensePublisher.start_depth()
+////                mRealsensePublisher.start_fisheye()
+            }
+        }
+
+        override fun onUnbind(reason: String) {
+            Log.i(TAG, "onUnbindVision: $reason")
+        }
+    }
+
 
     override fun onDestroy() {
         stopThreads()

@@ -37,8 +37,8 @@ class RealsensePublisher(
         var source: RealsenseMetadataSource? = null
     }
 
-    lateinit var mVision: Vision
-    lateinit var mBridgeNode: RosBridgeNode
+    private var mVision: Vision? = null
+    private var mBridgeNode: RosBridgeNode? = null
     lateinit var mRsColorIntrinsic: Intrinsic
     lateinit var mRsDepthIntrinsic: Intrinsic
     lateinit var mFisheyeIntrinsic: Intrinsic
@@ -64,12 +64,13 @@ class RealsensePublisher(
     private var mDepthStarted = false
     private var mFisheyeStarted = false
     private val mLatestDepthStamp = 0L
+
     override fun node_started(mBridgeNode: RosBridgeNode) {
         this.mBridgeNode = mBridgeNode
     }
 
     override fun start() { // No generic initialization is required
-        if (mBridgeNode == null || !mVision.isBind) {
+        if (mBridgeNode == null || mVision == null) {
             Log.d(
                 TAG,
                 "Cannot start RealsensePublisher, ROS or Loomo SDK is not ready"
@@ -89,7 +90,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun start_all() {
-        if (!mVision.isBind || mBridgeNode == null) {
+        if (mVision==null || mBridgeNode == null) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -127,7 +128,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun stop_all() {
-        if (!mVision.isBind || mBridgeNode == null) {
+        if (mVision == null || mBridgeNode == null) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -151,7 +152,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun start_imu() {
-        if (!mVision.isBind || mBridgeNode == null) {
+        if (mVision == null || mBridgeNode == null) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -163,7 +164,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun start_color() {
-        if (!mVision.isBind || mBridgeNode == null || mColorStarted) {
+        if (mVision == null || mBridgeNode == null || mColorStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -184,7 +185,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun start_depth() {
-        if (!mVision.isBind || mBridgeNode == null || mDepthStarted) {
+        if (mVision == null || mBridgeNode == null || mDepthStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -205,7 +206,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun start_fisheye() {
-        if (!mVision.isBind) {
+        if (mVision == null) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -224,7 +225,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun stop_color() {
-        if (!mVision.isBind || !mColorStarted) {
+        if (mVision == null || !mColorStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -238,7 +239,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun stop_depth() {
-        if (!mVision.isBind || !mDepthStarted) {
+        if (mVision == null || !mDepthStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -252,7 +253,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun stop_fisheye() {
-        if (!mVision.isBind || !mFisheyeStarted) {
+        if (mVision == null || !mFisheyeStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -373,7 +374,7 @@ class RealsensePublisher(
 
     var mRsColorListener =
         Vision.FrameListener { streamType, frame ->
-            if (!mIsPubRsColor) { //                TODO: this throws a lot of messages, why?
+            if (streamType != StreamType.COLOR) { //                TODO: this throws a lot of messages, why?
                 //                Log.d(TAG, "mRsColorListener: !mIsPubRsColor");
                 return@FrameListener
             }
@@ -465,13 +466,13 @@ class RealsensePublisher(
     var mFisheyeListener =
         Vision.FrameListener { streamType, frame ->
             //            Log.d(TAG, "mRsColorListener onNewFrame...");
-            if (!mIsPubFisheye) {
-                Log.d(
-                    TAG,
-                    "mFisheyeListener: !mIsPubFisheye"
-                )
-                return@FrameListener
-            }
+//            if (streamType != StreamType.FISH_EYE) {
+//                Log.d(
+//                    TAG,
+//                    "mFisheyeListener: !mIsPubFisheye"
+//                )
+//                return@FrameListener
+//            }
             if (streamType != StreamType.FISH_EYE) {
                 Log.e(
                     TAG,
@@ -538,7 +539,7 @@ class RealsensePublisher(
             width = mRsColorWidth
             height = mRsColorHeight
         } else {
-            pubr = mBridgeNode.mRsDepthInfoPubr
+            pubr = mBridgeNode!!.mRsDepthInfoPubr
             intrinsic = mRsDepthIntrinsic
             width = mRsDepthWidth
             height = mRsDepthHeight

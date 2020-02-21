@@ -2,6 +2,7 @@ package com.example.loomoapp.ROS
 
 import android.util.Log
 import android.util.Pair
+import com.example.loomoapp.mBase
 import com.segway.robot.algo.tf.AlgoTfData
 import com.segway.robot.sdk.locomotion.sbv.AngularVelocity
 import com.segway.robot.sdk.locomotion.sbv.Base
@@ -25,11 +26,12 @@ class TFPublisher(
     private val mDepthRosStamps: Queue<Pair<Long, Time>>?
 ) :  RosBridge {
     var mIsPubTF = false
-    lateinit var mTFPublishThread: Thread
-    lateinit var mSensor: Sensor
-    lateinit var mVision: Vision
-    lateinit var mBase: Base
-    lateinit var mBridgeNode: RosBridgeNode
+    private var mTFPublishThread: Thread = TFPublisherThread()
+    private var mVision: Vision? = null
+    private var mBridgeNode: RosBridgeNode? = null
+    private var mSensor: Sensor? = null
+//    lateinit var mBase: Base
+//    lateinit var mBridgeNode: RosBridgeNode
     lateinit var mDepthCalibration: ColorDepthCalibration
     lateinit var mMotionCalibration: MotionModuleCalibration
     private val mStarted = false
@@ -40,33 +42,31 @@ class TFPublisher(
     fun loomo_started(mVision: Vision) {
         this.mVision = mVision
     }
-
-    fun loomo_started(mBase: Base) {
-        this.mBase = mBase
-    }
+//
+//    fun loomo_started(mBase: Base) {
+//        this.mBase = mBase
+//    }
 
     override fun node_started(mBridgeNode: RosBridgeNode) {
         this.mBridgeNode = mBridgeNode
     }
 
     override fun start() {
-        if (mSensor == null || mVision == null || mBridgeNode == null || mBase == null || mStarted) {
+        if (mStarted || mVision==null ) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
             )
             return
         }
-        mDepthCalibration = mVision.colorDepthCalibrationData
-        mMotionCalibration = mVision.motionModuleCalibrationData
+        mDepthCalibration = mVision!!.colorDepthCalibrationData
+        mMotionCalibration = mVision!!.motionModuleCalibrationData
         Log.d(
             TAG,
             "Depth extrinsic data: " + mDepthCalibration.depthToColorExtrinsic.toString()
         )
         Log.d(TAG, "start_tf()")
-        if (!mTFPublishThread.isAlive) {
-            mTFPublishThread = TFPublisherThread()
-        }
+
         mTFPublishThread.start()
     }
 
@@ -91,13 +91,13 @@ class TFPublisher(
         time: Time
     ): TransformStamped {
         val vector3: Vector3 =
-            mBridgeNode.mMessageFactory!!.newFromType(Vector3._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Vector3._TYPE)
         // Extrinsic data is in mm, convert to meters
         vector3.x = extrinsic.translation.x / 1000.0f.toDouble()
         vector3.y = extrinsic.translation.y / 1000.0f.toDouble()
         vector3.z = extrinsic.translation.z / 1000.0f.toDouble()
         val quaternion: Quaternion =
-            mBridgeNode.mMessageFactory!!.newFromType(Quaternion._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Quaternion._TYPE)
         val identity_quaternion =
             org.ros.rosjava_geometry.Quaternion.identity()
         quaternion.x = identity_quaternion.x
@@ -105,15 +105,15 @@ class TFPublisher(
         quaternion.z = identity_quaternion.z
         quaternion.w = identity_quaternion.w
         val transform: Transform =
-            mBridgeNode.mMessageFactory!!.newFromType(Transform._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Transform._TYPE)
         transform.translation = vector3
         transform.rotation = quaternion
-        val transformStamped: TransformStamped = mBridgeNode.mMessageFactory!!.newFromType(
+        val transformStamped: TransformStamped = mBridgeNode!!.mMessageFactory!!.newFromType(
             TransformStamped._TYPE
         )
         transformStamped.transform = transform
-        transformStamped.childFrameId = mBridgeNode.RsDepthOpticalFrame
-        transformStamped.header.frameId = mBridgeNode.RsColorOpticalFrame
+        transformStamped.childFrameId = mBridgeNode!!.RsDepthOpticalFrame
+        transformStamped.header.frameId = mBridgeNode!!.RsColorOpticalFrame
         // Future-date this static transform so that depth_image_proc/register can get the TF easier
         transformStamped.header.stamp = time.add(Duration.fromMillis(1000))
         return transformStamped
@@ -121,7 +121,7 @@ class TFPublisher(
 
     private fun realsenseColorToOpticalFrame(time: Time): TransformStamped {
         val vector3: Vector3 =
-            mBridgeNode.mMessageFactory!!.newFromType(Vector3._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Vector3._TYPE)
         // Assume that rscolor_optical_frame is in the same physical location as Sensor.RS_COLOR_FRAME, but with a different rotation
         vector3.x = 0.0
         vector3.y = 0.0
@@ -145,21 +145,21 @@ class TFPublisher(
         camera_rotation_x = camera_rotation_x.multiply(camera_rotation_y)
         //camera_rotation_x = camera_rotation_x.multiply(camera_rotation_z);
         val quaternion: Quaternion =
-            mBridgeNode.mMessageFactory!!.newFromType(Quaternion._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Quaternion._TYPE)
         quaternion.x = camera_rotation_x.x
         quaternion.y = camera_rotation_x.y
         quaternion.z = camera_rotation_x.z
         quaternion.w = camera_rotation_x.w
         val transform: Transform =
-            mBridgeNode.mMessageFactory!!.newFromType(Transform._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Transform._TYPE)
         transform.translation = vector3
         transform.rotation = quaternion
-        val transformStamped: TransformStamped = mBridgeNode.mMessageFactory!!.newFromType(
+        val transformStamped: TransformStamped = mBridgeNode!!.mMessageFactory!!.newFromType(
             TransformStamped._TYPE
         )
         transformStamped.transform = transform
-        transformStamped.childFrameId = mBridgeNode.RsColorOpticalFrame
-        transformStamped.header.frameId = mBridgeNode.tf_prefix + "_" + Sensor.RS_COLOR_FRAME
+        transformStamped.childFrameId = mBridgeNode!!.RsColorOpticalFrame
+        transformStamped.header.frameId = mBridgeNode!!.tf_prefix + "_" + Sensor.RS_COLOR_FRAME
         transformStamped.header.stamp = time
         return transformStamped
     }
@@ -174,18 +174,18 @@ class TFPublisher(
         q_w: Float
     ): Transform {
         val vector3: Vector3 =
-            mBridgeNode.mMessageFactory!!.newFromType(Vector3._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Vector3._TYPE)
         vector3.x = t_x.toDouble()
         vector3.y = t_y.toDouble()
         vector3.z = t_z.toDouble()
         val quaternion: Quaternion =
-            mBridgeNode.mMessageFactory!!.newFromType(Quaternion._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Quaternion._TYPE)
         quaternion.x = q_x.toDouble()
         quaternion.y = q_y.toDouble()
         quaternion.z = q_z.toDouble()
         quaternion.w = q_w.toDouble()
         val transform: Transform =
-            mBridgeNode.mMessageFactory!!.newFromType(Transform._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Transform._TYPE)
         transform.translation = vector3
         transform.rotation = quaternion
         return transform
@@ -210,7 +210,7 @@ class TFPublisher(
     }
 
     private fun baseLinkToNeckTransform(time: Time): TransformStamped {
-        val transformStamped: TransformStamped = mBridgeNode.mMessageFactory!!.newFromType(
+        val transformStamped: TransformStamped = mBridgeNode!!.mMessageFactory!!.newFromType(
             TransformStamped._TYPE
         )
         // Neck is approx 50cm above the base
@@ -219,9 +219,9 @@ class TFPublisher(
             Sensor.BASE_ODOM_FRAME
         var targetFrame =
             Sensor.NECK_POSE_FRAME
-        if (mBridgeNode.use_tf_prefix) {
-            sourceFrame = mBridgeNode.tf_prefix + "_" + sourceFrame
-            targetFrame = mBridgeNode.tf_prefix + "_" + targetFrame
+        if (mBridgeNode!!.use_tf_prefix) {
+            sourceFrame = mBridgeNode!!.tf_prefix + "_" + sourceFrame
+            targetFrame = mBridgeNode!!.tf_prefix + "_" + targetFrame
         }
         transformStamped.header.frameId = sourceFrame
         transformStamped.childFrameId = targetFrame
@@ -232,14 +232,14 @@ class TFPublisher(
 
     private fun baseLinkToUltrasonicTransform(time: Time): TransformStamped {
         val vector3: Vector3 =
-            mBridgeNode.mMessageFactory!!.newFromType(Vector3._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Vector3._TYPE)
         // 44cm = 0.44m
 // 12cm = 0.12m
         vector3.x = 0.12
         vector3.y = 0.0
         vector3.z = 0.44
         val quaternion: Quaternion =
-            mBridgeNode.mMessageFactory!!.newFromType(Quaternion._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Quaternion._TYPE)
         val identity_quaternion =
             org.ros.rosjava_geometry.Quaternion.identity()
         quaternion.x = identity_quaternion.x
@@ -247,17 +247,17 @@ class TFPublisher(
         quaternion.z = identity_quaternion.z
         quaternion.w = identity_quaternion.w
         val transform: Transform =
-            mBridgeNode.mMessageFactory!!.newFromType(Transform._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Transform._TYPE)
         transform.translation = vector3
         transform.rotation = quaternion
-        val transformStamped: TransformStamped = mBridgeNode.mMessageFactory!!.newFromType(
+        val transformStamped: TransformStamped = mBridgeNode!!.mMessageFactory!!.newFromType(
             TransformStamped._TYPE
         )
         transformStamped.transform = transform
-        transformStamped.childFrameId = mBridgeNode.UltrasonicFrame
+        transformStamped.childFrameId = mBridgeNode!!.UltrasonicFrame
         var sourceFrame = "base_link"
-        if (mBridgeNode.use_tf_prefix) {
-            sourceFrame = mBridgeNode.tf_prefix + "_" + sourceFrame
+        if (mBridgeNode!!.use_tf_prefix) {
+            sourceFrame = mBridgeNode!!.tf_prefix + "_" + sourceFrame
         }
         transformStamped.header.frameId = sourceFrame
         // Future-date this static transform so that depth_image_proc/register can get the TF easier
@@ -267,21 +267,21 @@ class TFPublisher(
 
     private fun algoTf2TfStamped(tfData: AlgoTfData, time: Time): TransformStamped {
         val vector3: Vector3 =
-            mBridgeNode.mMessageFactory!!.newFromType(Vector3._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Vector3._TYPE)
         vector3.x = tfData.t.x.toDouble()
         vector3.y = tfData.t.y.toDouble()
         vector3.z = tfData.t.z.toDouble()
         val quaternion: Quaternion =
-            mBridgeNode.mMessageFactory!!.newFromType(Quaternion._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Quaternion._TYPE)
         quaternion.x = tfData.q.x.toDouble()
         quaternion.y = tfData.q.y.toDouble()
         quaternion.z = tfData.q.z.toDouble()
         quaternion.w = tfData.q.w.toDouble()
         val transform: Transform =
-            mBridgeNode.mMessageFactory!!.newFromType(Transform._TYPE)
+            mBridgeNode!!.mMessageFactory!!.newFromType(Transform._TYPE)
         transform.translation = vector3
         transform.rotation = quaternion
-        val transformStamped: TransformStamped = mBridgeNode.mMessageFactory!!.newFromType(
+        val transformStamped: TransformStamped = mBridgeNode!!.mMessageFactory!!.newFromType(
             TransformStamped._TYPE
         )
         transformStamped.transform = transform
@@ -297,7 +297,7 @@ class TFPublisher(
         angularVelocity: AngularVelocity,
         time: Time
     ): Odometry { // Start assembling a nav_msg/Odometry
-        val odom_message = mBridgeNode.mOdometryPubr!!.newMessage()
+        val odom_message = mBridgeNode!!.mOdometryPubr!!.newMessage()
         odom_message.pose.pose.position.x = tfData.t.x.toDouble()
         odom_message.pose.pose.position.y = tfData.t.y.toDouble()
         odom_message.pose.pose.position.z = tfData.t.z.toDouble()
@@ -313,15 +313,15 @@ class TFPublisher(
         odom_message.twist.twist.angular.z = angularVelocity.speed.toDouble()
         // Child frame is the frame of the twist: base link
 // Add tf_prefix to each transform before ROS publishing (in case of multiple loomos on one network)
-        if (mBridgeNode.use_tf_prefix) {
-            odom_message.childFrameId = mBridgeNode.tf_prefix + "_" + "base_link"
+        if (mBridgeNode!!.use_tf_prefix) {
+            odom_message.childFrameId = mBridgeNode!!.tf_prefix + "_" + "base_link"
         } else {
             odom_message.childFrameId = "base_link"
         }
         // parent frame is the odometry frame
 // Add tf_prefix to each transform before ROS publishing (in case of multiple loomos on one network)
-        if (mBridgeNode.use_tf_prefix) {
-            odom_message.header.frameId = mBridgeNode.tf_prefix + "_" + "odom"
+        if (mBridgeNode!!.use_tf_prefix) {
+            odom_message.header.frameId = mBridgeNode!!.tf_prefix + "_" + "odom"
         } else {
             odom_message.header.frameId = "odom"
         }
@@ -363,7 +363,7 @@ class TFPublisher(
                     Pair(3, 6),  // head_link to tablet_link
                     Pair(6, 7)
                 ) // tablet_link to plat_cam_link
-            while (!mSensor.isBind) {
+            while (mSensor != null) {
                 if (mDepthRosStamps == null) {
                     continue
                 }
@@ -371,7 +371,7 @@ class TFPublisher(
                     mDepthRosStamps.poll()
                 if (stamp != null) { // Get an appropriate ROS time to match the platform time of this stamp
 /*
-                    Time currentRosTime = mBridgeNode.mConnectedNode.getCurrentTime();
+                    Time currentRosTime = mBridgeNode!!.mConnectedNode.getCurrentTime();
                     Time currentSystemTime = Time.fromMillis(System.currentTimeMillis());
                     Time stampTime = Time.fromNano(Utils.platformStampInNano(stamp));
                     Duration rosToSystemTimeOffset = currentRosTime.subtract(currentSystemTime);
@@ -387,12 +387,12 @@ class TFPublisher(
                     Log.d(TAG, "True stamp: " + correctedStampTime.toString());
                     Log.d(TAG, "True node-stamp diff: " + (currentRosTime.subtract(correctedStampTime)).toString());
                     */
-                    val tfMessage = mBridgeNode.mTfPubr!!.newMessage()
+                    val tfMessage = mBridgeNode!!.mTfPubr!!.newMessage()
                     for (index in frameIndices) {
                         var target = frameNames[index.second]
                         var source = frameNames[index.first]
                         // Swapped source/target because it seemed backwards in RViz
-                        val tfData = mSensor.getTfData(target, source, stamp.first, 100)
+                        val tfData = mSensor!!.getTfData(target, source, stamp.first, 100)
                         //Log.d(TAG, tfData.toString());
 // ROS usually uses "base_link" and "odom" as fundamental tf names
 // definitely could remove this if you prefer Loomo's names
@@ -409,9 +409,9 @@ class TFPublisher(
                             target = "odom"
                         }
                         // Add tf_prefix to each transform before ROS publishing (in case of multiple loomos on one network)
-                        if (mBridgeNode.use_tf_prefix) {
-                            tfData.srcFrameID = mBridgeNode.tf_prefix + "_" + source
-                            tfData.tgtFrameID = mBridgeNode.tf_prefix + "_" + target
+                        if (mBridgeNode!!.use_tf_prefix) {
+                            tfData.srcFrameID = mBridgeNode!!.tf_prefix + "_" + source
+                            tfData.tgtFrameID = mBridgeNode!!.tf_prefix + "_" + target
                         }
                         if (stamp.first != tfData.timeStamp) {
                             Log.d(
@@ -442,11 +442,11 @@ class TFPublisher(
                     val ultrasonicTf = baseLinkToUltrasonicTransform(stamp.second)
                     tfMessage.transforms.add(ultrasonicTf)
                     if (tfMessage.transforms.size > 0) {
-                        mBridgeNode.mTfPubr!!.publish(tfMessage)
+                        mBridgeNode!!.mTfPubr!!.publish(tfMessage)
                     }
                     // Swapped source/target because it seemed backwards in RViz
 // TODO: this isn't capturing the velocity at the sensor timestamp. Consider moving to another thread to publish this as fast as possible
-                    val tfData = mSensor.getTfData(
+                    val tfData = mSensor!!.getTfData(
                         Sensor.BASE_POSE_FRAME,
                         Sensor.WORLD_ODOM_ORIGIN,
                         stamp.first,
@@ -461,7 +461,7 @@ class TFPublisher(
                         angularVelocity,
                         stamp.second
                     )
-                    mBridgeNode.mOdometryPubr!!.publish(odom_message)
+                    mBridgeNode!!.mOdometryPubr!!.publish(odom_message)
                     Log.d(TAG, odom_message.toString())
                 }
             }

@@ -16,41 +16,56 @@ package com.example.loomoapp
 import android.content.Context
 import android.util.Log
 import com.example.loomoapp.viewModel.*
-import com.segway.robot.sdk.base.bind.ServiceBinder
+import com.segway.robot.sdk.base.bind.ServiceBinder.BindStateListener
 import com.segway.robot.sdk.perception.sensor.RobotAllSensors
 import com.segway.robot.sdk.perception.sensor.Sensor
 
 
-class LoomoSensor (context: Context) {
+class LoomoSensor(context: Context) {
 
-    private var mSensor = Sensor.getInstance()
-
-    //var surroundings  = getSurroundings()
+    var mSensor: Sensor = Sensor.getInstance()
 
     init {
-        mSensor.bindService(context.applicationContext, object : ServiceBinder.BindStateListener {
+        val mBindStateListener: BindStateListener = object : BindStateListener {
             override fun onBind() {
-                Log.d(TAG, "Sensor onBind")
-//                Log.i(TAG, "All sensors: ${mLoomoSensor.getAllSensors()}")
+                Log.d(TAG, "onBind() mBindStateListener called")
+                mTFPublisher.loomo_started(mSensor)
+                mSensorPublisher.loomo_started(mSensor)
+                mTFPublisher.start()
+                mSensorPublisher.start()
             }
+
             override fun onUnbind(reason: String) {
+                Log.d(
+                    TAG,
+                    "onUnbind() called with: reason = [$reason]"
+                )
             }
-        })
+        }
 
+        mSensor.bindService(context, mBindStateListener)
 
+//        mSensor.bindService(context.applicationContext, object : BindStateListener {
+//            override fun onBind() {
+//                Log.d(TAG, "Sensor onBind")
+////                Log.i(TAG, "All sensors: ${mLoomoSensor.getAllSensors()}")
+//            }
+//            override fun onUnbind(reason: String) {
+//            }
+//        })
     }
 
-     fun getSurroundings() : SensSurroundings {
-         val mInfraredData = mSensor.querySensorData(listOf(Sensor.INFRARED_BODY))[0]
-         val mUltrasonicData = mSensor.querySensorData(listOf(Sensor.ULTRASONIC_BODY))[0]
-         return SensSurroundings(
-             IR_Left = mInfraredData.intData[0],
-             IR_Right = mInfraredData.intData[1],
-             UltraSonic = mUltrasonicData.intData[0]
-         )
-     }
+    fun getSurroundings(): SensSurroundings {
+        val mInfraredData = mSensor.querySensorData(listOf(Sensor.INFRARED_BODY))[0]
+        val mUltrasonicData = mSensor.querySensorData(listOf(Sensor.ULTRASONIC_BODY))[0]
+        return SensSurroundings(
+            IR_Left = mInfraredData.intData[0],
+            IR_Right = mInfraredData.intData[1],
+            UltraSonic = mUltrasonicData.intData[0]
+        )
+    }
 
-    fun getWheelSpeed() : SensWheelSpeed {
+    fun getWheelSpeed(): SensWheelSpeed {
         val mWheelSpeed = mSensor.querySensorData(listOf(Sensor.WHEEL_SPEED))[0]
         return SensWheelSpeed(
             SpeedLeft = mWheelSpeed.intData[0].toFloat(),
@@ -58,7 +73,7 @@ class LoomoSensor (context: Context) {
         )
     }
 
-    fun getHeadPoseWorld() : SensHeadPoseWorld {
+    fun getHeadPoseWorld(): SensHeadPoseWorld {
         val mHeadImu = mSensor.querySensorData(listOf(Sensor.HEAD_WORLD_IMU))[0]
         return SensHeadPoseWorld(
             pitch = mHeadImu.floatData[0],
@@ -67,7 +82,7 @@ class LoomoSensor (context: Context) {
         )
     }
 
-    fun getHeadPoseJoint() : SensHeadPoseJoint {
+    fun getHeadPoseJoint(): SensHeadPoseJoint {
         val mHeadPitch = mSensor.querySensorData(listOf(Sensor.HEAD_JOINT_PITCH))[0]
         val mHeadYaw = mSensor.querySensorData(listOf(Sensor.HEAD_JOINT_YAW))[0]
         val mHeadRoll = mSensor.querySensorData(listOf(Sensor.HEAD_JOINT_ROLL))[0]
@@ -79,7 +94,7 @@ class LoomoSensor (context: Context) {
         )
     }
 
-    fun getSensBaseImu() : SensBaseImu {
+    fun getSensBaseImu(): SensBaseImu {
         val mBaseImu = mSensor.querySensorData(listOf(Sensor.BASE_IMU))[0]
 
         return SensBaseImu(
@@ -89,7 +104,7 @@ class LoomoSensor (context: Context) {
         )
     }
 
-    fun getSensBaseTick() : SensBaseTick {
+    fun getSensBaseTick(): SensBaseTick {
         val mBaseTick = mSensor.querySensorData(listOf(Sensor.ENCODER))[0]
 
         return SensBaseTick(
@@ -98,7 +113,7 @@ class LoomoSensor (context: Context) {
         )
     }
 
-    fun getSensPose2D() : SensPose2D {
+    fun getSensPose2D(): SensPose2D {
         val mPose2DData = mSensor.querySensorData(listOf(Sensor.POSE_2D))[0]
         val pose2D = mSensor.sensorDataToPose2D(mPose2DData)
 
@@ -111,7 +126,7 @@ class LoomoSensor (context: Context) {
         )
     }
 
-    fun getAllSensors() : RobotAllSensors{
+    fun getAllSensors(): RobotAllSensors {
         return mSensor.robotAllSensors
     }
 
