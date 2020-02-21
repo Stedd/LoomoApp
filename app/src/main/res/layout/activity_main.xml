@@ -1,69 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#00A88686"
     tools:context=".MainActivity">
 
 
     <org.opencv.android.JavaCameraView
         android:id="@+id/javaCam"
-        android:layout_width="200dp"
-        android:layout_height="120dp"
-        android:layout_marginEnd="8dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/btnStartService"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/btnStringStartService"
-        app:layout_constraintBottom_toTopOf="@+id/btnStopService"
-        app:layout_constraintStart_toStartOf="@+id/btnStopService"
-        app:layout_constraintTop_toBottomOf="@+id/btnStopCamera" />
-
-    <Button
-        android:id="@+id/btnStopService"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:text="@string/btnStringStopService"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnStartService" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.499" />
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="qwert"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/camView"
-        app:layout_constraintStart_toStartOf="@+id/camView"
-        app:layout_constraintTop_toBottomOf="@+id/camView" />
-
-    <ImageView
-        android:id="@+id/camView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="@+id/btnStopCamera"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.31"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/btnStartCamera"
-        tools:srcCompat="@drawable/ic_videocam" />
 
     <Button
-        android:id="@+id/btnStartCamera"
+        android:id="@+id/btnCaptureFrame"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/btnStringStartCamera"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:text="@string/btnStrCaptureFrame"
         app:layout_constraintBottom_toTopOf="@+id/btnStopCamera"
-        app:layout_constraintStart_toStartOf="@+id/btnStopCamera"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.5" />
 
@@ -71,19 +38,22 @@
         android:id="@+id/btnStopCamera"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
         android:text="@string/btnStringStopCamera"
-        app:layout_constraintBottom_toTopOf="@+id/btnStartService"
-        app:layout_constraintStart_toStartOf="@+id/btnStartService"
-        app:layout_constraintTop_toBottomOf="@+id/btnStartCamera" />
+        app:layout_constraintStart_toStartOf="@+id/btnCaptureFrame"
+        app:layout_constraintTop_toBottomOf="@+id/btnCaptureFrame" />
 
     <TextView
-        android:id="@+id/sample_text"
+        android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="TextView"
-        app:layout_constraintBottom_toTopOf="@+id/camView"
+        android:layout_marginBottom="16dp"
+        android:background="#75030303"
+        android:text="qwert"
+        android:textColor="#FFFFFF"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

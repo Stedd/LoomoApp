@@ -1,6 +1,5 @@
 package com.example.loomoapp
 
-import android.R.attr.src
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.Handler
@@ -19,16 +18,17 @@ import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
 import org.opencv.android.*
-import org.opencv.core.CvType
-import org.opencv.core.Mat
-import org.opencv.core.MatOfKeyPoint
+import org.opencv.core.*
+import org.opencv.core.Core.NORM_HAMMING
+import org.opencv.features2d.BFMatcher
+import org.opencv.features2d.DescriptorMatcher
 import org.opencv.features2d.Features2d
 import org.opencv.features2d.ORB
 import org.opencv.imgproc.Imgproc
 
 
 //Variables
-const val TAG = "debugMSG"
+const val TAG = "MainActivity"
 
 lateinit var viewModel: MainActivityViewModel
 lateinit var mBase: Base
@@ -40,10 +40,16 @@ lateinit var mLoaderCallback: BaseLoaderCallback
 val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
 var cameraRunning: Boolean = false
 
+
+
 var img = Mat()
 var imgFisheye = Mat()
 var resultImg = Mat()
 var resultImgFisheye = Mat()
+var orbKeyPointsOld = MatOfKeyPoint()
+var orbDescriptorsOld = Mat()
+var imgOld = Mat()
+var trainList = listOf<KeyPoint>()
 
 class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -65,6 +71,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         findViewById<TextView>(R.id.textView)
     }
 
+    private var captureNewKeyFrame = true
     private val imgWidth = 640
     private val imgHeight = 480
     private var mImgDepth = Bitmap.createBitmap(
@@ -123,25 +130,26 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             textView.text = it
         })
 
-        camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
+//        camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
 
         viewModel.text.value = "Service not started"
 
-        btnStartService.setOnClickListener {
-            startController("ControllerThread start command")
-//            Log.d(TAG, "${HelloWorld()}")
-        }
-        btnStopService.setOnClickListener {
-            stopController("ControllerThread stop command")
-        }
-        btnStartCamera.setOnClickListener {
-            startCamera("Camera start command")
+//        btnStartService.setOnClickListener {
+//            startController("ControllerThread start command")
+////            Log.d(TAG, "${HelloWorld()}")
+//        }
+//        btnStopService.setOnClickListener {
+//            stopController("ControllerThread stop command")
+//        }
+        btnCaptureFrame.setOnClickListener {
+//            startCamera("Camera start command")
+            captureNewKeyFrame = true
         }
         btnStopCamera.setOnClickListener {
             stopCamera("Camera stop command")
         }
 
-        sample_text.text = stringFromJNI()
+//        sample_text.text = stringFromJNI()
     }
 
     override fun onResume() {
@@ -226,7 +234,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                     Utils.matToBitmap(resultImgFisheye ,mImgDepthCanny)
 
                     threadHandler.post {
-                        camView.setImageBitmap(mImgDepth.copy(Bitmap.Config.ARGB_8888, true))
+//                        camView.setImageBitmap(mImgDepth.copy(Bitmap.Config.ARGB_8888, true))
                     }
                 }
                 cameraRunning = true
@@ -244,27 +252,67 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             Log.i(TAG, msg)
             mVision.stopListenFrame(StreamType.FISH_EYE)
             cameraRunning = false
-            camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
+//            camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
         }
     }
 
 
-    // Hellow Tor
     override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
-//        Log.i("cam", "new frame")
         img = inputFrame.gray()
 //        resultImg = img
 //        Imgproc.blur(img, resultImg, Size(15.0, 15.0))
 //        Imgproc.GaussianBlur(img, resultImg, Size(15.0, 15.0), 1.0)
 //        Imgproc.Canny(img, resultImg, 0.01, 190.0)
 
-        val detector: ORB = ORB.create(50, 1.2F)
-        val keypoints = MatOfKeyPoint()
-        detector.detect(img, keypoints)
+//        val detector: ORB = ORB.create(50, 1.2F)
+//        val keypoints = MatOfKeyPoint()
+//        detector.detect(img, keypoints)
+//
+//
 
-        Log.i("cam", "Keypoints:$keypoints")
+        val detector: ORB = ORB.create()
+        val keyPoints = MatOfKeyPoint()
+        val descriptors = Mat()
+        detector.detect(img, keyPoints)
+        detector.compute(img, keyPoints, descriptors)
 
-        Features2d.drawKeypoints(img, keypoints, resultImg)
+//        Features2d.drawKeypoints(img, keyPoints, resultImg)
+
+        if (captureNewKeyFrame) {
+            //Update the keypoints used for comparison
+            captureNewKeyFrame = false
+            detector.detect(img, orbKeyPointsOld)
+            detector.compute(img, orbKeyPointsOld, orbDescriptorsOld)
+            trainList = orbKeyPointsOld.toList()
+//            imgOld = img
+        }
+
+        val matches = MatOfDMatch()
+        DescriptorMatcher.create(NORM_HAMMING).match(descriptors, orbDescriptorsOld, matches)
+//        val matcher = BFMatcher(NORM_HAMMING, true)
+//        BFMatcher(NORM_HAMMING, true).match(orbDescriptorsOld, descriptors, matches)
+//        Features2d.drawMatches(img, keyPoints, img, orbKeyPointsOld, asdf, resultImg)
+        Features2d.drawKeypoints(img, keyPoints, resultImg, Scalar(0.0, 255.0, 0.0))
+        Features2d.drawKeypoints(resultImg, orbKeyPointsOld, resultImg, Scalar(255.0,0.0,0.0,127.0))
+
+//        Log.d("OnFrame", "Matches:")
+//        for(i in 0..matches.toArray().size) {
+//
+//        }
+//        val asdf = intArrayOf(2)
+//        val point1 = keyPoints[asdf]
+//        Imgproc.line(resultImg, Point(0.0,0.0), point1 ,Scalar(0.0,0.0,255.0))
+
+//        val list1 = mutableListOf<Point>()
+//        val list2 = mutableListOf<Point>()
+        val queryList = keyPoints.toList()
+        val matchList = matches.toList()
+
+        for(mat in matchList) {
+//            list1.add(queryList[mat.queryIdx].pt)
+//            list2.add(trainList[mat.trainIdx].pt)
+            Imgproc.line(resultImg, queryList[mat.queryIdx].pt, trainList[mat.trainIdx].pt, Scalar(0.0,0.0,255.0))
+        }
 
         return resultImg
     }
