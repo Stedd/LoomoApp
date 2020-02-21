@@ -21,6 +21,7 @@ import tf2_msgs.TFMessage
 
 
 class LoomoRosBridgeNode(onStarted: Runnable,onShutdown: Runnable) :AbstractNodeMain() {
+
     var RsDepthOpticalFrame = "rs_depth_optical_frame"
     var RsColorOpticalFrame = "rs_color_optical_frame"
     var FisheyeOpticalFrame = "fisheye_optical_frame"
@@ -48,6 +49,7 @@ class LoomoRosBridgeNode(onStarted: Runnable,onShutdown: Runnable) :AbstractNode
     var mNtpProvider: NtpTimeProvider? = null
     var node_name = "loomo_ros_bridge_node"
     var tf_prefix = "LO01"
+    //TODO:Dynamic name
     var should_pub_ultrasonic = true
     var should_pub_infrared = true
     var should_pub_base_pitch = true
@@ -118,14 +120,14 @@ class LoomoRosBridgeNode(onStarted: Runnable,onShutdown: Runnable) :AbstractNode
             "$tf_prefix/ultrasonic",
             Range._TYPE
         )
-        mBasePitchPubr =
-            connectedNode.newPublisher("$tf_prefix/base_pitch", Float32._TYPE)
-        mOdometryPubr = connectedNode.newPublisher("$tf_prefix/odom", Odometry._TYPE)
-        // Subscribe to commanded twist msgs (e.g. from joystick or autonomous driving software)
-        mCmdVelSubr = mConnectedNode!!.newSubscriber("$tf_prefix/cmd_vel", Twist._TYPE)
-        // Subscribe to a topic instructing the loomo to change modes
-        mTransformSubr = mConnectedNode!!.newSubscriber("$tf_prefix/mode", Int8._TYPE)
-        mOnStarted.run()
+        mBasePitchPubr = connectedNode.newPublisher(
+            "$tf_prefix/base_pitch",
+            Float32._TYPE
+        )
+        mOdometryPubr = connectedNode.newPublisher(
+            "$tf_prefix/odom",
+            Odometry._TYPE
+        )
     }
 
     override fun onShutdown(node: Node) {
@@ -161,4 +163,5 @@ class LoomoRosBridgeNode(onStarted: Runnable,onShutdown: Runnable) :AbstractNode
         mOnStarted = onStarted
         mOnShutdown = onShutdown
     }
+
 }

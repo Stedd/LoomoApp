@@ -6,7 +6,9 @@
       <w>coroutine</w>
       <w>keypoints</w>
       <w>loomo</w>
+      <w>odometry</w>
       <w>opencvsdk</w>
+      <w>realsense</w>
       <w>setpoint</w>
       <w>videocam</w>
     </words>
