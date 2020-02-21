@@ -20,7 +20,7 @@ import std_msgs.Int8
 import tf2_msgs.TFMessage
 
 
-class LoomoRosBridgeNode(onStarted: Runnable,onShutdown: Runnable) :AbstractNodeMain() {
+class RosBridgeNode(onStarted: Runnable, onShutdown: Runnable) :AbstractNodeMain() {
 
     var RsDepthOpticalFrame = "rs_depth_optical_frame"
     var RsColorOpticalFrame = "rs_color_optical_frame"
@@ -37,7 +37,7 @@ class LoomoRosBridgeNode(onStarted: Runnable,onShutdown: Runnable) :AbstractNode
     var mRsColorCompressedPubr: Publisher<CompressedImage>? = null
     var mRsDepthPubr: Publisher<Image>? = null
     var mRsColorInfoPubr: Publisher<CameraInfo>? = null
-    var mRsDepthInfoPubr: Publisher<CameraInfo>? = null
+    lateinit var mRsDepthInfoPubr: Publisher<CameraInfo>
     var mTfPubr: Publisher<TFMessage>? = null
     var mInfraredPubrLeft: Publisher<Range>? = null
     var mInfraredPubrRight: Publisher<Range>? = null
@@ -151,14 +151,14 @@ class LoomoRosBridgeNode(onStarted: Runnable,onShutdown: Runnable) :AbstractNode
     }
 
     companion object {
-        private const val TAG = "LoomoRosBridgeNode"
+        private const val TAG = "RosBridgeNode"
     }
 
     init {
         //        this.mNtpProvider = ntpTimeProvider;
         Log.d(
             TAG,
-            "Created instance of LoomoRosBridgeNode()."
+            "Created instance of RosBridgeNode()."
         )
         mOnStarted = onStarted
         mOnShutdown = onShutdown

@@ -5,12 +5,14 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.util.Pair
 import android.view.SurfaceView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import com.example.loomoapp.ROS.*
 import com.example.loomoapp.viewModel.MainActivityViewModel
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.locomotion.sbv.Base
@@ -18,12 +20,16 @@ import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
 import org.opencv.android.*
+import org.opencv.android.Utils
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.MatOfKeyPoint
 import org.opencv.features2d.Features2d
 import org.opencv.features2d.ORB
 import org.opencv.imgproc.Imgproc
+import org.ros.message.Time
+import java.util.*
+import java.util.concurrent.ConcurrentLinkedDeque
 
 
 //Variables
@@ -34,6 +40,17 @@ lateinit var mBase: Base
 lateinit var mVision: Vision
 lateinit var mLoomoSensor: LoomoSensor
 lateinit var mLoaderCallback: BaseLoaderCallback
+
+lateinit var mRealsensePublisher: RealsensePublisher
+lateinit var mTFPublisher: TFPublisher
+lateinit var mSensorPublisher: SensorPublisher
+lateinit var mRosBridgeConsumers: List<RosBridge>
+lateinit var mBridgeNode: RosBridgeNode
+
+lateinit var mDepthRosStamps // Stores a co-ordinated platform time and ROS time to help manage the offset
+        : Queue<Pair<Long, Time>>
+
+lateinit var mDepthStamps: Queue<Long>
 
 
 val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
@@ -159,6 +176,26 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             textView.text = it
         })
 
+
+        //ROS
+        // Keep track of timestamps when images published, so corresponding TFs can be published too
+        mDepthStamps = ConcurrentLinkedDeque<Long>()
+        mDepthRosStamps = ConcurrentLinkedDeque<Pair<Long, Time>>()
+        mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps)
+        mTFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps)
+        mSensorPublisher = SensorPublisher()
+
+        mRosBridgeConsumers = listOf(
+            mRealsensePublisher,
+            mTFPublisher,
+            mSensorPublisher
+        )
+
+
+
+
+
+
         camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
 
         viewModel.text.value = "Service not started"
@@ -181,6 +218,22 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     }
 
     override fun onResume() {
+
+        Runnable {
+            // Node has started, so we can now tell publishers and subscribers that ROS has initialized
+            for (consumer in mRosBridgeConsumers) {
+                consumer.node_started(mBridgeNode)
+                // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
+                consumer.start()
+            }
+            // Special nodes
+            // TODO: we should handle this in the generic "start()" function
+            mRealsensePublisher.start_color()
+            mRealsensePublisher.start_depth()
+        }
+
+
+
         Log.i(TAG, "Activity resumed")
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization")

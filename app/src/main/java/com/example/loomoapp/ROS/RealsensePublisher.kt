@@ -37,11 +37,11 @@ class RealsensePublisher(
         var source: RealsenseMetadataSource? = null
     }
 
-    private var mVision: Vision? = null
-    private var mBridgeNode: LoomoRosBridgeNode? = null
-    private var mRsColorIntrinsic: Intrinsic? = null
-    private var mRsDepthIntrinsic: Intrinsic? = null
-    private val mFisheyeIntrinsic: Intrinsic? = null
+    lateinit var mVision: Vision
+    lateinit var mBridgeNode: RosBridgeNode
+    lateinit var mRsColorIntrinsic: Intrinsic
+    lateinit var mRsDepthIntrinsic: Intrinsic
+    lateinit var mFisheyeIntrinsic: Intrinsic
     private var mRsColorWidth = 640
     private var mRsColorHeight = 480
     private var mRsDepthWidth = 320
@@ -64,12 +64,12 @@ class RealsensePublisher(
     private var mDepthStarted = false
     private var mFisheyeStarted = false
     private val mLatestDepthStamp = 0L
-    override fun node_started(mBridgeNode: LoomoRosBridgeNode) {
+    override fun node_started(mBridgeNode: RosBridgeNode) {
         this.mBridgeNode = mBridgeNode
     }
 
     override fun start() { // No generic initialization is required
-        if (mBridgeNode == null || mVision == null) {
+        if (mBridgeNode == null || !mVision.isBind) {
             Log.d(
                 TAG,
                 "Cannot start RealsensePublisher, ROS or Loomo SDK is not ready"
@@ -82,14 +82,14 @@ class RealsensePublisher(
 // TODO: really?
     }
 
-    fun loomo_started(mVision: Vision?) {
+    fun loomo_started(mVision: Vision) {
         this.mVision = mVision
         // Get color-depth extrinsic and publish as a TF
     }
 
     @Synchronized
     fun start_all() {
-        if (mVision == null || mBridgeNode == null) {
+        if (!mVision.isBind || mBridgeNode == null) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -127,7 +127,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun stop_all() {
-        if (mVision == null || mBridgeNode == null) {
+        if (!mVision.isBind || mBridgeNode == null) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -151,7 +151,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun start_imu() {
-        if (mVision == null || mBridgeNode == null) {
+        if (!mVision.isBind || mBridgeNode == null) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -163,7 +163,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun start_color() {
-        if (mVision == null || mBridgeNode == null || mColorStarted) {
+        if (!mVision.isBind || mBridgeNode == null || mColorStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -184,7 +184,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun start_depth() {
-        if (mVision == null || mBridgeNode == null || mDepthStarted) {
+        if (!mVision.isBind || mBridgeNode == null || mDepthStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -205,7 +205,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun start_fisheye() {
-        if (mVision == null) {
+        if (!mVision.isBind) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -224,7 +224,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun stop_color() {
-        if (mVision == null || !mColorStarted) {
+        if (!mVision.isBind || !mColorStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -238,7 +238,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun stop_depth() {
-        if (mVision == null || !mDepthStarted) {
+        if (!mVision.isBind || !mDepthStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -252,7 +252,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun stop_fisheye() {
-        if (mVision == null || !mFisheyeStarted) {
+        if (!mVision.isBind || !mFisheyeStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -317,25 +317,29 @@ class RealsensePublisher(
 // - The metadata matches our frame metadata exactly
 // - Our metadata is newer
 // - Our metadata is older
-                if (mRealsenseMeta!!.frameNum == currentFrame) { // Consume the metadata and clear it
-// Set the image header
-                    imageHeader.stamp = mRealsenseMeta!!.rosTime
-                    mRealsenseMeta = null
-                    return true
-                } else if (mRealsenseMeta!!.frameNum > currentFrame) { // We have an old frame, and should drop it to try and catch up
-                    Log.d(
-                        TAG,
-                        "ERROR: Camera " + source + " has fallen behind. Processing frame num " + currentFrame + " but other source metadata has already processed " + mRealsenseMeta!!.frameNum
-                    )
-                    return false
-                } else  // implied: if (mRealsenseMeta.frameNum < currentFrame)
-                { // Metadata from the other camera is old. This implies that the current source skipped a frame.
-                    Log.d(
-                        TAG,
-                        "WARNING: Camera " + source + " is ahead. Processing frame num " + currentFrame + " but other source published metadata data for old frame " + mRealsenseMeta!!.frameNum
-                    )
-                    // We should create new metadata for the current frame. Fall through.
-// TODO: is this the right choice?
+                when {
+                    mRealsenseMeta!!.frameNum == currentFrame -> { // Consume the metadata and clear it
+                        // Set the image header
+                        imageHeader.stamp = mRealsenseMeta!!.rosTime
+                        mRealsenseMeta = null
+                        return true
+                    }
+                    mRealsenseMeta!!.frameNum > currentFrame -> { // We have an old frame, and should drop it to try and catch up
+                        Log.d(
+                            TAG,
+                            "ERROR: Camera " + source + " has fallen behind. Processing frame num " + currentFrame + " but other source metadata has already processed " + mRealsenseMeta!!.frameNum
+                        )
+                        return false
+                    }
+                    else  // implied: if (mRealsenseMeta.frameNum < currentFrame)
+                    -> { // Metadata from the other camera is old. This implies that the current source skipped a frame.
+                        Log.d(
+                            TAG,
+                            "WARNING: Camera " + source + " is ahead. Processing frame num " + currentFrame + " but other source published metadata data for old frame " + mRealsenseMeta!!.frameNum
+                        )
+                        // We should create new metadata for the current frame. Fall through.
+                        // TODO: is this the right choice?
+                    }
                 }
             }
         }
@@ -494,7 +498,7 @@ class RealsensePublisher(
 
     fun updateCameraInfo(
         type: Int,
-        ins: Intrinsic?,
+        ins: Intrinsic,
         width: Int,
         height: Int
     ) {
@@ -518,7 +522,7 @@ class RealsensePublisher(
     private fun publishCameraInfo(type: Int, header: Header) {
         val pubr: Publisher<CameraInfo>?
         val info: CameraInfo
-        val intrinsic: Intrinsic?
+        val intrinsic: Intrinsic
         val width: Int
         val height: Int
         // type: 1 for pcam, 2 for RsColor, 3 for RsDepth
@@ -534,7 +538,7 @@ class RealsensePublisher(
             width = mRsColorWidth
             height = mRsColorHeight
         } else {
-            pubr = mBridgeNode!!.mRsDepthInfoPubr
+            pubr = mBridgeNode.mRsDepthInfoPubr
             intrinsic = mRsDepthIntrinsic
             width = mRsDepthWidth
             height = mRsDepthHeight

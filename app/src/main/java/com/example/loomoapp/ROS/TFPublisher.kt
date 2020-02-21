@@ -29,7 +29,7 @@ class TFPublisher(
     lateinit var mSensor: Sensor
     lateinit var mVision: Vision
     lateinit var mBase: Base
-    lateinit var mBridgeNode: LoomoRosBridgeNode
+    lateinit var mBridgeNode: RosBridgeNode
     lateinit var mDepthCalibration: ColorDepthCalibration
     lateinit var mMotionCalibration: MotionModuleCalibration
     private val mStarted = false
@@ -45,7 +45,7 @@ class TFPublisher(
         this.mBase = mBase
     }
 
-    override fun node_started(mBridgeNode: LoomoRosBridgeNode) {
+    override fun node_started(mBridgeNode: RosBridgeNode) {
         this.mBridgeNode = mBridgeNode
     }
 
