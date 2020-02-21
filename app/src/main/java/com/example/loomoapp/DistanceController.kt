@@ -42,7 +42,7 @@ class DistanceController : ThreadLoop() {
 
         //Post variables to UI
         threadHandler.post {
-            viewModel.text.value = "Distance controller\nsetp:$setpoint\ndist:$dist\nLin_Vel: ${saturation(error,maxSpeed)}\nAng_Vel:$turnError"
+//            viewModel.text.value = "Distance controller\nsetp:$setpoint\ndist:$dist\nLin_Vel: ${saturation(error,maxSpeed)}\nAng_Vel:$turnError"
         }
     }
 
@@ -50,7 +50,7 @@ class DistanceController : ThreadLoop() {
         mBase.setLinearVelocity(0.0F)
         mBase.setAngularVelocity(0.0F)
         threadHandler.post {
-            viewModel.text.value = "Thread stopped"
+//            viewModel.text.value = "Thread stopped"
         }
     }
 

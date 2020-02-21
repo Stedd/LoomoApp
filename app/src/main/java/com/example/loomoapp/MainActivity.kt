@@ -9,9 +9,8 @@ import android.util.Pair
 import android.view.SurfaceView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.*
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
 import com.example.loomoapp.ROS.*
 import com.example.loomoapp.viewModel.MainActivityViewModel
 import com.segway.robot.sdk.base.bind.ServiceBinder
@@ -27,15 +26,22 @@ import org.opencv.core.MatOfKeyPoint
 import org.opencv.features2d.Features2d
 import org.opencv.features2d.ORB
 import org.opencv.imgproc.Imgproc
+import org.ros.address.InetAddressFactory
+import org.ros.android.RosActivity
 import org.ros.message.Time
+import org.ros.node.NodeConfiguration
+import org.ros.node.NodeMainExecutor
+import org.ros.time.NtpTimeProvider
+import java.net.URI
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.TimeUnit
 
 
 //Variables
 const val TAG = "debugMSG"
 
-lateinit var viewModel: MainActivityViewModel
+//lateinit var viewModel: MainActivityViewModel
 lateinit var mBase: Base
 lateinit var mVision: Vision
 lateinit var mLoomoSensor: LoomoSensor
@@ -61,10 +67,11 @@ var imgFisheye = Mat()
 var resultImg = Mat()
 var resultImgFisheye = Mat()
 
-class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
+
+
+class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")), CameraBridgeViewBase.CvCameraViewListener2 {
 
     private val mDistanceController = DistanceController()
-    private val mSender = Sender()
     private var mControllerThread = Thread()
 
     external fun stringFromJNI(): String
@@ -79,7 +86,42 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         } else {
             Log.d(TAG, "OpenCV loaded")
         }
+
     }
+
+    override fun init(nodeMainExecutor: NodeMainExecutor) {
+        Log.d(TAG, "init().")
+        val nodeConfiguration = NodeConfiguration.newPublic(
+            InetAddressFactory.newNonLoopback().hostAddress,
+            masterUri
+        )
+        // Note: NTPd on Linux will, by default, not allow NTP queries from the local networks.
+        // Add a rule like this to /etc/ntp.conf:
+        //
+        // restrict 192.168.86.0 mask 255.255.255.0 nomodify notrap nopeer
+        //
+        // Where the IP address is based on your subnet
+        val ntpTimeProvider = NtpTimeProvider(
+            InetAddressFactory.newFromHostString(masterUri.host),
+            nodeMainExecutor.scheduledExecutorService
+        )
+        try {
+            ntpTimeProvider.updateTime()
+        } catch (e: Exception) {
+            Log.d(TAG, "exception when updating time...")
+        }
+        Log.d(TAG, "master uri: " + masterUri.host)
+        Log.d(TAG, "ros: " + ntpTimeProvider.currentTime.toString())
+        Log.d(
+            TAG,
+            "sys: " + Time.fromMillis(System.currentTimeMillis())
+        )
+        ntpTimeProvider.startPeriodicUpdates(1, TimeUnit.MINUTES)
+        nodeConfiguration.timeProvider = ntpTimeProvider
+        nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
+    }
+
+
 
     private val textView by lazy {
         findViewById<TextView>(R.id.textView)
@@ -123,12 +165,13 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         imgHeightDepth,
         Bitmap.Config.ARGB_8888
     )
-//    private var mImgDepthCanny = Bitmap.createBitmap(
+    //    private var mImgDepthCanny = Bitmap.createBitmap(
 //        imgWidth/3,
 //        imgHeight/3,
 //        Bitmap.Config.RGB_565
 //    ) // Depth info is in Z16 format. RGB_565 is also a 16 bit format and is compatible for storing the pixels
-    private var mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidthColor/3, imgWidthColor/3,false)
+    private var mImgDepthScaled =
+        Bitmap.createScaledBitmap(mImgDepth, imgWidthColor / 3, imgWidthColor / 3, false)
 
     private val detectorColorCam: ORB = ORB.create(10, 1.9F)
     private val keypointsColorCam = MatOfKeyPoint()
@@ -136,11 +179,9 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     private val keypointsAndroidCam = MatOfKeyPoint()
 
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        supportActionBar?.hide()
         Log.i(TAG, "Activity created")
 
         val mCameraView = findViewById<JavaCameraView>(R.id.javaCam)
@@ -169,12 +210,12 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         mVision = Vision.getInstance()
         mLoomoSensor = LoomoSensor(this)
 
-        viewModel = ViewModelProvider(this)
-            .get(MainActivityViewModel::class.java)
-
-        viewModel.text.observe(this, Observer {
-            textView.text = it
-        })
+////        viewModel = ViewModelProvider().get(MainActivityViewModel::class.java)
+//        viewModel = MainActivityViewModel()
+//
+//        viewModel.text.observe(this, Observer {
+//            textView.text = it
+//        })
 
 
         //ROS
@@ -184,6 +225,9 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps)
         mTFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps)
         mSensorPublisher = SensorPublisher()
+        // Start an instance of the LoomoRosBridgeNode
+        mBridgeNode = RosBridgeNode(mOnNodeStarted, mOnNodeShutdown)
+
 
         mRosBridgeConsumers = listOf(
             mRealsensePublisher,
@@ -192,13 +236,9 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         )
 
 
-
-
-
-
         camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
 
-        viewModel.text.value = "Service not started"
+//        viewModel.text.value = "Service not started"
 
         btnStartService.setOnClickListener {
             startController("ControllerThread start command")
@@ -217,22 +257,24 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         sample_text.text = stringFromJNI()
     }
 
-    override fun onResume() {
-
-        Runnable {
-            // Node has started, so we can now tell publishers and subscribers that ROS has initialized
-            for (consumer in mRosBridgeConsumers) {
-                consumer.node_started(mBridgeNode)
-                // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
-                consumer.start()
-            }
-            // Special nodes
-            // TODO: we should handle this in the generic "start()" function
-            mRealsensePublisher.start_color()
-            mRealsensePublisher.start_depth()
+    private var mOnNodeStarted = Runnable {
+        // Node has started, so we can now tell publishers and subscribers that ROS has initialized
+        for (consumer in mRosBridgeConsumers) {
+            consumer.node_started(mBridgeNode)
+            // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
+            consumer.start()
         }
+        // Special nodes
+// TODO: we should handle this in the generic "start()" function
+        mRealsensePublisher.start_color()
+        mRealsensePublisher.start_depth()
+    }
+
+    // TODO: shutdown consumers correctly
+    private var mOnNodeShutdown = Runnable { }
 
 
+    override fun onResume() {
 
         Log.i(TAG, "Activity resumed")
         if (!OpenCVLoader.initDebug()) {
@@ -323,7 +365,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
 //                    Features2d.drawKeypoints(imgFisheye, keypointsColorCam, resultImgFisheye)
 
                     //Convert to Bitmap
-                    Utils.matToBitmap(resultImgFisheye ,mImgColorResult)
+                    Utils.matToBitmap(resultImgFisheye, mImgColorResult)
 
                     //Scale result image
 //                    mImgDepthScaled = Bitmap.createScaledBitmap(mImgColorResult, imgWidthColor/3, imgWidthColor/3,false)
@@ -362,7 +404,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
 
         detectorAndroidCam.detect(img, keypointsAndroidCam)
 
-        Log.i("cam", "Keypoints:$keypointsAndroidCam")
+//        Log.i("cam", "Keypoints:$keypointsAndroidCam")
 
         Features2d.drawKeypoints(img, keypointsAndroidCam, resultImg)
 
@@ -372,7 +414,7 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     override fun onCameraViewStarted(width: Int, height: Int) {
         Log.i("cam", "camera view started. width:$width, height: $height")
         img = Mat(width, height, CvType.CV_8UC4)
-}
+    }
 
     override fun onCameraViewStopped() {
         Log.i("cam", "camera view stopped")
