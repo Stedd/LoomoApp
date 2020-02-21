@@ -2,6 +2,7 @@ package com.example.loomoapp
 
 import android.util.Log
 
+
 open class ThreadLoop: Runnable {
 
     //Thread interval in milliseconds
