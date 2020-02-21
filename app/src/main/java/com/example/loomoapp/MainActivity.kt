@@ -20,7 +20,11 @@ import kotlinx.android.synthetic.main.activity_main.*
 import org.opencv.android.*
 import org.opencv.core.CvType
 import org.opencv.core.Mat
+import org.opencv.core.MatOfKeyPoint
+import org.opencv.features2d.Features2d
+import org.opencv.features2d.ORB
 import org.opencv.imgproc.Imgproc
+
 
 //Variables
 const val TAG = "debugMSG"
@@ -36,9 +40,15 @@ val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to U
 var cameraRunning: Boolean = false
 
 var img = Mat()
+var imgFisheye = Mat()
 var resultImg = Mat()
+var resultImgFisheye = Mat()
 
 class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListener2 {
+
+    private val mDistanceController = DistanceController()
+    private val mSender = Sender()
+    private var mControllerThread = Thread()
 
     external fun stringFromJNI(): String
 
@@ -58,23 +68,62 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         findViewById<TextView>(R.id.textView)
     }
 
-    private val imgWidth = 640
-    private val imgHeight = 480
-    private var mImgDepth = Bitmap.createBitmap(
-        imgWidth,
-        imgHeight,
+    private val imgWidthColor = 640
+    private val imgHeightColor = 480
+    private var mImgColor = Bitmap.createBitmap(
+        imgWidthColor,
+        imgHeightColor,
+        Bitmap.Config.ARGB_8888
+    )
+    private var mImgColorResult = Bitmap.createBitmap(
+        imgWidthColor,
+        imgHeightColor,
+        Bitmap.Config.ARGB_8888
+    )
+
+    private val imgWidthFishEye = 640
+    private val imgHeightFishEye = 480
+    private var mImgFishEye = Bitmap.createBitmap(
+        imgWidthFishEye,
+        imgHeightFishEye,
         Bitmap.Config.ALPHA_8
-    ) // Depth info is in Z16 format. RGB_565 is also a 16 bit format and is compatible for storing the pixels
+    )
+    private var mImgFishEyeResult = Bitmap.createBitmap(
+        imgWidthFishEye,
+        imgHeightFishEye,
+        Bitmap.Config.ARGB_8888
+    )
 
-    private var mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidth/2, imgHeight/2,false)
+    private val imgWidthDepth = 320
+    private val imgHeightDepth = 240
+    private var mImgDepth = Bitmap.createBitmap(
+        imgWidthDepth,
+        imgHeightDepth,
+        Bitmap.Config.RGB_565
+    )
+    private var mImgDepthResult = Bitmap.createBitmap(
+        imgWidthDepth,
+        imgHeightDepth,
+        Bitmap.Config.ARGB_8888
+    )
+//    private var mImgDepthCanny = Bitmap.createBitmap(
+//        imgWidth/3,
+//        imgHeight/3,
+//        Bitmap.Config.RGB_565
+//    ) // Depth info is in Z16 format. RGB_565 is also a 16 bit format and is compatible for storing the pixels
+    private var mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidthColor/3, imgWidthColor/3,false)
+
+    private val detectorColorCam: ORB = ORB.create(10, 1.9F)
+    private val keypointsColorCam = MatOfKeyPoint()
+    private val detectorAndroidCam: ORB = ORB.create(10, 1.9F)
+    private val keypointsAndroidCam = MatOfKeyPoint()
 
 
-    private val mDistanceController = DistanceController()
-    private var mControllerThread = Thread()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        supportActionBar?.hide()
         Log.i(TAG, "Activity created")
 
         val mCameraView = findViewById<JavaCameraView>(R.id.javaCam)
@@ -129,7 +178,6 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         }
 
         sample_text.text = stringFromJNI()
-//        Log.i(TAG, "from c++ ${stringFromJNI()}")
     }
 
     override fun onResume() {
@@ -203,14 +251,33 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     }
 
     private fun startCamera(msg: String) {
+
         if (mVision.isBind) {
             if (!cameraRunning) {
                 Log.i(TAG, msg)
-                mVision.startListenFrame(StreamType.FISH_EYE) { streamType, frame ->
-                    mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
-                    mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidth/2, imgHeight/2,false)
+                mVision.startListenFrame(StreamType.COLOR) { streamType, frame ->
+                    mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
+//                    mImgColor = mImgFishEye.copy(Bitmap.Config.ARGB_8888, true)
+
+                    //Convert to Mat
+                    Utils.bitmapToMat(mImgColor, imgFisheye)
+
+                    //Canny edge detector
+                    Imgproc.Canny(imgFisheye, resultImgFisheye, 0.01, 190.0)
+
+                    //ORB feature detector
+//                    detectorColorCam.detect(imgFisheye, keypointsColorCam)
+//                    Features2d.drawKeypoints(imgFisheye, keypointsColorCam, resultImgFisheye)
+
+                    //Convert to Bitmap
+                    Utils.matToBitmap(resultImgFisheye ,mImgColorResult)
+
+                    //Scale result image
+//                    mImgDepthScaled = Bitmap.createScaledBitmap(mImgColorResult, imgWidthColor/3, imgWidthColor/3,false)
+
+                    //Show result image on main ui
                     threadHandler.post {
-                        camView.setImageBitmap(mImgDepthScaled.copy(Bitmap.Config.ALPHA_8, true))
+                        camView.setImageBitmap(mImgColorResult.copy(Bitmap.Config.ARGB_8888, true))
                     }
                 }
                 cameraRunning = true
@@ -226,10 +293,10 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
     private fun stopCamera(msg: String) {
         if (cameraRunning) {
             Log.i(TAG, msg)
-            mVision.stopListenFrame(StreamType.FISH_EYE)
+            mVision.stopListenFrame(StreamType.COLOR)
             cameraRunning = false
-            camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
         }
+        camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
     }
 
     override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
@@ -238,8 +305,13 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
 //        resultImg = img
 //        Imgproc.blur(img, resultImg, Size(15.0, 15.0))
 //        Imgproc.GaussianBlur(img, resultImg, Size(15.0, 15.0), 1.0)
-        Imgproc.Canny(img, resultImg, 0.01, 190.0)
-//        Log.i("cam", "${Thread.currentThread()}")
+//        Imgproc.Canny(img, resultImg, 0.01, 190.0)
+
+        detectorAndroidCam.detect(img, keypointsAndroidCam)
+
+        Log.i("cam", "Keypoints:$keypointsAndroidCam")
+
+        Features2d.drawKeypoints(img, keypointsAndroidCam, resultImg)
 
         return resultImg
     }

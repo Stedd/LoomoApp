@@ -36,7 +36,12 @@ android {
             include 'armeabi-v7a' // , 'x86', 'x86_64', 'arm64-v8a'
         }
     }
+}
 
+repositories {
+    maven {
+        url "https://github.com/rosjava/rosjava_mvn_repo/raw/master"
+    }
 }
 
 dependencies {
@@ -67,5 +72,16 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0"
 
     implementation project(':opencv')
+
+    //ROS
+    implementation 'com.github.rosjava.android_remocons:common_tools:0.3.0'
+    implementation 'org.ros.rosjava_core:rosjava:0.3.6'
+    implementation 'org.ros.android_core:android_core_components:0.4.0'
+    implementation 'org.ros.rosjava_messages:diagnostic_msgs:1.12.7'
+    implementation 'org.ros.rosjava_messages:sensor_msgs:1.12.7'
+    implementation 'org.ros.rosjava_messages:geometry_msgs'
+    implementation 'org.ros.rosjava_messages:nav_msgs'
+    implementation 'org.ros.rosjava_messages:tf2_msgs'
+    implementation 'org.ros.rosjava_messages:std_msgs'
 
 }

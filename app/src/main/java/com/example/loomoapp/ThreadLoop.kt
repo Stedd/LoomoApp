@@ -16,11 +16,8 @@ open class ThreadLoop: Runnable {
         while (enable) {
             main()
             Thread.sleep(interval)
-            if (!enable) {
-                close()
-                break
-            }
         }
+        close()
         Log.i(TAG, "${Thread.currentThread()} stopped.")
     }
 
