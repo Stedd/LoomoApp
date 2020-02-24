@@ -1,4 +1,4 @@
-package com.example.loomoapp
+package com.example.loomoapp.Loomo
 
 /**
  * Note: The unit of Distance is the millimeter. The unit of Angle is the radian.
@@ -15,42 +15,21 @@ package com.example.loomoapp
 
 import android.content.Context
 import android.util.Log
+import com.example.loomoapp.TAG
 import com.example.loomoapp.viewModel.*
 import com.segway.robot.sdk.base.bind.ServiceBinder.BindStateListener
 import com.segway.robot.sdk.perception.sensor.RobotAllSensors
 import com.segway.robot.sdk.perception.sensor.Sensor
 
 
-class LoomoSensor(context: Context) {
+class LoomoSensor() {
 
-    init {
-//        val mBindStateListener: BindStateListener = object : BindStateListener {
-//            override fun onBind() {
-//                Log.d(TAG, "onBind() mBindStateListener called")
-//                mTFPublisher.loomo_started(mSensor)
-//                mSensorPublisher.loomo_started(mSensor)
-//                mTFPublisher.start()
-//                mSensorPublisher.start()
-//            }
-//
-//            override fun onUnbind(reason: String) {
-//                Log.d(
-//                    TAG,
-//                    "onUnbind() called with: reason = [$reason]"
-//                )
-//            }
-//        }
+    private val mSensor: Sensor = Sensor.getInstance()
 
-//        mSensor.bindService(context, mBindStateListener)
-
+    fun bind (context: Context){
         mSensor.bindService(context.applicationContext, object : BindStateListener {
             override fun onBind() {
                 Log.d(TAG, "Sensor onBind")
-//                Log.i(TAG, "All sensors: ${mLoomoSensor.getAllSensors()}")
-//                mTFPublisher.loomo_started(mSensor)
-//                mSensorPublisher.loomo_started(mSensor)
-//                mTFPublisher.start()
-//                mSensorPublisher.start()
             }
             override fun onUnbind(reason: String) {
                 Log.d(TAG, "Sensor onUnbind")

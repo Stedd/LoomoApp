@@ -9,7 +9,12 @@ import android.util.Pair
 import android.view.SurfaceView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import com.example.loomoapp.Loomo.LoomoBase
+import com.example.loomoapp.Loomo.LoomoRealsense
+import com.example.loomoapp.Loomo.LoomoSensor
+import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
 import com.example.loomoapp.viewModel.MainActivityViewModel
 import com.segway.robot.sdk.base.bind.ServiceBinder.BindStateListener
@@ -24,6 +29,7 @@ import org.opencv.android.Utils
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.MatOfKeyPoint
+import org.opencv.engine.OpenCVEngineInterface
 import org.opencv.features2d.Features2d
 import org.opencv.features2d.ORB
 import org.opencv.imgproc.Imgproc
@@ -41,40 +47,24 @@ import java.util.concurrent.TimeUnit
 //Variables
 const val TAG = "MainActivity"
 
-//lateinit var viewModel: MainActivityViewModel
+lateinit var viewModel: MainActivityViewModel
 
 //Initialize loomo SDK instances
-var mBase: Base = Base.getInstance()
-var mVision: Vision = Vision.getInstance()
-var mSensor: Sensor = Sensor.getInstance()
-var mHead: Head = Head.getInstance()
+lateinit var mLoomoBase: LoomoBase
+lateinit var mLoomoRealsense: LoomoRealsense
 lateinit var mLoomoSensor: LoomoSensor
 
 //ROS classes
-lateinit var mRealsensePublisher: RealsensePublisher
-lateinit var mTFPublisher: TFPublisher
-lateinit var mSensorPublisher: SensorPublisher
-lateinit var mRosBridgeConsumers: List<RosBridge>
-lateinit var mBridgeNode: RosBridgeNode
-lateinit var mDepthRosStamps // Stores a co-ordinated platform time and ROS time to help manage the offset
-        : Queue<Pair<Long, Time>>
-lateinit var mDepthStamps: Queue<Long>
+lateinit var mROSMain: ROSMain
 
 val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
 var cameraRunning: Boolean = false
 
 //OpenCV Variables
-lateinit var mLoaderCallback: BaseLoaderCallback
-var img = Mat()
-var imgFisheye = Mat()
-var resultImg = Mat()
-var resultImgFisheye = Mat()
-
-lateinit var viewModel : MainActivityViewModel
+lateinit var mOpenCVMain: OpenCVMain
 
 
-class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")),
-    CameraBridgeViewBase.CvCameraViewListener2 {
+class MainActivity : AppCompatActivity() {
 
     private val mDistanceController = DistanceController()
     private var mControllerThread = Thread()
@@ -87,160 +77,31 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
         //Load native
         System.loadLibrary("native-lib")
 
-        //Load OpenCV
-        if (!OpenCVLoader.initDebug()) {
-            Log.d(TAG, "OpenCV not loaded")
-        } else {
-            Log.d(TAG, "OpenCV loaded")
-        }
+        mOpenCVMain.init()
 
-
-        //ROS
-        // Keep track of timestamps when images published, so corresponding TFs can be published too
-        mDepthStamps = ConcurrentLinkedDeque<Long>()
-        mDepthRosStamps = ConcurrentLinkedDeque<Pair<Long, Time>>()
-        mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps)
-        mTFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps)
-        mSensorPublisher = SensorPublisher()
-
-        mRosBridgeConsumers = listOf(
-            mRealsensePublisher,
-            mTFPublisher,
-            mSensorPublisher
-        )
-        val mOnNodeStarted = Runnable {
-            Log.d(TAG, "node for loop")
-            // Node has started, so we can now tell publishers and subscribers that ROS has initialized
-            for (consumer in mRosBridgeConsumers) {
-                consumer.node_started(mBridgeNode)
-                // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
-                consumer.start()
-            }
-        }
-
-        // TODO: shutdown consumers correctly
-        val mOnNodeShutdown = Runnable { }
-
-        // Start an instance of the RosBridgeNode
-        mBridgeNode = RosBridgeNode(mOnNodeStarted, mOnNodeShutdown)
-
-
+        mROSMain.initMain()
     }
-
-    override fun init(nodeMainExecutor: NodeMainExecutor) {
-        Log.d(TAG, "Init ROS node.")
-        val nodeConfiguration = NodeConfiguration.newPublic(
-            InetAddressFactory.newNonLoopback().hostAddress,
-            masterUri
-        )
-        // Note: NTPd on Linux will, by default, not allow NTP queries from the local networks.
-        // Add a rule like this to /etc/ntp.conf:
-        //
-        // restrict 192.168.86.0 mask 255.255.255.0 nomodify notrap nopeer
-        //
-        // Where the IP address is based on your subnet
-        val ntpTimeProvider = NtpTimeProvider(
-            InetAddressFactory.newFromHostString(masterUri.host),
-            nodeMainExecutor.scheduledExecutorService
-        )
-        try {
-            ntpTimeProvider.updateTime()
-        } catch (e: Exception) {
-            Log.d(TAG, "exception when updating time...")
-        }
-        Log.d(TAG, "master uri: " + masterUri.host)
-        Log.d(TAG, "ros: " + ntpTimeProvider.currentTime.toString())
-        Log.d(
-            TAG,
-            "sys: " + Time.fromMillis(System.currentTimeMillis())
-        )
-        ntpTimeProvider.startPeriodicUpdates(1, TimeUnit.MINUTES)
-        nodeConfiguration.timeProvider = ntpTimeProvider
-        nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
-    }
-
 
     private val textView by lazy {
         findViewById<TextView>(R.id.textView)
     }
-
-    private val imgWidthColor = 640
-    private val imgHeightColor = 480
-    private var mImgColor = Bitmap.createBitmap(
-        imgWidthColor,
-        imgHeightColor,
-        Bitmap.Config.ARGB_8888
-    )
-    private var mImgColorResult = Bitmap.createBitmap(
-        imgWidthColor,
-        imgHeightColor,
-        Bitmap.Config.ARGB_8888
-    )
-
-    private val imgWidthFishEye = 640
-    private val imgHeightFishEye = 480
-    private var mImgFishEye = Bitmap.createBitmap(
-        imgWidthFishEye,
-        imgHeightFishEye,
-        Bitmap.Config.ALPHA_8
-    )
-    private var mImgFishEyeResult = Bitmap.createBitmap(
-        imgWidthFishEye,
-        imgHeightFishEye,
-        Bitmap.Config.ARGB_8888
-    )
-
-    private val imgWidthDepth = 320
-    private val imgHeightDepth = 240
-    private var mImgDepth = Bitmap.createBitmap(
-        imgWidthDepth,
-        imgHeightDepth,
-        Bitmap.Config.RGB_565
-    )
-    private var mImgDepthResult = Bitmap.createBitmap(
-        imgWidthDepth,
-        imgHeightDepth,
-        Bitmap.Config.ARGB_8888
-    )
-
-    private var mImgDepthScaled =
-        Bitmap.createScaledBitmap(mImgDepth, imgWidthColor / 3, imgWidthColor / 3, false)
-
-
-    private val detectorAndroidCam: ORB = ORB.create(10, 1.9F)
-    private val keypointsAndroidCam = MatOfKeyPoint()
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
 
-        //Initialize OpenCV camera view
-        val mCameraView = findViewById<JavaCameraView>(R.id.javaCam)
-        mCameraView.setCameraPermissionGranted()
-        mCameraView.visibility = SurfaceView.INVISIBLE
-        mCameraView.setCameraIndex(-1)
-//        mCameraView.enableFpsMeter()
-        mCameraView.setCvCameraViewListener(this)
 
-        mLoaderCallback = object : BaseLoaderCallback(this) {
-            override fun onManagerConnected(status: Int) {
-                when (status) {
-                    LoaderCallbackInterface.SUCCESS -> {
-                        Log.i(TAG, "OpenCV loaded successfully, enabling camera view")
-                        mCameraView.enableView()
-                        mCameraView.visibility = SurfaceView.VISIBLE
-                    }
-                    else -> {
-                        super.onManagerConnected(status)
-                    }
-                }
-            }
-        }
+        //Start Loomo SDK instances
+        mLoomoBase      = LoomoBase()
+        mLoomoRealsense = LoomoRealsense()
+        mLoomoSensor    = LoomoSensor()
+        mROSMain        = ROSMain()
+        mOpenCVMain     = OpenCVMain()
+        mOpenCVMain     .onCreate(this)
 
         //Initialize viewModel
-        viewModel = ViewModelProvider().get(MainActivityViewModel::class.java)
+        viewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
 //        viewModel = MainActivityViewModel()
 //
 //        viewModel.text.observe(this, Observer {
@@ -270,58 +131,14 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
 
     override fun onResume() {
 
-        //Start OpenCV
-        Log.i(TAG, "Activity resumed")
-        if (!OpenCVLoader.initDebug()) {
-            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization")
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback)
-        } else {
-            Log.d(TAG, "OpenCV library found inside package. Using it!")
-            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
-        }
-
+        mOpenCVMain.resume()
 
         //Bind Sensor SDK service
-        mLoomoSensor = LoomoSensor(this)
+        mLoomoSensor.bind(this)
 
-        // Bind Vision SDK service
-        mVision.bindService(this.applicationContext, object : BindStateListener {
-            override fun onBind() {
-                Log.d(TAG, "Vision onBind ${mVision.isBind}")
-//                mRealsensePublisher.node_started(mBridgeNode)
-//                mRealsensePublisher.start()
-                //Vision always initialize last, try this
-                    for (consumer in mRosBridgeConsumers) {
-                        consumer.node_started(mBridgeNode)
-                        // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
-                        consumer.start()
-                    }
-            }
+        mLoomoRealsense.bind(this)
 
-            override fun onUnbind(reason: String?) {
-                Log.d(TAG, "Vision unBind. Reason: $reason")
-            }
-        })
-
-        //Bind Base SDK service
-        mBase.bindService(this.applicationContext, object : BindStateListener {
-            override fun onBind() {
-                Log.d(TAG, "Base onBind")
-            }
-
-            override fun onUnbind(reason: String?) {
-                Log.d(TAG, "Base unBind. Reason: $reason")
-            }
-        })
-
-
-        //Start ROS publishers
-//        mRealsensePublisher.node_started(mBridgeNode)
-//        mTFPublisher.node_started(mBridgeNode)
-//        mSensorPublisher.node_started(mBridgeNode)
-
-//        mTFPublisher.start()
-//        mSensorPublisher.start()
+        mLoomoBase.bind(this)
 
         super.onResume()
     }
@@ -362,78 +179,5 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
         }
     }
 
-    private fun startCamera(msg: String) {
 
-        if (mVision.isBind) {
-            if (!cameraRunning) {
-                Log.i(TAG, msg)
-                mVision.startListenFrame(StreamType.COLOR) { streamType, frame ->
-                    mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
-//                    mImgColor = mImgFishEye.copy(Bitmap.Config.ARGB_8888, true)
-
-                    //Convert to Mat
-                    Utils.bitmapToMat(mImgColor, imgFisheye)
-
-                    //Canny edge detector
-                    Imgproc.Canny(imgFisheye, resultImgFisheye, 0.01, 190.0)
-
-                    //ORB feature detector
-//                    detectorColorCam.detect(imgFisheye, keypointsColorCam)
-//                    Features2d.drawKeypoints(imgFisheye, keypointsColorCam, resultImgFisheye)
-
-                    //Convert to Bitmap
-                    Utils.matToBitmap(resultImgFisheye, mImgColorResult)
-
-                    //Scale result image
-//                    mImgDepthScaled = Bitmap.createScaledBitmap(mImgColorResult, imgWidthColor/3, imgWidthColor/3,false)
-
-                    //Show result image on main ui
-                    threadHandler.post {
-                        camView.setImageBitmap(mImgColorResult.copy(Bitmap.Config.ARGB_8888, true))
-                    }
-                }
-                cameraRunning = true
-            } else {
-                Toast.makeText(this, "Dude, the camera is already activated..", Toast.LENGTH_SHORT)
-                    .show()
-            }
-        } else {
-            Toast.makeText(this, "Vision service not started yet", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun stopCamera(msg: String) {
-        if (cameraRunning) {
-            Log.i(TAG, msg)
-            mVision.stopListenFrame(StreamType.COLOR)
-            cameraRunning = false
-        }
-        camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
-    }
-
-    override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
-//        Log.i("cam", "new frame")
-        img = inputFrame.gray()
-//        resultImg = img
-//        Imgproc.blur(img, resultImg, Size(15.0, 15.0))
-//        Imgproc.GaussianBlur(img, resultImg, Size(15.0, 15.0), 1.0)
-//        Imgproc.Canny(img, resultImg, 0.01, 190.0)
-
-        detectorAndroidCam.detect(img, keypointsAndroidCam)
-
-//        Log.i("cam", "Keypoints:$keypointsAndroidCam")
-
-        Features2d.drawKeypoints(img, keypointsAndroidCam, resultImg)
-
-        return resultImg
-    }
-
-    override fun onCameraViewStarted(width: Int, height: Int) {
-        Log.i("cam", "camera view started. width:$width, height: $height")
-        img = Mat(width, height, CvType.CV_8UC4)
-    }
-
-    override fun onCameraViewStopped() {
-        Log.i("cam", "camera view stopped")
-    }
 }

@@ -1,17 +1,17 @@
 package com.example.loomoapp.viewModel
 
+import android.app.Application
 import android.graphics.Bitmap
 import android.util.Log
-import androidx.core.graphics.createBitmap
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import com.example.loomoapp.R
 import com.example.loomoapp.TAG
+import org.opencv.core.Mat
 
-open class MainActivityViewModel : ViewModel() {
+open class MainActivityViewModel(app: Application) : AndroidViewModel(app) {
 
     //Variables
-
+    val img = MutableLiveData<Mat>()
     val head = MutableLiveData<Head?>()
     val velocity = MutableLiveData<Velocity?>()
     val position = MutableLiveData<Position?>()
