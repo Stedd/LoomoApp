@@ -1,6 +1,7 @@
 package com.example.loomoapp.ROS
 
 import android.util.Log
+import com.example.loomoapp.mSensor
 import com.segway.robot.sdk.perception.sensor.Sensor
 import org.ros.message.Time
 import sensor_msgs.Range
@@ -11,25 +12,34 @@ import java.util.*
  */
 class SensorPublisher : RosBridge {
     var mIsStarted = false
-    private var mSensor: Sensor? = null
+//    private var mSensor: Sensor? = null
     private var mBridgeNode: RosBridgeNode? = null
     private var mSensorPublishThread = SensorPublisherThread()
-    fun loomo_started(mSensor: Sensor) {
-        this.mSensor = mSensor
-    }
+//    fun loomo_started(mSensor: Sensor) {
+//        this.mSensor = mSensor
+//    }
 
     override fun node_started(mBridgeNode: RosBridgeNode) {
         this.mBridgeNode = mBridgeNode
+        Log.d(
+            TAG,
+            "SensorPublisher node_started"
+        )
     }
 
     override fun start() {
-//        if (mSensor == null || mBridgeNode == null || mIsStarted) {
-//            Log.d(
-//                TAG,
-//                "Cannot start_listening yet, a required service is not ready"
-//            )
-//            return
-//        }
+        if (mSensor == null || mBridgeNode == null || mIsStarted) {
+            Log.d(
+                TAG,
+                "SensorPublisher Cannot start_listening yet, a required service is not ready"
+            )
+            return
+        }else {
+            Log.d(
+                TAG,
+                "SensorPublisher started"
+            )
+        }
         mIsStarted = true
         Log.d(TAG, "start_sensor()")
 //        if (!mSensorPublishThread.isAlive) {

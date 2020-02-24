@@ -3,6 +3,8 @@ package com.example.loomoapp.ROS
 import android.util.Log
 import android.util.Pair
 import com.example.loomoapp.mBase
+import com.example.loomoapp.mSensor
+import com.example.loomoapp.mVision
 import com.segway.robot.algo.tf.AlgoTfData
 import com.segway.robot.sdk.locomotion.sbv.AngularVelocity
 import com.segway.robot.sdk.locomotion.sbv.Base
@@ -27,21 +29,21 @@ class TFPublisher(
 ) :  RosBridge {
     var mIsPubTF = false
     private var mTFPublishThread: Thread = TFPublisherThread()
-    private var mVision: Vision? = null
+//    private var mVision: Vision? = null
     private var mBridgeNode: RosBridgeNode? = null
-    private var mSensor: Sensor? = null
+//    private var mSensor: Sensor? = null
 //    lateinit var mBase: Base
 //    lateinit var mBridgeNode: RosBridgeNode
     lateinit var mDepthCalibration: ColorDepthCalibration
     lateinit var mMotionCalibration: MotionModuleCalibration
     private val mStarted = false
-    fun loomo_started(mSensor: Sensor) {
-        this.mSensor = mSensor
-    }
-
-    fun loomo_started(mVision: Vision) {
-        this.mVision = mVision
-    }
+//    fun loomo_started(mSensor: Sensor) {
+//        this.mSensor = mSensor
+//    }
+//
+//    fun loomo_started(mVision: Vision) {
+//        this.mVision = mVision
+//    }
 //
 //    fun loomo_started(mBase: Base) {
 //        this.mBase = mBase
@@ -49,15 +51,24 @@ class TFPublisher(
 
     override fun node_started(mBridgeNode: RosBridgeNode) {
         this.mBridgeNode = mBridgeNode
+        Log.d(
+            TAG,
+            "TFPublisher node_started"
+        )
     }
 
     override fun start() {
-        if (mStarted || mVision==null ) {
+        if (mStarted || !mVision.isBind ) {
             Log.d(
                 TAG,
-                "Cannot start_listening yet, a required service is not ready"
+                "TFPublisher Cannot start_listening yet, a required service is not ready"
             )
             return
+        }else {
+            Log.d(
+                TAG,
+                "TFPublisher started"
+            )
         }
         mDepthCalibration = mVision!!.colorDepthCalibrationData
         mMotionCalibration = mVision!!.motionModuleCalibrationData
@@ -363,7 +374,7 @@ class TFPublisher(
                     Pair(3, 6),  // head_link to tablet_link
                     Pair(6, 7)
                 ) // tablet_link to plat_cam_link
-            while (mSensor != null) {
+            while (mSensor.isBind) {
                 if (mDepthRosStamps == null) {
                     continue
                 }
@@ -392,7 +403,7 @@ class TFPublisher(
                         var target = frameNames[index.second]
                         var source = frameNames[index.first]
                         // Swapped source/target because it seemed backwards in RViz
-                        val tfData = mSensor!!.getTfData(target, source, stamp.first, 100)
+                        val tfData = mSensor.getTfData(target, source, stamp.first, 100)
                         //Log.d(TAG, tfData.toString());
 // ROS usually uses "base_link" and "odom" as fundamental tf names
 // definitely could remove this if you prefer Loomo's names
@@ -446,7 +457,7 @@ class TFPublisher(
                     }
                     // Swapped source/target because it seemed backwards in RViz
 // TODO: this isn't capturing the velocity at the sensor timestamp. Consider moving to another thread to publish this as fast as possible
-                    val tfData = mSensor!!.getTfData(
+                    val tfData = mSensor.getTfData(
                         Sensor.BASE_POSE_FRAME,
                         Sensor.WORLD_ODOM_ORIGIN,
                         stamp.first,

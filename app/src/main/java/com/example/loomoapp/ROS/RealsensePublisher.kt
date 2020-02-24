@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import android.util.Pair
 import com.example.loomoapp.ROS.Utils.platformStampInNano
+import com.example.loomoapp.mVision
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.calibration.Intrinsic
 import com.segway.robot.sdk.vision.frame.FrameInfo
@@ -37,7 +38,7 @@ class RealsensePublisher(
         var source: RealsenseMetadataSource? = null
     }
 
-    private var mVision: Vision? = null
+    //    private var mVision: Vision? = null
     private var mBridgeNode: RosBridgeNode? = null
     lateinit var mRsColorIntrinsic: Intrinsic
     lateinit var mRsDepthIntrinsic: Intrinsic
@@ -67,15 +68,24 @@ class RealsensePublisher(
 
     override fun node_started(mBridgeNode: RosBridgeNode) {
         this.mBridgeNode = mBridgeNode
+        Log.d(
+            TAG,
+            "RealsensePublisher node_started"
+        )
     }
 
     override fun start() { // No generic initialization is required
-        if (mBridgeNode == null || mVision == null) {
+        if (mBridgeNode == null || !mVision.isBind) {
             Log.d(
                 TAG,
-                "Cannot start RealsensePublisher, ROS or Loomo SDK is not ready"
+                "RealsensePublisher Cannot start , ROS or Loomo SDK is not ready"
             )
             return
+        } else {
+            Log.d(
+                TAG,
+                "RealsensePublisher started"
+            )
         }
     }
 
@@ -83,14 +93,14 @@ class RealsensePublisher(
 // TODO: really?
     }
 
-    fun loomo_started(mVision: Vision) {
-        this.mVision = mVision
-        // Get color-depth extrinsic and publish as a TF
-    }
+//    fun loomo_started(mVision: Vision) {
+//        this.mVision = mVision
+//        // Get color-depth extrinsic and publish as a TF
+//    }
 
     @Synchronized
     fun start_all() {
-        if (mVision==null || mBridgeNode == null) {
+        if (!mVision.isBind || mBridgeNode == null) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -98,25 +108,25 @@ class RealsensePublisher(
             return
         }
         Log.d(TAG, "start_all() called")
-        val infos = mVision!!.activatedStreamInfo
+        val infos = mVision.activatedStreamInfo
         for (info in infos) {
             when (info.streamType) {
                 StreamType.COLOR -> {
                     updateCameraInfo(
-                        2, mVision!!.colorDepthCalibrationData.colorIntrinsic,
+                        2, mVision.colorDepthCalibrationData.colorIntrinsic,
                         info.width, info.height
                     )
-                    mVision!!.startListenFrame(
+                    mVision.startListenFrame(
                         StreamType.COLOR,
                         mRsColorListener
                     )
                 }
                 StreamType.DEPTH -> {
                     updateCameraInfo(
-                        3, mVision!!.colorDepthCalibrationData.depthIntrinsic,
+                        3, mVision.colorDepthCalibrationData.depthIntrinsic,
                         info.width, info.height
                     )
-                    mVision!!.startListenFrame(
+                    mVision.startListenFrame(
                         StreamType.DEPTH,
                         mRsDepthListener
                     )
@@ -128,7 +138,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun stop_all() {
-        if (mVision == null || mBridgeNode == null) {
+        if (!mVision.isBind || mBridgeNode == null) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -136,13 +146,13 @@ class RealsensePublisher(
             return
         }
         Log.d(TAG, "stop_all() called")
-        val streamInfos = mVision!!.activatedStreamInfo
+        val streamInfos = mVision.activatedStreamInfo
         for (info in streamInfos) {
             when (info.streamType) {
                 StreamType.COLOR ->  // Stop color listener
-                    mVision!!.stopListenFrame(StreamType.COLOR)
+                    mVision.stopListenFrame(StreamType.COLOR)
                 StreamType.DEPTH ->  // Stop depth listener
-                    mVision!!.stopListenFrame(StreamType.DEPTH)
+                    mVision.stopListenFrame(StreamType.DEPTH)
             }
         }
         mColorStarted = false
@@ -152,19 +162,19 @@ class RealsensePublisher(
 
     @Synchronized
     fun start_imu() {
-        if (mVision == null || mBridgeNode == null) {
+        if (!mVision.isBind || mBridgeNode == null) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
             )
             return
         }
-        mVision!!.setIMUCallback(this)
+        mVision.setIMUCallback(this)
     }
 
     @Synchronized
     fun start_color() {
-        if (mVision == null || mBridgeNode == null || mColorStarted) {
+        if (!mVision.isBind || mBridgeNode == null || mColorStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -174,10 +184,10 @@ class RealsensePublisher(
         mColorStarted = true
         Log.d(TAG, "start_color() called")
         updateCameraInfo(
-            2, mVision!!.colorDepthCalibrationData.colorIntrinsic,
+            2, mVision.colorDepthCalibrationData.colorIntrinsic,
             mRsColorWidth, mRsColorHeight
         )
-        mVision!!.startListenFrame(
+        mVision.startListenFrame(
             StreamType.COLOR,
             mRsColorListener
         )
@@ -185,7 +195,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun start_depth() {
-        if (mVision == null || mBridgeNode == null || mDepthStarted) {
+        if (!mVision.isBind || mBridgeNode == null || mDepthStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -195,10 +205,10 @@ class RealsensePublisher(
         mDepthStarted = true
         Log.d(TAG, "start_depth() called")
         updateCameraInfo(
-            3, mVision!!.colorDepthCalibrationData.depthIntrinsic,
+            3, mVision.colorDepthCalibrationData.depthIntrinsic,
             mRsDepthWidth, mRsDepthHeight
         )
-        mVision!!.startListenFrame(
+        mVision.startListenFrame(
             StreamType.DEPTH,
             mRsDepthListener
         )
@@ -206,7 +216,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun start_fisheye() {
-        if (mVision == null) {
+        if (!mVision.isBind) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -217,7 +227,7 @@ class RealsensePublisher(
         Log.d(TAG, "start_fisheye() called")
         //        updateCameraInfo(1, mVision.getColorDepthCalibrationData().colorIntrinsic,
 //                mFisheyeWidth, mFisheyeHeight);
-        mVision!!.startListenFrame(
+        mVision.startListenFrame(
             StreamType.FISH_EYE,
             mFisheyeListener
         )
@@ -225,7 +235,7 @@ class RealsensePublisher(
 
     @Synchronized
     fun stop_color() {
-        if (mVision == null || !mColorStarted) {
+        if (!mVision.isBind || !mColorStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -233,13 +243,13 @@ class RealsensePublisher(
             return
         }
         Log.d(TAG, "stop_color() called")
-        mVision!!.stopListenFrame(StreamType.COLOR)
+        mVision.stopListenFrame(StreamType.COLOR)
         mColorStarted = false
     }
 
     @Synchronized
     fun stop_depth() {
-        if (mVision == null || !mDepthStarted) {
+        if (!mVision.isBind || !mDepthStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -247,13 +257,13 @@ class RealsensePublisher(
             return
         }
         Log.d(TAG, "stop_depth() called")
-        mVision!!.stopListenFrame(StreamType.DEPTH)
+        mVision.stopListenFrame(StreamType.DEPTH)
         mDepthStarted = false
     }
 
     @Synchronized
     fun stop_fisheye() {
-        if (mVision == null || !mFisheyeStarted) {
+        if (!mVision.isBind || !mFisheyeStarted) {
             Log.d(
                 TAG,
                 "Cannot start_listening yet, a required service is not ready"
@@ -261,7 +271,7 @@ class RealsensePublisher(
             return
         }
         Log.d(TAG, "stop_fisheye() called")
-        mVision!!.stopListenFrame(StreamType.FISH_EYE)
+        mVision.stopListenFrame(StreamType.FISH_EYE)
         mFisheyeStarted = false
     }
 
@@ -392,7 +402,7 @@ class RealsensePublisher(
             }
             val image = mBridgeNode!!.mRsColorCompressedPubr!!.newMessage()
             image.format = "jpeg"
-            //Log.d(TAG, "COLOR FRAME NUM: " + frame.getInfo().getFrameNum());
+            Log.d(TAG, "COLOR FRAME NUM: " + frame.getInfo().getFrameNum());
             //Log.d(TAG, "COLOR FRAME PLATFORM STAMP: " + frame.getInfo().getPlatformTimeStamp());
             // If process_metadata doesn't want us to publish the frame, bail out now
             if (!process_metadata(
@@ -426,7 +436,7 @@ class RealsensePublisher(
                 )
                 return@FrameListener
             }
-            //Log.d(TAG, "DEPTH FRAME NUM: " + frame.getInfo().getFrameNum());
+            Log.d(TAG, "DEPTH FRAME NUM: " + frame.getInfo().getFrameNum());
             //Log.d(TAG, "DEPTH FRAME PLATFORM STAMP: " + frame.getInfo().getPlatformTimeStamp());
             val image = mBridgeNode!!.mRsDepthPubr!!.newMessage()
             image.width = mRsDepthWidth

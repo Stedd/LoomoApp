@@ -10,9 +10,10 @@ import android.view.SurfaceView
 import android.widget.TextView
 import android.widget.Toast
 import com.example.loomoapp.ROS.*
-import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.base.bind.ServiceBinder.BindStateListener
+import com.segway.robot.sdk.emoji.module.head.Head
 import com.segway.robot.sdk.locomotion.sbv.Base
+import com.segway.robot.sdk.perception.sensor.Sensor
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
@@ -35,31 +36,33 @@ import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
 
-
 //Variables
-const val TAG = "debugMSG"
+const val TAG = "MainActivity"
 
 //lateinit var viewModel: MainActivityViewModel
-lateinit var mBase: Base
-lateinit var mVision: Vision
-lateinit var mLoomoSensor: LoomoSensor
-lateinit var mLoaderCallback: BaseLoaderCallback
 
+//Initialize loomo SDK instances
+var mBase: Base = Base.getInstance()
+var mVision: Vision = Vision.getInstance()
+var mSensor: Sensor = Sensor.getInstance()
+var mHead: Head = Head.getInstance()
+lateinit var mLoomoSensor: LoomoSensor
+
+//ROS classes
 lateinit var mRealsensePublisher: RealsensePublisher
 lateinit var mTFPublisher: TFPublisher
 lateinit var mSensorPublisher: SensorPublisher
 lateinit var mRosBridgeConsumers: List<RosBridge>
 lateinit var mBridgeNode: RosBridgeNode
-
 lateinit var mDepthRosStamps // Stores a co-ordinated platform time and ROS time to help manage the offset
         : Queue<Pair<Long, Time>>
-
 lateinit var mDepthStamps: Queue<Long>
-
 
 val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
 var cameraRunning: Boolean = false
 
+//OpenCV Variables
+lateinit var mLoaderCallback: BaseLoaderCallback
 var img = Mat()
 var imgFisheye = Mat()
 var resultImg = Mat()
@@ -72,13 +75,11 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
     private val mDistanceController = DistanceController()
     private var mControllerThread = Thread()
 
-
-
-
+    //Import native functions
     external fun stringFromJNI(): String
 
     init {
-
+        Log.d(TAG, "Init Main activity")
         //Load native
         System.loadLibrary("native-lib")
 
@@ -104,28 +105,26 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
             mSensorPublisher
         )
         val mOnNodeStarted = Runnable {
+            Log.d(TAG, "node for loop")
             // Node has started, so we can now tell publishers and subscribers that ROS has initialized
             for (consumer in mRosBridgeConsumers) {
                 consumer.node_started(mBridgeNode)
                 // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
                 consumer.start()
             }
-            // Special nodes
-// TODO: we should handle this in the generic "start()" function
-            mRealsensePublisher.start_color()
-            mRealsensePublisher.start_depth()
         }
 
         // TODO: shutdown consumers correctly
         val mOnNodeShutdown = Runnable { }
 
-        // Start an instance of the LoomoRosBridgeNode
+        // Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode(mOnNodeStarted, mOnNodeShutdown)
+
 
     }
 
     override fun init(nodeMainExecutor: NodeMainExecutor) {
-        Log.d(TAG, "init().")
+        Log.d(TAG, "Init ROS node.")
         val nodeConfiguration = NodeConfiguration.newPublic(
             InetAddressFactory.newNonLoopback().hostAddress,
             masterUri
@@ -199,16 +198,11 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
         imgHeightDepth,
         Bitmap.Config.ARGB_8888
     )
-    //    private var mImgDepthCanny = Bitmap.createBitmap(
-//        imgWidth/3,
-//        imgHeight/3,
-//        Bitmap.Config.RGB_565
-//    ) // Depth info is in Z16 format. RGB_565 is also a 16 bit format and is compatible for storing the pixels
+
     private var mImgDepthScaled =
         Bitmap.createScaledBitmap(mImgDepth, imgWidthColor / 3, imgWidthColor / 3, false)
 
-    private val detectorColorCam: ORB = ORB.create(10, 1.9F)
-    private val keypointsColorCam = MatOfKeyPoint()
+
     private val detectorAndroidCam: ORB = ORB.create(10, 1.9F)
     private val keypointsAndroidCam = MatOfKeyPoint()
 
@@ -218,6 +212,7 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
 
+        //Initialize OpenCV camera view
         val mCameraView = findViewById<JavaCameraView>(R.id.javaCam)
         mCameraView.setCameraPermissionGranted()
         mCameraView.visibility = SurfaceView.INVISIBLE
@@ -240,25 +235,19 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
             }
         }
 
-        mBase = Base.getInstance()
-//        mVision = Vision.getInstance()
-        mLoomoSensor = LoomoSensor(this)
-
-////        viewModel = ViewModelProvider().get(MainActivityViewModel::class.java)
+        //Initialize viewModel
+//        viewModel = ViewModelProvider().get(MainActivityViewModel::class.java)
 //        viewModel = MainActivityViewModel()
 //
 //        viewModel.text.observe(this, Observer {
 //            textView.text = it
 //        })
 
-
-
-
-
         camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
 
 //        viewModel.text.value = "Service not started"
 
+        // Onclicklisteners
         btnStartService.setOnClickListener {
             startController("ControllerThread start command")
         }
@@ -275,11 +264,9 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
         sample_text.text = stringFromJNI()
     }
 
-
-
-
     override fun onResume() {
 
+        //Start OpenCV
         Log.i(TAG, "Activity resumed")
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization")
@@ -289,22 +276,30 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
 
-        // get Vision SDK instance
-        mVision = Vision.getInstance()
-        mVision.bindService(this, mBindVisionListener)
 
-        // get Sensor SDK instance
-//        mSensor = Sensor.getInstance()
+        //Bind Sensor SDK service
+        mLoomoSensor = LoomoSensor(this)
 
-        // get Locomotion SDK instance
-//        mBase = Base.getInstance()
+        // Bind Vision SDK service
+        mVision.bindService(this.applicationContext, object : BindStateListener {
+            override fun onBind() {
+                Log.d(TAG, "Vision onBind ${mVision.isBind}")
+//                mRealsensePublisher.node_started(mBridgeNode)
+//                mRealsensePublisher.start()
+                //Vision always initialize last, try this
+                    for (consumer in mRosBridgeConsumers) {
+                        consumer.node_started(mBridgeNode)
+                        // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
+                        consumer.start()
+                    }
+            }
 
-        // get Head SDK instance
-//        mHead = Head.getInstance()
+            override fun onUnbind(reason: String?) {
+                Log.d(TAG, "Vision unBind. Reason: $reason")
+            }
+        })
 
-
-
-        //Bind loomo services
+        //Bind Base SDK service
         mBase.bindService(this.applicationContext, object : BindStateListener {
             override fun onBind() {
                 Log.d(TAG, "Base onBind")
@@ -314,43 +309,18 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
                 Log.d(TAG, "Base unBind. Reason: $reason")
             }
         })
-//
-//        mVision.bindService(this.applicationContext, object : ServiceBinder.BindStateListener {
-//            override fun onBind() {
-//                Log.d(TAG, "Vision onBind")
-//            }
-//
-//            override fun onUnbind(reason: String?) {
-//                Log.d(TAG, "Vision unBind. Reason $reason")
-//            }
-//        })
+
+
+        //Start ROS publishers
+//        mRealsensePublisher.node_started(mBridgeNode)
+//        mTFPublisher.node_started(mBridgeNode)
+//        mSensorPublisher.node_started(mBridgeNode)
+
+//        mTFPublisher.start()
+//        mSensorPublisher.start()
 
         super.onResume()
     }
-
-
-
-
-    private var mBindVisionListener: BindStateListener = object : BindStateListener {
-        override fun onBind() {
-            if (mVision.isBind) {
-                Log.i(TAG, "onBind() mBindVisionListener called")
-                mRealsensePublisher.loomo_started(mVision)
-                mTFPublisher.loomo_started(mVision)
-                Log.d(TAG, "bindVision enabling realsense switches.")
-
-                mTFPublisher.start()
-//                mRealsensePublisher.start_color()
-////                mRealsensePublisher.start_depth()
-////                mRealsensePublisher.start_fisheye()
-            }
-        }
-
-        override fun onUnbind(reason: String) {
-            Log.i(TAG, "onUnbindVision: $reason")
-        }
-    }
-
 
     override fun onDestroy() {
         stopThreads()

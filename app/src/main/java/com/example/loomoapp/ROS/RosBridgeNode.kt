@@ -58,7 +58,7 @@ class RosBridgeNode(onStarted: Runnable, onShutdown: Runnable) :AbstractNodeMain
     private val mOnStarted: Runnable
     private val mOnShutdown: Runnable
     override fun onStart(connectedNode: ConnectedNode) {
-        Log.d(TAG, "onStart()")
+        Log.d(TAG, "onStart() $connectedNode")
         super.onStart(connectedNode)
         Log.d(TAG, "onStart() creating publishers.")
         mConnectedNode = connectedNode

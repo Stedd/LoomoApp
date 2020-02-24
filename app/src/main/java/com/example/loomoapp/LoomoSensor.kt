@@ -23,36 +23,39 @@ import com.segway.robot.sdk.perception.sensor.Sensor
 
 class LoomoSensor(context: Context) {
 
-    var mSensor: Sensor = Sensor.getInstance()
-
     init {
-        val mBindStateListener: BindStateListener = object : BindStateListener {
-            override fun onBind() {
-                Log.d(TAG, "onBind() mBindStateListener called")
-                mTFPublisher.loomo_started(mSensor)
-                mSensorPublisher.loomo_started(mSensor)
-                mTFPublisher.start()
-                mSensorPublisher.start()
-            }
-
-            override fun onUnbind(reason: String) {
-                Log.d(
-                    TAG,
-                    "onUnbind() called with: reason = [$reason]"
-                )
-            }
-        }
-
-        mSensor.bindService(context, mBindStateListener)
-
-//        mSensor.bindService(context.applicationContext, object : BindStateListener {
+//        val mBindStateListener: BindStateListener = object : BindStateListener {
 //            override fun onBind() {
-//                Log.d(TAG, "Sensor onBind")
-////                Log.i(TAG, "All sensors: ${mLoomoSensor.getAllSensors()}")
+//                Log.d(TAG, "onBind() mBindStateListener called")
+//                mTFPublisher.loomo_started(mSensor)
+//                mSensorPublisher.loomo_started(mSensor)
+//                mTFPublisher.start()
+//                mSensorPublisher.start()
 //            }
+//
 //            override fun onUnbind(reason: String) {
+//                Log.d(
+//                    TAG,
+//                    "onUnbind() called with: reason = [$reason]"
+//                )
 //            }
-//        })
+//        }
+
+//        mSensor.bindService(context, mBindStateListener)
+
+        mSensor.bindService(context.applicationContext, object : BindStateListener {
+            override fun onBind() {
+                Log.d(TAG, "Sensor onBind")
+//                Log.i(TAG, "All sensors: ${mLoomoSensor.getAllSensors()}")
+//                mTFPublisher.loomo_started(mSensor)
+//                mSensorPublisher.loomo_started(mSensor)
+//                mTFPublisher.start()
+//                mSensorPublisher.start()
+            }
+            override fun onUnbind(reason: String) {
+                Log.d(TAG, "Sensor onUnbind")
+            }
+        })
     }
 
     fun getSurroundings(): SensSurroundings {
