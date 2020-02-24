@@ -9,7 +9,9 @@ import android.util.Pair
 import android.view.SurfaceView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.ViewModelProvider
 import com.example.loomoapp.ROS.*
+import com.example.loomoapp.viewModel.MainActivityViewModel
 import com.segway.robot.sdk.base.bind.ServiceBinder.BindStateListener
 import com.segway.robot.sdk.emoji.module.head.Head
 import com.segway.robot.sdk.locomotion.sbv.Base
@@ -67,6 +69,8 @@ var img = Mat()
 var imgFisheye = Mat()
 var resultImg = Mat()
 var resultImgFisheye = Mat()
+
+lateinit var viewModel : MainActivityViewModel
 
 
 class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")),
@@ -236,7 +240,7 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
         }
 
         //Initialize viewModel
-//        viewModel = ViewModelProvider().get(MainActivityViewModel::class.java)
+        viewModel = ViewModelProvider().get(MainActivityViewModel::class.java)
 //        viewModel = MainActivityViewModel()
 //
 //        viewModel.text.observe(this, Observer {

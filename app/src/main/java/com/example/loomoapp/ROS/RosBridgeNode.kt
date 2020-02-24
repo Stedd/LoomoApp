@@ -48,7 +48,7 @@ class RosBridgeNode(onStarted: Runnable, onShutdown: Runnable) :AbstractNodeMain
     var mCmdVelSubr: Subscriber<Twist>? = null
     var mNtpProvider: NtpTimeProvider? = null
     var node_name = "loomo_ros_bridge_node"
-    var tf_prefix = "LO01"
+    var tf_prefix = "LO03"
     //TODO:Dynamic name
     var should_pub_ultrasonic = true
     var should_pub_infrared = true
