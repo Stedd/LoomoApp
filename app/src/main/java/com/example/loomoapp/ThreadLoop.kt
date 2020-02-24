@@ -1,5 +1,11 @@
 package com.example.loomoapp
 
+/**
+ * Class that creates an infinite loop in a thread.
+ * The main() function is meant to be analogous to the 'void loop()' in Arduino
+ */
+
+
 import android.util.Log
 
 open class ThreadLoop: Runnable {
@@ -16,11 +22,8 @@ open class ThreadLoop: Runnable {
         while (enable) {
             main()
             Thread.sleep(interval)
-            if (!enable) {
-                close()
-                break
-            }
         }
+        close()
         Log.i(TAG, "${Thread.currentThread()} stopped.")
     }
 
