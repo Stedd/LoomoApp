@@ -3,11 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.loomoapp">
 
-    <uses-permission android:name="android.permission.CAMERA"/>
-<!--    <uses-feature android:name="android.hardware.camera" android:required="false"/>-->
-<!--    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>-->
-<!--    <uses-feature android:name="android.hardware.camera.front" android:required="false"/>-->
-<!--    <uses-feature android:name="android.hardware.camera.front.autofocus" android:required="false"/>-->
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:allowBackup="true"
@@ -17,16 +13,20 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
+        <service
+            android:name=".MainCVService"
+            android:enabled="true"
+            android:exported="true"></service>
+
         <activity
             android:name=".MainActivity"
-            android:screenOrientation="landscape" >
+            android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
-
-
 
 </manifest>
