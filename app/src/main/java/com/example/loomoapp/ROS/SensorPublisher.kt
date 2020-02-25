@@ -47,7 +47,7 @@ class SensorPublisher(sensor: LoomoSensor) : RosBridge {
 //            mSensorPublishThread = SensorPublisherThread()
 //        }
 //        mSensorPublishThread = SensorPublisherThread()
-        mSensorPublishThread.start()
+//        mSensorPublishThread.start()
     }
 
     override fun stop() {

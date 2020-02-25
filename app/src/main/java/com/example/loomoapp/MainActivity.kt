@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         mLoomoSensor    = LoomoSensor   (viewModel)
         mLoomoControl   = LoomoControl  (viewModel, mLoomoBase, mLoomoSensor)
 
-        mROSMain        = ROSMain(mLoomoBase, mLoomoSensor, mLoomoRealsense)
+        mROSMain        = ROSMain(UIThreadHandler, mLoomoBase, mLoomoSensor, mLoomoRealsense)
 
         mOpenCVMain     = OpenCVMain()
         intentOpenCV    = Intent(this, mOpenCVMain::class.java)
@@ -75,9 +75,9 @@ class MainActivity : AppCompatActivity() {
         //Start OpenCV Service
         startService(intentOpenCV)
 
+
         //Start Ros Activity
         mROSMain.initMain()
-
 
         mLoomoControl.mControllerThread.start()
 
@@ -115,6 +115,8 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
 
         mOpenCVMain.resume()
+
+//        UIThreadHandler.postDelayed({ mROSMain.startConsumers()}, 5000)
 
         //Bind Sensor SDK service
         mLoomoSensor.bind(this)
