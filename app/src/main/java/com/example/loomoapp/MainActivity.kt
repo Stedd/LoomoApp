@@ -10,7 +10,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.example.loomoapp.ComputerVision.CVHandlerThread
-import com.example.loomoapp.ComputerVision.CVHandlerThread.Companion.TASK1
 import com.example.loomoapp.viewModel.MainActivityViewModel
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.locomotion.sbv.Base
@@ -152,15 +151,17 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
             captureNewKeyFrame = true
         }
         btnStopCamera.setOnClickListener {
+            val currentThread = Thread.currentThread().toString()
             cvHandlerTread.handler.post {
-                Log.d(TAG, "Runnable.")
+                Log.d(TAG, "Runnable, passed from $currentThread, running on ${Thread.currentThread()}")
             }
-            val msg = Message.obtain(cvHandlerTread.handler)
-            msg.what = TASK1
-            cvHandlerTread.handler.sendMessage(msg)
-            val msg2 = Message.obtain(cvHandlerTread.handler)
-            msg2.what = 7
-            cvHandlerTread.handler.sendMessage(msg2)
+
+//            val msg = Message.obtain(cvHandlerTread.handler)
+//            msg.what = TASK1
+//            cvHandlerTread.handler.sendMessage(msg)
+//            val msg2 = Message.obtain(cvHandlerTread.handler)
+//            msg2.what = 7
+//            cvHandlerTread.handler.sendMessage(msg2)
 //            stopCamera("Camera stop command")
         }
 

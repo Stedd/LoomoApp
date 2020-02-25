@@ -5,18 +5,21 @@ package com.example.loomoapp.Loomo
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.Handler
+import android.os.Message
 import android.util.Log
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
+import com.segway.robot.sdk.vision.frame.Frame
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
-class LoomoRealSense(context: Context) {
+class LoomoRealSense(context: Context, receivingThreadHandler: Handler) {
     companion object {
-        val TAG = "LoomoRealSense"
+        const val TAG = "LoomoRealSense"
 
         const val COLOR_WIDTH = 640
         const val COLOR_HEIGHT = 480
@@ -28,6 +31,7 @@ class LoomoRealSense(context: Context) {
         const val DEPTH_HEIGHT = 240
     }
 
+    private val handler_ = receivingThreadHandler
 
     var mVision = Vision.getInstance()
 
@@ -63,7 +67,7 @@ class LoomoRealSense(context: Context) {
         if (colorIsActive || fishEyeIsActive || depthIsActive) {
             GlobalScope.launch {
                 if (colorIsActive) startColorCamera()
-                if (fishEyeIsActive) startFisheyeCamera()
+                if (fishEyeIsActive) startFishEyeCamera()
                 if (depthIsActive) startDepthCamera()
             }
         }
@@ -81,15 +85,17 @@ class LoomoRealSense(context: Context) {
         while (!mVision.isBind) {
             delay(10L)
         }
-        mVision.startListenFrame(StreamType.COLOR
+        mVision.startListenFrame(
+            StreamType.COLOR
         ) { streamType, frame -> mImgColor.copyPixelsFromBuffer(frame.byteBuffer) }
     }
 
-    private suspend fun startFisheyeCamera() {
+    private suspend fun startFishEyeCamera() {
         while (!mVision.isBind) {
             delay(10L)
         }
-        mVision.startListenFrame(StreamType.FISH_EYE
+        mVision.startListenFrame(
+            StreamType.FISH_EYE
         ) { streamType, frame -> mImgFishEye.copyPixelsFromBuffer(frame.byteBuffer) }
     }
 
@@ -97,7 +103,15 @@ class LoomoRealSense(context: Context) {
         while (!mVision.isBind) {
             delay(10L)
         }
-        mVision.startListenFrame(StreamType.DEPTH
-        ) { streamType, frame -> mImgDepth.copyPixelsFromBuffer(frame.byteBuffer) }
+//        mVision.startListenFrame(
+//            StreamType.DEPTH
+//        ) { streamType, frame -> mImgDepth.copyPixelsFromBuffer(frame.byteBuffer) }
+        mVision.startListenFrame(StreamType.DEPTH, object : Vision.FrameListener {
+            override fun onNewFrame(streamType: Int, frame: Frame) {
+                mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
+                val msg = Message.obtain(handler_)
+                handler_.sendMessage(msg)
+            }
+        })
     }
 }

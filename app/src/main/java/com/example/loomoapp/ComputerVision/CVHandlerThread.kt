@@ -11,30 +11,34 @@ class CVHandlerThread(name: String, priority: Int) :
     HandlerThread(name, priority) {
     companion object {
         private const val TAG = "CVHandlerThread"
-        const val TASK1 = 1
+
+        // These can be used if you want the thread to handle messages
+        /*const val TASK1 = 1
         const val TASK2 = 2
         const val TASK3 = 3
-        const val TASK4 = 4
+        const val TASK4 = 4*/
     }
 
     lateinit var handler: Handler//? = null
 //        private set
 
     override fun onLooperPrepared() {
-        handler = @SuppressLint("HandlerLeak")
-        object : Handler() {
-            override fun handleMessage(msg: Message) {
-                when (msg.what) {
-                    TASK1 -> {
-                        Log.d(
-                            TAG,
-                            "TASK1, arg1: " + msg.arg1 + ", obj: " + msg.obj
-                        )
-                    }
-                    else -> Log.d(TAG, "Non-reckognized task: ${msg.what}")
-                }
-            }
-        }
+        handler = @SuppressLint("HandlerLeak") object : Handler() {}
     }
+
+//    override fun onLooperPrepared() {
+//        handler = @SuppressLint("HandlerLeak")
+//        object : Handler() {
+//            override fun handleMessage(msg: Message) {
+//                when (msg.what) {
+//                    TASK1 -> {
+//                        Log.d(TAG, "TASK1, arg1: " + msg.arg1 + ", obj: " + msg.obj
+//                        )
+//                    }
+//                    else -> Log.d(TAG, "Non-recognized task: ${msg.what}")
+//                }
+//            }
+//        }
+//    }
 
 }
