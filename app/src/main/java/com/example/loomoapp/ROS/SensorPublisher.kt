@@ -1,7 +1,7 @@
 package com.example.loomoapp.ROS
 
 import android.util.Log
-import com.example.loomoapp.mSensor
+import com.example.loomoapp.Loomo.LoomoSensor
 import com.segway.robot.sdk.perception.sensor.Sensor
 import org.ros.message.Time
 import sensor_msgs.Range
@@ -10,13 +10,14 @@ import java.util.*
 /**
  * Created by mfe on 8/3/18.
  */
-class SensorPublisher : RosBridge {
+class SensorPublisher(sensor: LoomoSensor) : RosBridge {
     var mIsStarted = false
+    val sensor_ = sensor.mSensor
 //    private var mSensor: Sensor? = null
     private var mBridgeNode: RosBridgeNode? = null
     private var mSensorPublishThread = SensorPublisherThread()
-//    fun loomo_started(mSensor: Sensor) {
-//        this.mSensor = mSensor
+//    fun loomo_started(sensor_: Sensor) {
+//        this.sensor_ = sensor_
 //    }
 
     override fun node_started(mBridgeNode: RosBridgeNode) {
@@ -28,7 +29,7 @@ class SensorPublisher : RosBridge {
     }
 
     override fun start() {
-        if (mSensor == null || mBridgeNode == null || mIsStarted) {
+        if (!sensor_.isBind || mBridgeNode == null || mIsStarted) {
             Log.d(
                 TAG,
                 "SensorPublisher Cannot start_listening yet, a required service is not ready"
@@ -82,7 +83,7 @@ class SensorPublisher : RosBridge {
                     currentRosTime.subtract(currentSystemTime)
                 if (mBridgeNode!!.should_pub_ultrasonic) { //                    TODO: Her hentes ultralyd sensor data gjennom Loomo API
                     val mUltrasonicData =
-                        mSensor!!.querySensorData(Arrays.asList(Sensor.ULTRASONIC_BODY))[0]
+                        sensor_.querySensorData(Arrays.asList(Sensor.ULTRASONIC_BODY))[0]
                     var mUltrasonicDistance = mUltrasonicData.intData[0].toFloat()
                     val ultrasonicMessage =
                         mBridgeNode!!.mUltrasonicPubr!!.newMessage()
@@ -106,7 +107,7 @@ class SensorPublisher : RosBridge {
                     mBridgeNode!!.mUltrasonicPubr!!.publish(ultrasonicMessage)
                 }
                 if (mBridgeNode!!.should_pub_infrared) {
-                    val infraredData = mSensor!!.infraredDistance
+                    val infraredData = sensor_.infraredDistance
                     val mInfraredDistanceLeft = infraredData.leftDistance
                     val mInfraredDistanceRight = infraredData.rightDistance
                     val infraredMessageLeft =
@@ -133,7 +134,7 @@ class SensorPublisher : RosBridge {
                 }
                 if (mBridgeNode!!.should_pub_base_pitch) {
                     val mBaseImu =
-                        mSensor!!.querySensorData(Arrays.asList(Sensor.BASE_IMU))[0]
+                        sensor_.querySensorData(Arrays.asList(Sensor.BASE_IMU))[0]
                     val mBasePitch = mBaseImu.floatData[0]
                     //                    float mBaseRoll = mBaseImu.getFloatData()[1];
 //                    float mBaseYaw = mBaseImu.getFloatData()[2];

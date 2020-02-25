@@ -21,26 +21,24 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
-    var UIThreadHandler = Handler() //Used to post messages to UI Thread
-    val viewModel: MainActivityViewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
+    private val UIThreadHandler = Handler() //Used to post messages to UI Thread
+    private lateinit var viewModel: MainActivityViewModel
 
     //Variables
     private val TAG = "MainActivity"
 
     //Initialize loomo classes
-    val mLoomoBase: LoomoBase = LoomoBase(viewModel)
-    val mLoomoRealsense: LoomoRealsense = LoomoRealsense(viewModel)
-    val mLoomoSensor: LoomoSensor = LoomoSensor(viewModel)
-    val mLoomoControl: LoomoControl= LoomoControl(viewModel, mLoomoBase, mLoomoSensor)
-
-
+    lateinit var mLoomoBase: LoomoBase
+    lateinit var mLoomoRealsense: LoomoRealsense
+    lateinit var mLoomoSensor: LoomoSensor
+    lateinit var mLoomoControl: LoomoControl
 
     //ROS classes
-    private val mROSMain: ROSMain = ROSMain()
+    lateinit var mROSMain: ROSMain
 
     //OpenCV Variables
-    private val mOpenCVMain: OpenCVMain = OpenCVMain()
-    private val intentOpenCV = Intent(this, mOpenCVMain::class.java)
+    lateinit var mOpenCVMain: OpenCVMain
+    private lateinit var intentOpenCV: Intent
 
     //Import native functions
     external fun stringFromJNI(): String
@@ -48,17 +46,8 @@ class MainActivity : AppCompatActivity() {
     init {
         Log.d(TAG, "Init Main activity")
 
-        //Initialize viewModel
-//        viewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
-
         //Load native
         System.loadLibrary("native-lib")
-
-        //Start OpenCV Service
-        startService(intentOpenCV)
-
-        //Start Ros Activity
-        mROSMain.initMain()
     }
 
     private val textView by lazy {
@@ -69,6 +58,26 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
+
+        viewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
+
+        //Initialize classes
+        mLoomoBase      = LoomoBase     (viewModel)
+        mLoomoRealsense = LoomoRealsense(viewModel)
+        mLoomoSensor    = LoomoSensor   (viewModel)
+        mLoomoControl   = LoomoControl  (viewModel, mLoomoBase, mLoomoSensor)
+
+        mROSMain        = ROSMain(mLoomoBase, mLoomoSensor, mLoomoRealsense)
+
+        mOpenCVMain     = OpenCVMain()
+        intentOpenCV    = Intent(this, mOpenCVMain::class.java)
+
+        //Start OpenCV Service
+        startService(intentOpenCV)
+
+        //Start Ros Activity
+        mROSMain.initMain()
+
 
         mLoomoControl.mControllerThread.start()
 

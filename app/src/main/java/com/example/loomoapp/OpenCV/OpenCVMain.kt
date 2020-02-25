@@ -13,26 +13,28 @@ import org.opencv.core.MatOfKeyPoint
 import org.opencv.features2d.ORB
 
 class OpenCVMain: Service(), CameraBridgeViewBase.CvCameraViewListener2 {
-
     private val TAG = "OpenCV"
-    private lateinit var mLoaderCallback: BaseLoaderCallback
 
-    private val detectorAndroidCam: ORB = ORB.create(10, 1.9F)
-    private val keypointsAndroidCam = MatOfKeyPoint()
-
-    private var img = Mat()
-    private var imgFisheye = Mat()
-    private var resultImg = Mat()
-    private var resultImgFisheye = Mat()
-
-    override fun onBind(intent: Intent?): IBinder? {
-
+    init {
         //Load OpenCV
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "OpenCV not loaded")
         } else {
             Log.d(TAG, "OpenCV loaded")
         }
+    }
+
+    private lateinit var mLoaderCallback: BaseLoaderCallback
+
+    private val detectorAndroidCam: ORB = ORB.create(10, 1.9F)
+    private val keypointsAndroidCam = MatOfKeyPoint()
+//
+    private var img = Mat()
+//    private var imgFisheye = Mat()
+//    private var resultImg = Mat()
+//    private var resultImgFisheye = Mat()
+
+    override fun onBind(intent: Intent?): IBinder? {
         return Binder()
     }
 
@@ -71,8 +73,8 @@ class OpenCVMain: Service(), CameraBridgeViewBase.CvCameraViewListener2 {
         }
     }
 
-    override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame?): Mat {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
+        return inputFrame.gray()
     }
 
     override fun onCameraViewStarted(width: Int, height: Int) {

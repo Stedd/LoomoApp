@@ -26,9 +26,9 @@ class LoomoControl(viewModel: MainActivityViewModel, base: LoomoBase, sensor: Lo
     fun startController(context: Context, msg: String) {
         if (!mControllerThread.isAlive) {
             Log.i(TAG, msg)
-            mDistanceController.enable = true
+//            mDistanceController.enable = true
             mControllerThread.handler.post {
-                    base_.mBase.setLinearVelocity(PController(350.0F, sensor_.getSurroundings().UltraSonic.toFloat(), 3F).out)
+                    base_.mBase.setLinearVelocity(PController(350.0F, sensor_.getSurroundings().UltraSonic.toFloat(), -0.0009F, 0.2F).out)
             }
 
         } else {
@@ -44,7 +44,7 @@ class LoomoControl(viewModel: MainActivityViewModel, base: LoomoBase, sensor: Lo
     fun stopController(context: Context, msg: String) {
         if (mControllerThread.isAlive) {
             Log.i(TAG, msg)
-            mDistanceController.enable = false
+//            mDistanceController.enable = false
         }
     }
 

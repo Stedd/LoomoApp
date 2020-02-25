@@ -24,7 +24,7 @@ import java.util.logging.Handler
 
 open class LoomoSensor(viewModel: MainActivityViewModel) {
     private val TAG = "LoomoSensor"
-    private val mSensor: Sensor = Sensor.getInstance()
+    val mSensor: Sensor = Sensor.getInstance()
 
     fun bind (context: Context){
         mSensor.bindService(context.applicationContext, object : BindStateListener {

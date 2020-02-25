@@ -2,9 +2,9 @@ package com.example.loomoapp.ROS
 
 import android.util.Log
 import android.util.Pair
-import com.example.loomoapp.mBase
-import com.example.loomoapp.mSensor
-import com.example.loomoapp.mVision
+import com.example.loomoapp.Loomo.LoomoBase
+import com.example.loomoapp.Loomo.LoomoRealsense
+import com.example.loomoapp.Loomo.LoomoSensor
 import com.segway.robot.algo.tf.AlgoTfData
 import com.segway.robot.sdk.locomotion.sbv.AngularVelocity
 import com.segway.robot.sdk.locomotion.sbv.Base
@@ -25,8 +25,17 @@ import java.util.*
 
 class TFPublisher(
     private val mDepthStamps: Queue<Long>,
-    private val mDepthRosStamps: Queue<Pair<Long, Time>>?
+    private val mDepthRosStamps: Queue<Pair<Long, Time>>?,
+    base:LoomoBase,
+    sensor: LoomoSensor,
+    realsense: LoomoRealsense
 ) :  RosBridge {
+
+    val base_ = base.mBase
+    val sensor_ = sensor.mSensor
+    val vision_ = realsense.mVision
+
+
     var mIsPubTF = false
     private var mTFPublishThread: Thread = TFPublisherThread()
 //    private var mVision: Vision? = null
@@ -58,7 +67,7 @@ class TFPublisher(
     }
 
     override fun start() {
-        if (mStarted || !mVision.isBind ) {
+        if (mStarted || !vision_.isBind ) {
             Log.d(
                 TAG,
                 "TFPublisher Cannot start_listening yet, a required service is not ready"
@@ -70,8 +79,8 @@ class TFPublisher(
                 "TFPublisher started"
             )
         }
-        mDepthCalibration = mVision!!.colorDepthCalibrationData
-        mMotionCalibration = mVision!!.motionModuleCalibrationData
+        mDepthCalibration = vision_!!.colorDepthCalibrationData
+        mMotionCalibration = vision_!!.motionModuleCalibrationData
         Log.d(
             TAG,
             "Depth extrinsic data: " + mDepthCalibration.depthToColorExtrinsic.toString()
@@ -374,7 +383,7 @@ class TFPublisher(
                     Pair(3, 6),  // head_link to tablet_link
                     Pair(6, 7)
                 ) // tablet_link to plat_cam_link
-            while (mSensor.isBind) {
+            while (sensor_.isBind) {
                 if (mDepthRosStamps == null) {
                     continue
                 }
@@ -403,7 +412,7 @@ class TFPublisher(
                         var target = frameNames[index.second]
                         var source = frameNames[index.first]
                         // Swapped source/target because it seemed backwards in RViz
-                        val tfData = mSensor.getTfData(target, source, stamp.first, 100)
+                        val tfData = sensor_.getTfData(target, source, stamp.first, 100)
                         //Log.d(TAG, tfData.toString());
 // ROS usually uses "base_link" and "odom" as fundamental tf names
 // definitely could remove this if you prefer Loomo's names
@@ -457,15 +466,15 @@ class TFPublisher(
                     }
                     // Swapped source/target because it seemed backwards in RViz
 // TODO: this isn't capturing the velocity at the sensor timestamp. Consider moving to another thread to publish this as fast as possible
-                    val tfData = mSensor.getTfData(
+                    val tfData = sensor_.getTfData(
                         Sensor.BASE_POSE_FRAME,
                         Sensor.WORLD_ODOM_ORIGIN,
                         stamp.first,
                         100
                     )
-                    val linearVelocity = mBase.linearVelocity
+                    val linearVelocity = base_.linearVelocity
                     val angularVelocity =
-                        mBase.angularVelocity
+                        base_.angularVelocity
                     val odom_message = produceOdometryMessage(
                         tfData,
                         linearVelocity,

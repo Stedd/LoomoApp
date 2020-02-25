@@ -2,6 +2,9 @@ package com.example.loomoapp.ROS
 
 import android.util.Log
 import android.util.Pair
+import com.example.loomoapp.Loomo.LoomoBase
+import com.example.loomoapp.Loomo.LoomoRealsense
+import com.example.loomoapp.Loomo.LoomoSensor
 import org.ros.address.InetAddressFactory
 import org.ros.android.RosActivity
 import org.ros.message.Time
@@ -14,11 +17,14 @@ import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
 import java.util.logging.Handler
 
-class ROSMain : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
-
-    //Handler
+class ROSMain (base: LoomoBase, sensor: LoomoSensor, realsense: LoomoRealsense): RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
 
     private val TAG = "RosMain"
+
+    val base_ = base
+    val sensor_ = sensor
+    val vision_ = realsense
+
 
     // Keep track of timestamps when images published, so corresponding TFs can be published too
     // Stores a co-ordinated platform time and ROS time to help manage the offset
@@ -31,9 +37,9 @@ class ROSMain : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2
     private lateinit var mBridgeNode: RosBridgeNode
 
     //Publishers
-    private val mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps)
-    private val mTFPublisher: TFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps)
-    private val mSensorPublisher: SensorPublisher = SensorPublisher()
+    private val mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps,vision_)
+    private val mTFPublisher: TFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps,base_,sensor_,vision_)
+    private val mSensorPublisher: SensorPublisher = SensorPublisher(sensor_)
     private val mRosBridgeConsumers: List<RosBridge> =
         listOf(mRealsensePublisher, mTFPublisher, mSensorPublisher)
 

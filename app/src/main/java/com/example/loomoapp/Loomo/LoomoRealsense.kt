@@ -13,7 +13,7 @@ import com.segway.robot.sdk.vision.stream.StreamType
 
 class LoomoRealsense(viewModel: MainActivityViewModel) {
     private val TAG = "LoomoRealsense"
-    private val mVision :Vision = Vision.getInstance()
+    val mVision :Vision = Vision.getInstance()
     private val viewModel_ = viewModel
 
     private var cameraRunning = false
