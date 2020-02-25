@@ -47,8 +47,8 @@
 
     <ImageView
         android:id="@+id/camView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="640dp"
+        android:layout_height="480dp"
         android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="@+id/btnStopCamera"
         app:layout_constraintEnd_toEndOf="parent"

@@ -3,7 +3,7 @@ package com.example.loomoapp.ROS
 import android.graphics.Bitmap
 import android.util.Log
 import android.util.Pair
-import com.example.loomoapp.Loomo.LoomoRealsense
+import com.example.loomoapp.Loomo.LoomoRealSense
 import com.example.loomoapp.ROS.Utils.platformStampInNano
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.calibration.Intrinsic
@@ -24,7 +24,7 @@ import java.util.*
 class RealsensePublisher(
     private val mDepthStamps: Queue<Long>,
     private val mDepthRosStamps: Queue<Pair<Long, Time>>,
-    realsense: LoomoRealsense
+    realSense: LoomoRealSense
 ) :
     RosBridge,
     IMUDataCallback {
@@ -39,7 +39,7 @@ class RealsensePublisher(
         var source: RealsenseMetadataSource? = null
     }
 
-    val vision_ = realsense.mVision
+    val vision_ = realSense.mVision
     //    private var mVision: Vision? = null
     private var mBridgeNode: RosBridgeNode? = null
     lateinit var mRsColorIntrinsic: Intrinsic

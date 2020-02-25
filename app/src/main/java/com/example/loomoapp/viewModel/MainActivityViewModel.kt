@@ -28,9 +28,12 @@ open class MainActivityViewModel(app: Application) : AndroidViewModel(app) {
     var realSenseFishEyeImage = MutableLiveData<Bitmap>()
     var realSenseDepthImage = MutableLiveData<Bitmap>()
 
-    val colorLargeBitArray = MutableLiveData<ByteArray>()
-    val colorSmallBitArray = MutableLiveData<ByteArray>()
-    val colorDepthBitArray = MutableLiveData<ByteArray>()
+//    val colorLargeBitArray = MutableLiveData<ByteArray>()
+//    val colorSmallBitArray = MutableLiveData<ByteArray>()
+//    val colorDepthBitArray = MutableLiveData<ByteArray>()
+    var imgColorBitmap = MutableLiveData<Bitmap>()
+    var imgFishEyeBitmap = MutableLiveData<Bitmap>()
+    var imgDepthBitmap = MutableLiveData<Bitmap>()
 
     var text = MutableLiveData<String>()
     var image = MutableLiveData<Bitmap>()

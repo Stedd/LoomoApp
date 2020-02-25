@@ -8,7 +8,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.Observer
 import com.example.loomoapp.DistanceController
-import com.example.loomoapp.LoomoHandlerThread
+import com.example.loomoapp.LoopedThread
 import com.example.loomoapp.Runnables.PController
 import com.example.loomoapp.viewModel.MainActivityViewModel
 
@@ -20,8 +20,8 @@ class LoomoControl(viewModel: MainActivityViewModel, base: LoomoBase, sensor: Lo
 
     //Initialize threads
     private val mDistanceController = DistanceController(sensor)
-    val mControllerThread: LoomoHandlerThread =
-        LoomoHandlerThread("LoomoControl", Process.THREAD_PRIORITY_FOREGROUND)
+    val mControllerThread: LoopedThread =
+        LoopedThread("LoomoControl", Process.THREAD_PRIORITY_FOREGROUND)
 
     fun startController(context: Context, msg: String) {
         if (!mControllerThread.isAlive) {

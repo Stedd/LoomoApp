@@ -3,7 +3,7 @@ package com.example.loomoapp.ROS
 import android.util.Log
 import android.util.Pair
 import com.example.loomoapp.Loomo.LoomoBase
-import com.example.loomoapp.Loomo.LoomoRealsense
+import com.example.loomoapp.Loomo.LoomoRealSense
 import com.example.loomoapp.Loomo.LoomoSensor
 import org.ros.address.InetAddressFactory
 import org.ros.android.RosActivity
@@ -15,15 +15,14 @@ import java.net.URI
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
-import java.util.logging.Handler
 
-class ROSMain (base: LoomoBase, sensor: LoomoSensor, realsense: LoomoRealsense): RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
+class ROSMain (base: LoomoBase, sensor: LoomoSensor, realSense: LoomoRealSense): RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
 
     private val TAG = "RosMain"
 
     val base_ = base
     val sensor_ = sensor
-    val vision_ = realsense
+    val vision_ = realSense
 
 
     // Keep track of timestamps when images published, so corresponding TFs can be published too

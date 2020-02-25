@@ -1,18 +1,14 @@
 package com.example.loomoapp
 
-import android.content.Context
 import android.content.Intent
 import android.os.*
 import android.util.Log
+import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import com.example.loomoapp.Loomo.LoomoBase
-import com.example.loomoapp.Loomo.LoomoControl
-import com.example.loomoapp.Loomo.LoomoRealsense
-import com.example.loomoapp.Loomo.LoomoSensor
+import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.ROSMain
 import com.example.loomoapp.viewModel.MainActivityViewModel
@@ -29,9 +25,9 @@ class MainActivity : AppCompatActivity() {
 
     //Initialize loomo classes
     lateinit var mLoomoBase: LoomoBase
-    lateinit var mLoomoRealsense: LoomoRealsense
+    lateinit var mLoomoRealSense: LoomoRealSense
     lateinit var mLoomoSensor: LoomoSensor
-    lateinit var mLoomoControl: LoomoControl
+//    lateinit var mLoomoControl: LoomoControl
 
     //ROS classes
     lateinit var mROSMain: ROSMain
@@ -53,6 +49,10 @@ class MainActivity : AppCompatActivity() {
     private val textView by lazy {
         findViewById<TextView>(R.id.textView)
     }
+    private val camView by lazy {
+        findViewById<ImageView>(R.id.camView)
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,11 +63,12 @@ class MainActivity : AppCompatActivity() {
 
         //Initialize classes
         mLoomoBase      = LoomoBase     (viewModel)
-        mLoomoRealsense = LoomoRealsense(viewModel)
+        mLoomoRealSense = LoomoRealSense(this, viewModel, UIThreadHandler)
+        mLoomoRealSense.setActiveStateOfCameras(false, true, false)
         mLoomoSensor    = LoomoSensor   (viewModel)
-        mLoomoControl   = LoomoControl  (viewModel, mLoomoBase, mLoomoSensor)
+//        mLoomoControl   = LoomoControl  (viewModel, mLoomoBase, mLoomoSensor)
 
-        mROSMain        = ROSMain(mLoomoBase, mLoomoSensor, mLoomoRealsense)
+        mROSMain        = ROSMain(mLoomoBase, mLoomoSensor, mLoomoRealSense)
 
         mOpenCVMain     = OpenCVMain()
         intentOpenCV    = Intent(this, mOpenCVMain::class.java)
@@ -79,7 +80,7 @@ class MainActivity : AppCompatActivity() {
         mROSMain.initMain()
 
 
-        mLoomoControl.mControllerThread.start()
+//        mLoomoControl.mControllerThread.start()
 
         mOpenCVMain.onCreate(this, findViewById(R.id.javaCam))
 
@@ -87,7 +88,11 @@ class MainActivity : AppCompatActivity() {
             textView.text = it
         })
 
-        viewModel.realSenseColorImage.observe(this, Observer {
+//        viewModel.realSenseColorImage.observe(this, Observer {
+//            camView.setImageBitmap(it)
+//        })
+
+        viewModel.imgFishEyeBitmap.observe(this, Observer {
             camView.setImageBitmap(it)
         })
 
@@ -96,16 +101,16 @@ class MainActivity : AppCompatActivity() {
 
         // Onclicklisteners
         btnStartService.setOnClickListener {
-            mLoomoControl.startController(this,"ControllerThread start command")
+//            mLoomoControl.startController(this,"ControllerThread start command")
         }
         btnStopService.setOnClickListener {
-            mLoomoControl.stopController(this,"ControllerThread stop command")
+//            mLoomoControl.stopController(this,"ControllerThread stop command")
         }
         btnStartCamera.setOnClickListener {
-            mLoomoRealsense.startCamera(this, "Camera start command")
+            mLoomoRealSense.startActiveCameras()
         }
         btnStopCamera.setOnClickListener {
-            mLoomoRealsense.stopCamera(this,"Camera stop command")
+            mLoomoRealSense.stopActiveCameras()
         }
 
         //Helloworld from c++
@@ -119,7 +124,7 @@ class MainActivity : AppCompatActivity() {
         //Bind Sensor SDK service
         mLoomoSensor.bind(this)
 
-        mLoomoRealsense.bind(this)
+//        mLoomoRealSense.bind(this)
 
         mLoomoBase.bind(this)
 
@@ -137,9 +142,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun stopThreads() {
-        mLoomoControl.stopController(this,"App paused, Controller thread stopping")
+//        mLoomoControl.stopController(this,"App paused, Controller thread stopping")
 
-        mLoomoRealsense.stopCamera(this, "App paused, Camera thread stopping")
+//        mLoomoRealSense.stopCamera(this, "App paused, Camera thread stopping")
 
     }
 

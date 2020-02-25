@@ -3,14 +3,12 @@ package com.example.loomoapp.ROS
 import android.util.Log
 import android.util.Pair
 import com.example.loomoapp.Loomo.LoomoBase
-import com.example.loomoapp.Loomo.LoomoRealsense
+import com.example.loomoapp.Loomo.LoomoRealSense
 import com.example.loomoapp.Loomo.LoomoSensor
 import com.segway.robot.algo.tf.AlgoTfData
 import com.segway.robot.sdk.locomotion.sbv.AngularVelocity
-import com.segway.robot.sdk.locomotion.sbv.Base
 import com.segway.robot.sdk.locomotion.sbv.LinearVelocity
 import com.segway.robot.sdk.perception.sensor.Sensor
-import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.calibration.ColorDepthCalibration
 import com.segway.robot.sdk.vision.calibration.Extrinsic
 import com.segway.robot.sdk.vision.calibration.MotionModuleCalibration
@@ -28,12 +26,12 @@ class TFPublisher(
     private val mDepthRosStamps: Queue<Pair<Long, Time>>?,
     base:LoomoBase,
     sensor: LoomoSensor,
-    realsense: LoomoRealsense
+    realSense: LoomoRealSense
 ) :  RosBridge {
 
     val base_ = base.mBase
     val sensor_ = sensor.mSensor
-    val vision_ = realsense.mVision
+    val vision_ = realSense.mVision
 
 
     var mIsPubTF = false
