@@ -4,18 +4,19 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import android.widget.Toast
+import androidx.lifecycle.MutableLiveData
 import com.example.loomoapp.*
-import com.example.loomoapp.ROS.ROSMain
+import com.example.loomoapp.viewModel.MainActivityViewModel
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.stream.StreamType
-import kotlinx.android.synthetic.main.activity_main.*
-import org.opencv.android.Utils
-import org.opencv.imgproc.Imgproc
 
-class LoomoRealsense {
+class LoomoRealsense(viewModel: MainActivityViewModel) {
+    private val TAG = "LoomoRealsense"
     private val mVision :Vision = Vision.getInstance()
+    private val viewModel_ = viewModel
 
+    private var cameraRunning = false
 
     private val imgWidthColor = 640
     private val imgHeightColor = 480
@@ -65,8 +66,7 @@ class LoomoRealsense {
         mVision.bindService(context, object : ServiceBinder.BindStateListener {
             override fun onBind() {
                 Log.d(TAG, "Vision onBind ${mVision.isBind}")
-
-                mROSMain.startConsumers()
+//                    mROSMain.startConsumers()
             }
 
             override fun onUnbind(reason: String?) {
@@ -75,53 +75,42 @@ class LoomoRealsense {
         })
     }
 
-    private fun startCamera(msg: String) {
-
+    fun startCamera(context: Context, msg: String) {
         if (mVision.isBind) {
             if (!cameraRunning) {
                 Log.i(TAG, msg)
+                // TODO: 25/02/2020 Separate individual cameras?
                 mVision.startListenFrame(StreamType.COLOR) { streamType, frame ->
                     mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
-//                    mImgColor = mImgFishEye.copy(Bitmap.Config.ARGB_8888, true)
-
-                    //Convert to Mat
-//                    Utils.bitmapToMat(mImgColor, imgFisheye)
-
-                    //Canny edge detector
-//                    Imgproc.Canny(imgFisheye, resultImgFisheye, 0.01, 190.0)
-
-                    //ORB feature detector
-//                    detectorColorCam.detect(imgFisheye, keypointsColorCam)
-//                    Features2d.drawKeypoints(imgFisheye, keypointsColorCam, resultImgFisheye)
-
-                    //Convert to Bitmap
-//                    Utils.matToBitmap(resultImgFisheye, mImgColorResult)
-
-                    //Scale result image
-//                    mImgDepthScaled = Bitmap.createScaledBitmap(mImgColorResult, imgWidthColor/3, imgWidthColor/3,false)
-
-                    //Show result image on main ui
-                    threadHandler.post {
-                        camView.setImageBitmap(mImgColorResult.copy(Bitmap.Config.ARGB_8888, true))
-                    }
+                    viewModel_.realSenseColorImage = MutableLiveData(mImgColor)
+                }
+                mVision.startListenFrame(StreamType.FISH_EYE) { streamType, frame ->
+                    mImgFishEye.copyPixelsFromBuffer(frame.byteBuffer)
+                    viewModel_.realSenseFishEyeImage = MutableLiveData(mImgFishEye)
+                }
+                mVision.startListenFrame(StreamType.DEPTH) { streamType, frame ->
+                    mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
+                    viewModel_.realSenseDepthImage = MutableLiveData(mImgDepth)
                 }
                 cameraRunning = true
             } else {
-                Toast.makeText(this, "Dude, the camera is already activated..", Toast.LENGTH_SHORT)
+                Toast.makeText(context, "Dude, the camera is already activated..", Toast.LENGTH_SHORT)
                     .show()
             }
         } else {
-            Toast.makeText(this, "Vision service not started yet", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Vision service not started yet", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun stopCamera(msg: String) {
+    fun stopCamera(context: Context, msg: String) {
         if (cameraRunning) {
             Log.i(TAG, msg)
             mVision.stopListenFrame(StreamType.COLOR)
             cameraRunning = false
         }
-        camView.setImageDrawable(getDrawable(R.drawable.ic_videocam))
+//        UIThreadHandler.post {
+//            viewModel.image.setImageDrawable(getDrawable(context, R.drawable.ic_videocam))
+//        }
     }
 
 

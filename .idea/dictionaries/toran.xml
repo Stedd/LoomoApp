@@ -4,11 +4,14 @@
       <w>asynch</w>
       <w>autofocus</w>
       <w>coroutine</w>
+      <w>helloworld</w>
       <w>keypoints</w>
       <w>loomo</w>
       <w>odometry</w>
+      <w>onclicklisteners</w>
       <w>opencvsdk</w>
       <w>realsense</w>
+      <w>rosbridge</w>
       <w>setpoint</w>
       <w>videocam</w>
     </words>

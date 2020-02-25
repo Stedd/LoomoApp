@@ -5,27 +5,28 @@ import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
-import com.example.loomoapp.TAG
 import org.opencv.core.Mat
 
 open class MainActivityViewModel(app: Application) : AndroidViewModel(app) {
-
+    private val TAG = "ViewModel"
     //Variables
     val img = MutableLiveData<Mat>()
     val head = MutableLiveData<Head?>()
-    val velocity = MutableLiveData<Velocity?>()
+    var velocity = MutableLiveData<Velocity?>()
     val position = MutableLiveData<Position?>()
     val positionArray = MutableLiveData<PositionArray>()
     val speak = MutableLiveData<Speak?>()
     val volume = MutableLiveData<Volume?>()
     val endableDrive = MutableLiveData<EnableDrive?>()
     val headLightNotification = MutableLiveData<Int>()
+    var surroundings = MutableLiveData<SensSurroundings>()
 
     val visionIsActive = MutableLiveData<Boolean>()
     val activeStreams = MutableLiveData<EnableVision>()
 
-    val realSenseColorImage = MutableLiveData<Bitmap>()
-    val realSenseDepthImage = MutableLiveData<Bitmap>()
+    var realSenseColorImage = MutableLiveData<Bitmap>()
+    var realSenseFishEyeImage = MutableLiveData<Bitmap>()
+    var realSenseDepthImage = MutableLiveData<Bitmap>()
 
     val colorLargeBitArray = MutableLiveData<ByteArray>()
     val colorSmallBitArray = MutableLiveData<ByteArray>()
@@ -36,7 +37,6 @@ open class MainActivityViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         Log.i(TAG, "ViewModel created")
-        text.value = "Service not started yet"
     }
 }
 

@@ -15,15 +15,15 @@ package com.example.loomoapp.Loomo
 
 import android.content.Context
 import android.util.Log
-import com.example.loomoapp.TAG
 import com.example.loomoapp.viewModel.*
 import com.segway.robot.sdk.base.bind.ServiceBinder.BindStateListener
 import com.segway.robot.sdk.perception.sensor.RobotAllSensors
 import com.segway.robot.sdk.perception.sensor.Sensor
+import java.util.logging.Handler
 
 
-class LoomoSensor() {
-
+open class LoomoSensor(viewModel: MainActivityViewModel) {
+    private val TAG = "LoomoSensor"
     private val mSensor: Sensor = Sensor.getInstance()
 
     fun bind (context: Context){
@@ -37,7 +37,8 @@ class LoomoSensor() {
         })
     }
 
-    fun getSurroundings(): SensSurroundings {
+
+    open fun getSurroundings(): SensSurroundings {
         val mInfraredData = mSensor.querySensorData(listOf(Sensor.INFRARED_BODY))[0]
         val mUltrasonicData = mSensor.querySensorData(listOf(Sensor.ULTRASONIC_BODY))[0]
         return SensSurroundings(

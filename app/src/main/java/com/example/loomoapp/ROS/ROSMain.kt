@@ -2,7 +2,6 @@ package com.example.loomoapp.ROS
 
 import android.util.Log
 import android.util.Pair
-import com.example.loomoapp.*
 import org.ros.address.InetAddressFactory
 import org.ros.android.RosActivity
 import org.ros.message.Time
@@ -13,36 +12,35 @@ import java.net.URI
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
+import java.util.logging.Handler
 
-class ROSMain: RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
+class ROSMain : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
+
+    //Handler
+
+    private val TAG = "RosMain"
+
+    // Keep track of timestamps when images published, so corresponding TFs can be published too
+    // Stores a co-ordinated platform time and ROS time to help manage the offset
+    private val mDepthRosStamps: Queue<Pair<Long, Time>> = ConcurrentLinkedDeque<Pair<Long, Time>>()
+    private val mDepthStamps: Queue<Long> = ConcurrentLinkedDeque<Long>()
+
+    //Rosbridge
+    private lateinit var mOnNodeStarted: Runnable
+    private lateinit var mOnNodeShutdown: Runnable
+    private lateinit var mBridgeNode: RosBridgeNode
+
+    //Publishers
+    private val mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps)
+    private val mTFPublisher: TFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps)
+    private val mSensorPublisher: SensorPublisher = SensorPublisher()
+    private val mRosBridgeConsumers: List<RosBridge> =
+        listOf(mRealsensePublisher, mTFPublisher, mSensorPublisher)
 
 
-    lateinit var mRealsensePublisher: RealsensePublisher
-    lateinit var mTFPublisher: TFPublisher
-    lateinit var mSensorPublisher: SensorPublisher
-    lateinit var mRosBridgeConsumers: List<RosBridge>
-    lateinit var mBridgeNode: RosBridgeNode
-    lateinit var mDepthRosStamps // Stores a co-ordinated platform time and ROS time to help manage the offset
-            : Queue<Pair<Long, Time>>
-    lateinit var mDepthStamps: Queue<Long>
-
-
-    fun initMain(){
-        //ROS
-        // Keep track of timestamps when images published, so corresponding TFs can be published too
-        mDepthStamps = ConcurrentLinkedDeque<Long>()
-        mDepthRosStamps = ConcurrentLinkedDeque<Pair<Long, Time>>()
-        mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps)
-        mTFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps)
-        mSensorPublisher = SensorPublisher()
-
-        mRosBridgeConsumers = listOf(
-            mRealsensePublisher,
-            mTFPublisher,
-            mSensorPublisher
-        )
-        val mOnNodeStarted = Runnable {
-            Log.d(TAG, "node for loop")
+    fun initMain() {
+        // TODO: 25/02/2020 Not sure what these are used for
+        mOnNodeStarted = Runnable {
             // Node has started, so we can now tell publishers and subscribers that ROS has initialized
             for (consumer in mRosBridgeConsumers) {
                 consumer.node_started(mBridgeNode)
@@ -52,7 +50,7 @@ class ROSMain: RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.
         }
 
         // TODO: shutdown consumers correctly
-        val mOnNodeShutdown = Runnable { }
+        mOnNodeShutdown = Runnable { }
 
         // Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode(mOnNodeStarted, mOnNodeShutdown)
@@ -91,7 +89,7 @@ class ROSMain: RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.
     }
 
 
-    fun startConsumers(){
+    fun startConsumers() {
         for (consumer in mRosBridgeConsumers) {
             consumer.node_started(mBridgeNode)
             // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
