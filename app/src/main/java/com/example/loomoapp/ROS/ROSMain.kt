@@ -26,7 +26,6 @@ class ROSMain (handler: Handler, base: LoomoBase, sensor: LoomoSensor, realsense
     private val vision_ = realsense
     private val handler_ = handler
 
-
     // Keep track of timestamps when images published, so corresponding TFs can be published too
     // Stores a co-ordinated platform time and ROS time to help manage the offset
     private val mDepthRosStamps: Queue<Pair<Long, Time>> = ConcurrentLinkedDeque<Pair<Long, Time>>()
@@ -43,7 +42,6 @@ class ROSMain (handler: Handler, base: LoomoBase, sensor: LoomoSensor, realsense
     private val mSensorPublisher: SensorPublisher = SensorPublisher(sensor_)
     private val mRosBridgeConsumers: List<RosBridge> =
         listOf(mRealsensePublisher, mTFPublisher, mSensorPublisher)
-
 
     fun initMain() {
         Log.d(TAG, "Ros Initialized ")
@@ -62,7 +60,7 @@ class ROSMain (handler: Handler, base: LoomoBase, sensor: LoomoSensor, realsense
 
         // Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode(mOnNodeStarted, mOnNodeShutdown)
-        handler_.post{
+        runOnUiThread{
             init()
         }
     }

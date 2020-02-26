@@ -23,9 +23,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ROS.ROSMain">
-        </activity>
-        <service android:name=".OpenCV.OpenCVMain">
+        <service android:name=".ROS.ROSService"
+            tools:ignore="InnerclassSeparator">
+        </service>
+        <service android:name=".OpenCV.OpenCVMain"
+            tools:ignore="InnerclassSeparator">
         </service>
     </application>
 
