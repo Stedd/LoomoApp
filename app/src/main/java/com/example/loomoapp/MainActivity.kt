@@ -17,7 +17,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
-    private val UIThreadHandler = Handler() //Used to post messages to UI Thread
+    private val UIThreadHandler = Handler() //Used to post messages to UI Thread (i.e. MainActivityViewModel)
     private lateinit var viewModel: MainActivityViewModel
 
     //Variables
@@ -107,9 +107,11 @@ class MainActivity : AppCompatActivity() {
 //            mLoomoControl.stopController(this,"ControllerThread stop command")
         }
         btnStartCamera.setOnClickListener {
+            Log.d(TAG, "CamStartBtn clicked")
             mLoomoRealSense.startActiveCameras()
         }
         btnStopCamera.setOnClickListener {
+            Log.d(TAG, "CamStopBtn clicked")
             mLoomoRealSense.stopActiveCameras()
         }
 

@@ -1,9 +1,9 @@
 <resources>
     <string name="app_name">LoomoApp</string>
-    <string name="btnStringStartService">Start</string>
-    <string name="btnStringStopService">Stop</string>
-    <string name="btnStringStartCamera">Start</string>
-    <string name="btnStringStopCamera">Stop</string>
+    <string name="btnStringStartService">StartServ</string>
+    <string name="btnStringStopService">StopServ</string>
+    <string name="btnStringStartCamera">StartCam</string>
+    <string name="btnStringStopCamera">StopCam</string>
 
 
     <string name="hello_blank_fragment">Hello blank fragment</string>

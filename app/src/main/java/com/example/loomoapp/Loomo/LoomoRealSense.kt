@@ -13,6 +13,7 @@ import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.lang.IllegalArgumentException
 
 
 class LoomoRealSense(
@@ -84,43 +85,67 @@ class LoomoRealSense(
 
     private suspend fun startColorCamera() {
         if (mVision.isBind) {
-            mVision.stopListenFrame(StreamType.COLOR)
-            mVision.startListenFrame(
-                StreamType.COLOR
-            ) { streamType, frame ->
-                mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
-                viewModelHandler.post {
-                    viewModel.imgColorBitmap.value = mImgColor
+            try {
+                mVision.startListenFrame(
+                    StreamType.COLOR
+                ) { streamType, frame ->
+                    mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
+                    viewModelHandler.post {
+                        viewModel.imgColorBitmap.value = mImgColor
+                    }
                 }
+            } catch (e: IllegalArgumentException) {
+                Log.d(
+                    TAG,
+                    "Exception in Vision.startListenFrame: Probably already listening to COLOR(1)"
+                )
             }
+        } else {
+            Log.d(TAG, "Color cam not started: Vision !isBind")
         }
     }
 
     private suspend fun startFishEyeCamera() {
         if (mVision.isBind) {
-            mVision.stopListenFrame(StreamType.FISH_EYE)
-            mVision.startListenFrame(
-                StreamType.FISH_EYE
-            ) { streamType, frame ->
-                mImgFishEye.copyPixelsFromBuffer(frame.byteBuffer)
-                viewModelHandler.post {
-                    viewModel.imgFishEyeBitmap.value = mImgFishEye
+            try {
+                mVision.startListenFrame(
+                    StreamType.FISH_EYE
+                ) { streamType, frame ->
+                    mImgFishEye.copyPixelsFromBuffer(frame.byteBuffer)
+                    viewModelHandler.post {
+                        viewModel.imgFishEyeBitmap.value = mImgFishEye
+                    }
                 }
+            } catch (e: IllegalArgumentException) {
+                Log.d(
+                    TAG,
+                    "Exception in Vision.startListenFrame: Probably already listening to FISH_EYE(256)"
+                )
             }
+        } else {
+            Log.d(TAG, "FishEye cam not started: Vision !isBind")
         }
     }
 
     private suspend fun startDepthCamera() {
         if (mVision.isBind) {
-            mVision.stopListenFrame(StreamType.DEPTH)
-            mVision.startListenFrame(
-                StreamType.DEPTH
-            ) { streamType, frame ->
-                mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
-                viewModelHandler.post {
-                    viewModel.imgDepthBitmap.value = mImgDepth
+            try {
+                mVision.startListenFrame(
+                    StreamType.DEPTH
+                ) { streamType, frame ->
+                    mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
+                    viewModelHandler.post {
+                        viewModel.imgDepthBitmap.value = mImgDepth
+                    }
                 }
+            } catch (e: IllegalArgumentException) {
+                Log.d(
+                    TAG,
+                    "Exception in Vision.startListenFrame: Probably already listening to DEPTH(2)"
+                )
             }
+        } else {
+            Log.d(TAG, "Depth cam not started: Vision !isBind")
         }
     }
 }
