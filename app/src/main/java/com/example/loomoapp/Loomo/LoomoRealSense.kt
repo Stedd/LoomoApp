@@ -35,6 +35,7 @@ class LoomoRealSense(
     }
 
     var mVision = Vision.getInstance()
+    private var waitingForServiceToBind = false
 
     private var colorIsActive = false
     private var fishEyeIsActive = false
@@ -45,10 +46,19 @@ class LoomoRealSense(
         Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
     private var mImgDepth = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
 
-    init {
+//    init {
+//        bind(context)
+//    }
+
+    fun bind(context: Context) {
+        Log.d(TAG, "Started Vision.bindService")
+        waitingForServiceToBind = true
+        stopActiveCameras()
         mVision.bindService(context.applicationContext, object : ServiceBinder.BindStateListener {
             override fun onBind() {
                 Log.d(TAG, "Vision onBind")
+//                stopActiveCameras()
+                waitingForServiceToBind = false
             }
 
             override fun onUnbind(reason: String?) {
@@ -83,7 +93,7 @@ class LoomoRealSense(
         }
     }
 
-    private suspend fun startColorCamera() {
+    fun startColorCamera() {
         if (mVision.isBind) {
             try {
                 mVision.startListenFrame(
@@ -97,15 +107,19 @@ class LoomoRealSense(
             } catch (e: IllegalArgumentException) {
                 Log.d(
                     TAG,
-                    "Exception in Vision.startListenFrame: Probably already listening to COLOR(1)"
+                    "Exception in Vision.startListenFrame: Probably already listening to COLOR(1): $e"
                 )
             }
+        } else if (!mVision.isBind and waitingForServiceToBind) {
+            Log.d(TAG, "Waiting for service to bind before starting camera")
+            while (!mVision.isBind) {}
+            startColorCamera() // This recursion is safe. The while loop on the previous line however...
         } else {
-            Log.d(TAG, "Color cam not started: Vision !isBind")
+            Log.d(TAG, "Color camera not started. Bind Vision service first")
         }
     }
 
-    private suspend fun startFishEyeCamera() {
+    fun startFishEyeCamera() {
         if (mVision.isBind) {
             try {
                 mVision.startListenFrame(
@@ -119,15 +133,19 @@ class LoomoRealSense(
             } catch (e: IllegalArgumentException) {
                 Log.d(
                     TAG,
-                    "Exception in Vision.startListenFrame: Probably already listening to FISH_EYE(256)"
+                    "Exception in Vision.startListenFrame: Probably already listening to FISH_EYE(256): $e"
                 )
             }
+        } else if (!mVision.isBind and waitingForServiceToBind) {
+            Log.d(TAG, "Waiting for service to bind before starting camera")
+            while (!mVision.isBind) {}
+            startFishEyeCamera() // This recursion is safe. The while loop on the previous line however...
         } else {
             Log.d(TAG, "FishEye cam not started: Vision !isBind")
         }
     }
 
-    private suspend fun startDepthCamera() {
+    fun startDepthCamera() {
         if (mVision.isBind) {
             try {
                 mVision.startListenFrame(
@@ -141,9 +159,13 @@ class LoomoRealSense(
             } catch (e: IllegalArgumentException) {
                 Log.d(
                     TAG,
-                    "Exception in Vision.startListenFrame: Probably already listening to DEPTH(2)"
+                    "Exception in Vision.startListenFrame: Probably already listening to DEPTH(2): $e"
                 )
             }
+        } else if (!mVision.isBind and waitingForServiceToBind) {
+            Log.d(TAG, "Waiting for service to bind before starting camera")
+            while (!mVision.isBind) {}
+            startDepthCamera() // This recursion is safe. The while loop on the previous line however...
         } else {
             Log.d(TAG, "Depth cam not started: Vision !isBind")
         }

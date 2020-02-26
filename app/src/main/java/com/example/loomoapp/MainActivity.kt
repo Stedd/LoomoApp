@@ -126,7 +126,7 @@ class MainActivity : AppCompatActivity() {
         //Bind Sensor SDK service
         mLoomoSensor.bind(this)
 
-//        mLoomoRealSense.bind(this)
+        mLoomoRealSense.bind(this)
 
         mLoomoBase.bind(this)
 
