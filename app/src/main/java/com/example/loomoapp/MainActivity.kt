@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
 
 
 class MainActivity :
-    AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
+    AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.20:11311/")) {
 
 //    private fun getLifecycleOwner(): LifecycleOwner {
 //        var context: Context = this
@@ -188,6 +188,7 @@ class MainActivity :
         btnStartCamera.setOnClickListener {
             Log.d(TAG, "CamStartBtn clicked")
             mLoomoRealSense.startFishEyeCamera(UIThreadHandler, imgBuffer)
+//            mLoomoRealSense.startColorCamera(UIThreadHandler, imgBuffer)
         }
         btnStopCamera.setOnClickListener {
             Log.d(TAG, "CamStopBtn clicked")
