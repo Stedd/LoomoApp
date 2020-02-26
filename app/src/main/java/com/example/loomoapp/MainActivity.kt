@@ -64,7 +64,6 @@ class MainActivity : AppCompatActivity() {
         //Initialize classes
         mLoomoBase      = LoomoBase     (viewModel)
         mLoomoRealSense = LoomoRealSense(this, viewModel, UIThreadHandler)
-        mLoomoRealSense.setActiveStateOfCameras(false, true, false)
         mLoomoSensor    = LoomoSensor   (viewModel)
 //        mLoomoControl   = LoomoControl  (viewModel, mLoomoBase, mLoomoSensor)
 
@@ -108,7 +107,7 @@ class MainActivity : AppCompatActivity() {
         }
         btnStartCamera.setOnClickListener {
             Log.d(TAG, "CamStartBtn clicked")
-            mLoomoRealSense.startActiveCameras()
+            mLoomoRealSense.startFishEyeCamera()
         }
         btnStopCamera.setOnClickListener {
             Log.d(TAG, "CamStopBtn clicked")
@@ -127,6 +126,7 @@ class MainActivity : AppCompatActivity() {
         mLoomoSensor.bind(this)
 
         mLoomoRealSense.bind(this)
+//        mLoomoRealSense.bind(this)
 
         mLoomoBase.bind(this)
 

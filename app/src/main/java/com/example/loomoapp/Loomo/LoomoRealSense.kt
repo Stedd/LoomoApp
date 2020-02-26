@@ -37,53 +37,31 @@ class LoomoRealSense(
     var mVision = Vision.getInstance()
     private var waitingForServiceToBind = false
 
-    private var colorIsActive = false
-    private var fishEyeIsActive = false
-    private var depthIsActive = false
-
     private var mImgColor = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
-    private var mImgFishEye =
-        Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
+    private var mImgFishEye = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
     private var mImgDepth = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
 
-//    init {
-//        bind(context)
-//    }
 
     fun bind(context: Context) {
-        Log.d(TAG, "Started Vision.bindService")
-        waitingForServiceToBind = true
-        stopActiveCameras()
-        mVision.bindService(context.applicationContext, object : ServiceBinder.BindStateListener {
-            override fun onBind() {
-                Log.d(TAG, "Vision onBind")
-//                stopActiveCameras()
-                waitingForServiceToBind = false
-            }
+        if (!mVision.isBind and !waitingForServiceToBind) {
+            Log.d(TAG, "Started Vision.bindService")
+            waitingForServiceToBind = true
+            stopActiveCameras()
+            mVision.bindService(context.applicationContext, object : ServiceBinder.BindStateListener {
+                override fun onBind() {
+                    Log.d(TAG, "Vision onBind")
+                    waitingForServiceToBind = false
+                }
 
-            override fun onUnbind(reason: String?) {
-                Log.d(TAG, "Vision onUnbind")
-            }
-        })
-    }
-
-    fun setActiveStateOfCameras(color: Boolean, fishEye: Boolean, depth: Boolean) {
-        colorIsActive = color
-        fishEyeIsActive = fishEye
-        depthIsActive = depth
-        stopActiveCameras()
-        startActiveCameras()
-    }
-
-    fun startActiveCameras() {
-        if (colorIsActive || fishEyeIsActive || depthIsActive) {
-            GlobalScope.launch {
-                if (colorIsActive) startColorCamera()
-                if (fishEyeIsActive) startFishEyeCamera()
-                if (depthIsActive) startDepthCamera()
-            }
+                override fun onUnbind(reason: String?) {
+                    Log.d(TAG, "Vision onUnbind")
+                }
+            })
+        } else {
+            Log.d(TAG, "Vision.isBind = ${mVision.isBind}${if (waitingForServiceToBind) ", but binding is in progress" else ""}")
         }
     }
+
 
     fun stopActiveCameras() {
         if (mVision.isBind) {
@@ -112,7 +90,8 @@ class LoomoRealSense(
             }
         } else if (!mVision.isBind and waitingForServiceToBind) {
             Log.d(TAG, "Waiting for service to bind before starting camera")
-            while (!mVision.isBind) {}
+            while (!mVision.isBind) {
+            }
             startColorCamera() // This recursion is safe. The while loop on the previous line however...
         } else {
             Log.d(TAG, "Color camera not started. Bind Vision service first")
@@ -138,7 +117,8 @@ class LoomoRealSense(
             }
         } else if (!mVision.isBind and waitingForServiceToBind) {
             Log.d(TAG, "Waiting for service to bind before starting camera")
-            while (!mVision.isBind) {}
+            while (!mVision.isBind) {
+            }
             startFishEyeCamera() // This recursion is safe. The while loop on the previous line however...
         } else {
             Log.d(TAG, "FishEye cam not started: Vision !isBind")
@@ -164,7 +144,8 @@ class LoomoRealSense(
             }
         } else if (!mVision.isBind and waitingForServiceToBind) {
             Log.d(TAG, "Waiting for service to bind before starting camera")
-            while (!mVision.isBind) {}
+            while (!mVision.isBind) {
+            }
             startDepthCamera() // This recursion is safe. The while loop on the previous line however...
         } else {
             Log.d(TAG, "Depth cam not started: Vision !isBind")
