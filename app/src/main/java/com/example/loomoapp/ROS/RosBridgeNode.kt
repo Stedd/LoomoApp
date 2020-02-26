@@ -20,7 +20,11 @@ import std_msgs.Int8
 import tf2_msgs.TFMessage
 
 
-class LoomoRosBridgeNode(onStarted: Runnable,onShutdown: Runnable) :AbstractNodeMain() {
+class RosBridgeNode() :AbstractNodeMain() {
+
+    private val TAG = "RosBridge"
+
+
     var RsDepthOpticalFrame = "rs_depth_optical_frame"
     var RsColorOpticalFrame = "rs_color_optical_frame"
     var FisheyeOpticalFrame = "fisheye_optical_frame"
@@ -36,7 +40,7 @@ class LoomoRosBridgeNode(onStarted: Runnable,onShutdown: Runnable) :AbstractNode
     var mRsColorCompressedPubr: Publisher<CompressedImage>? = null
     var mRsDepthPubr: Publisher<Image>? = null
     var mRsColorInfoPubr: Publisher<CameraInfo>? = null
-    var mRsDepthInfoPubr: Publisher<CameraInfo>? = null
+    lateinit var mRsDepthInfoPubr: Publisher<CameraInfo>
     var mTfPubr: Publisher<TFMessage>? = null
     var mInfraredPubrLeft: Publisher<Range>? = null
     var mInfraredPubrRight: Publisher<Range>? = null
@@ -47,16 +51,17 @@ class LoomoRosBridgeNode(onStarted: Runnable,onShutdown: Runnable) :AbstractNode
     var mCmdVelSubr: Subscriber<Twist>? = null
     var mNtpProvider: NtpTimeProvider? = null
     var node_name = "loomo_ros_bridge_node"
-    var tf_prefix = "LO01"
+    var tf_prefix = "LO03"
+    //TODO:Dynamic name
     var should_pub_ultrasonic = true
     var should_pub_infrared = true
     var should_pub_base_pitch = true
     var use_tf_prefix = true
     private val is_started = false
-    private val mOnStarted: Runnable
-    private val mOnShutdown: Runnable
+//    private val mOnStarted: Runnable
+//    private val mOnShutdown: Runnable
     override fun onStart(connectedNode: ConnectedNode) {
-        Log.d(TAG, "onStart()")
+        Log.d(TAG, "onStart() $connectedNode")
         super.onStart(connectedNode)
         Log.d(TAG, "onStart() creating publishers.")
         mConnectedNode = connectedNode
@@ -118,19 +123,19 @@ class LoomoRosBridgeNode(onStarted: Runnable,onShutdown: Runnable) :AbstractNode
             "$tf_prefix/ultrasonic",
             Range._TYPE
         )
-        mBasePitchPubr =
-            connectedNode.newPublisher("$tf_prefix/base_pitch", Float32._TYPE)
-        mOdometryPubr = connectedNode.newPublisher("$tf_prefix/odom", Odometry._TYPE)
-        // Subscribe to commanded twist msgs (e.g. from joystick or autonomous driving software)
-        mCmdVelSubr = mConnectedNode!!.newSubscriber("$tf_prefix/cmd_vel", Twist._TYPE)
-        // Subscribe to a topic instructing the loomo to change modes
-        mTransformSubr = mConnectedNode!!.newSubscriber("$tf_prefix/mode", Int8._TYPE)
-        mOnStarted.run()
+        mBasePitchPubr = connectedNode.newPublisher(
+            "$tf_prefix/base_pitch",
+            Float32._TYPE
+        )
+        mOdometryPubr = connectedNode.newPublisher(
+            "$tf_prefix/odom",
+            Odometry._TYPE
+        )
     }
 
     override fun onShutdown(node: Node) {
         super.onShutdown(node)
-        mOnShutdown.run()
+//        mOnShutdown.run()
     }
 
     override fun onShutdownComplete(node: Node) {
@@ -149,16 +154,17 @@ class LoomoRosBridgeNode(onStarted: Runnable,onShutdown: Runnable) :AbstractNode
     }
 
     companion object {
-        private const val TAG = "LoomoRosBridgeNode"
+        private const val TAG = "RosBridgeNode"
     }
 
     init {
         //        this.mNtpProvider = ntpTimeProvider;
         Log.d(
             TAG,
-            "Created instance of LoomoRosBridgeNode()."
+            "Created instance of RosBridgeNode()."
         )
-        mOnStarted = onStarted
-        mOnShutdown = onShutdown
+//        mOnStarted = onStarted
+//        mOnShutdown = onShutdown
     }
+
 }

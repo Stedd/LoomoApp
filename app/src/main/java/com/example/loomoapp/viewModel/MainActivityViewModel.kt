@@ -1,42 +1,45 @@
 package com.example.loomoapp.viewModel
 
+import android.app.Application
 import android.graphics.Bitmap
 import android.util.Log
-import androidx.core.graphics.createBitmap
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import com.example.loomoapp.R
-import com.example.loomoapp.TAG
+import org.opencv.core.Mat
 
-open class MainActivityViewModel : ViewModel() {
-
+open class MainActivityViewModel(app: Application) : AndroidViewModel(app) {
+    private val TAG = "ViewModel"
     //Variables
-
+    val img = MutableLiveData<Mat>()
     val head = MutableLiveData<Head?>()
-    val velocity = MutableLiveData<Velocity?>()
+    var velocity = MutableLiveData<Velocity?>()
     val position = MutableLiveData<Position?>()
     val positionArray = MutableLiveData<PositionArray>()
     val speak = MutableLiveData<Speak?>()
     val volume = MutableLiveData<Volume?>()
     val endableDrive = MutableLiveData<EnableDrive?>()
     val headLightNotification = MutableLiveData<Int>()
+    var surroundings = MutableLiveData<SensSurroundings>()
 
     val visionIsActive = MutableLiveData<Boolean>()
     val activeStreams = MutableLiveData<EnableVision>()
 
-    val realSenseColorImage = MutableLiveData<Bitmap>()
-    val realSenseDepthImage = MutableLiveData<Bitmap>()
+    var realSenseColorImage = MutableLiveData<Bitmap>()
+    var realSenseFishEyeImage = MutableLiveData<Bitmap>()
+    var realSenseDepthImage = MutableLiveData<Bitmap>()
 
-    val colorLargeBitArray = MutableLiveData<ByteArray>()
-    val colorSmallBitArray = MutableLiveData<ByteArray>()
-    val colorDepthBitArray = MutableLiveData<ByteArray>()
+//    val colorLargeBitArray = MutableLiveData<ByteArray>()
+//    val colorSmallBitArray = MutableLiveData<ByteArray>()
+//    val colorDepthBitArray = MutableLiveData<ByteArray>()
+    var imgColorBitmap = MutableLiveData<Bitmap>()
+    var imgFishEyeBitmap = MutableLiveData<Bitmap>()
+    var imgDepthBitmap = MutableLiveData<Bitmap>()
 
     var text = MutableLiveData<String>()
     var image = MutableLiveData<Bitmap>()
 
     init {
         Log.i(TAG, "ViewModel created")
-        text.value = "Service not started yet"
     }
 }
 

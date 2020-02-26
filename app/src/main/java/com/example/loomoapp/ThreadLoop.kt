@@ -2,8 +2,9 @@ package com.example.loomoapp
 
 import android.util.Log
 
-open class ThreadLoop: Runnable {
 
+open class ThreadLoop: Runnable {
+    private val TAG = "Runnable"
     //Thread interval in milliseconds
     open var interval: Long = 10
 
