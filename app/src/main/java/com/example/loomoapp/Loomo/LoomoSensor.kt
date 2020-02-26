@@ -22,7 +22,7 @@ import com.segway.robot.sdk.perception.sensor.Sensor
 import java.util.logging.Handler
 
 
-open class LoomoSensor(viewModel: MainActivityViewModel) {
+open class LoomoSensor() {
     private val TAG = "LoomoSensor"
     val mSensor: Sensor = Sensor.getInstance()
 

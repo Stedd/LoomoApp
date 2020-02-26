@@ -59,7 +59,7 @@ class ROSMain (handler: Handler, base: LoomoBase, sensor: LoomoSensor, realsense
         mOnNodeShutdown = Runnable { }
 
         // Start an instance of the RosBridgeNode
-        mBridgeNode = RosBridgeNode(mOnNodeStarted, mOnNodeShutdown)
+        mBridgeNode = RosBridgeNode()
         runOnUiThread{
             init()
         }

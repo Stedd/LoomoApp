@@ -45,7 +45,7 @@ class TFPublisher(
 //    lateinit var mBridgeNode: RosBridgeNode
     lateinit var mDepthCalibration: ColorDepthCalibration
     lateinit var mMotionCalibration: MotionModuleCalibration
-    private val mStarted = false
+    private var mStarted = false
 //    fun loomo_started(mSensor: Sensor) {
 //        this.mSensor = mSensor
 //    }
@@ -79,6 +79,7 @@ class TFPublisher(
                 "TFPublisher started"
             )
         }
+        mStarted = true
         mDepthCalibration = vision_!!.colorDepthCalibrationData
         mMotionCalibration = vision_!!.motionModuleCalibrationData
         Log.d(
@@ -104,6 +105,7 @@ class TFPublisher(
                 e
             )
         }
+        mStarted = false
     }
 
     private fun realsenseColorToDepthExtrinsic(
@@ -383,13 +385,18 @@ class TFPublisher(
                     Pair(3, 6),  // head_link to tablet_link
                     Pair(6, 7)
                 ) // tablet_link to plat_cam_link
+            Log.d(TAG, "TFpublisher before while");
             while (sensor_.isBind) {
+                Log.d(TAG, "TFpublisher insite while $mDepthRosStamps");
+                // TODO: 26/02/2020 This condition is not true
                 if (mDepthRosStamps == null) {
+                    Log.d(TAG, "TFpublisher mDepthRosStamps continue");
                     continue
                 }
                 val stamp =
                     mDepthRosStamps.poll()
                 if (stamp != null) { // Get an appropriate ROS time to match the platform time of this stamp
+                    Log.d(TAG, "TFpublisher Run:");
 /*
                     Time currentRosTime = mBridgeNode!!.mConnectedNode.getCurrentTime();
                     Time currentSystemTime = Time.fromMillis(System.currentTimeMillis());
@@ -485,7 +492,10 @@ class TFPublisher(
                     Log.d(TAG, odom_message.toString())
                 }
             }
+            // TODO: 26/02/2020 test this
+//            sleep(50)
         }
+
     }
 
     companion object {

@@ -10,10 +10,9 @@ import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.stream.StreamType
 
-class LoomoRealsense(viewModel: MainActivityViewModel) {
+class LoomoRealsense() {
     private val TAG = "LoomoRealsense"
     val mVision :Vision = Vision.getInstance()
-    private val viewModel_ = viewModel
 
     private var cameraRunning = false
 
@@ -81,15 +80,15 @@ class LoomoRealsense(viewModel: MainActivityViewModel) {
                 // TODO: 25/02/2020 Separate individual cameras?
                 mVision.startListenFrame(StreamType.COLOR) { streamType, frame ->
                     mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
-                    viewModel_.realSenseColorImage = MutableLiveData(mImgColor)
+//                    viewModel_.realSenseColorImage = MutableLiveData(mImgColor)
                 }
                 mVision.startListenFrame(StreamType.FISH_EYE) { streamType, frame ->
                     mImgFishEye.copyPixelsFromBuffer(frame.byteBuffer)
-                    viewModel_.realSenseFishEyeImage = MutableLiveData(mImgFishEye)
+//                    viewModel_.realSenseFishEyeImage = MutableLiveData(mImgFishEye)
                 }
                 mVision.startListenFrame(StreamType.DEPTH) { streamType, frame ->
                     mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
-                    viewModel_.realSenseDepthImage = MutableLiveData(mImgDepth)
+//                    viewModel_.realSenseDepthImage = MutableLiveData(mImgDepth)
                 }
                 cameraRunning = true
             } else {

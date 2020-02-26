@@ -42,12 +42,12 @@ class SensorPublisher(sensor: LoomoSensor) : RosBridge {
             )
         }
         mIsStarted = true
-        Log.d(TAG, "start_sensor()")
+        Log.d(TAG, "start_sensor() $mIsStarted")
 //        if (!mSensorPublishThread.isAlive) {
 //            mSensorPublishThread = SensorPublisherThread()
 //        }
 //        mSensorPublishThread = SensorPublisherThread()
-//        mSensorPublishThread.start()
+        mSensorPublishThread.start()
     }
 
     override fun stop() {
@@ -143,6 +143,8 @@ class SensorPublisher(sensor: LoomoSensor) : RosBridge {
                     mBridgeNode!!.mBasePitchPubr!!.publish(basePitchMessage)
                 }
             }
+            // TODO: 26/02/2020 test this
+//            sleep(50)
         }
     }
 
