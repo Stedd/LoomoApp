@@ -73,7 +73,7 @@ class SensorPublisher(sensor: LoomoSensor) : RosBridge {
             Log.d(TAG, "run: SensorPublisherThread")
 //            super.run()
             while (mIsStarted) { // No metadata for this frame yet
-                Log.d(TAG, "run: SensorPublisherThread")
+//                Log.d(TAG, "run: SensorPublisherThread")
 // Get an appropriate ROS time to match the platform time of this stamp
                 val currentRosTime =
                     mBridgeNode!!.mConnectedNode!!.currentTime

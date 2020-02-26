@@ -33,13 +33,13 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
 
-    private fun getLifecycleOwner(): LifecycleOwner {
-        var context: Context = this
-        while (context !is LifecycleOwner) {
-            context = (context as ContextWrapper).baseContext
-        }
-        return context
-    }
+//    private fun getLifecycleOwner(): LifecycleOwner {
+//        var context: Context = this
+//        while (context !is LifecycleOwner) {
+//            context = (context as ContextWrapper).baseContext
+//        }
+//        return context
+//    }
 
     private val UIThreadHandler = Handler() //Used to post messages to UI Thread
 
@@ -55,7 +55,7 @@ class MainActivity : AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("ht
     var imgBuffer = MutableLiveData<Bitmap>()
 
     //ROS classes
-    lateinit var mROSMain: ROSMain
+//    lateinit var mROSMain: ROSMain
 
     //OpenCV Variables
     private lateinit var mOpenCVMain: OpenCVMain
@@ -118,7 +118,7 @@ class MainActivity : AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("ht
             TAG,
             "sys: " + Time.fromMillis(System.currentTimeMillis())
         )
-        ntpTimeProvider.startPeriodicUpdates(1, TimeUnit.SECONDS)
+        ntpTimeProvider.startPeriodicUpdates(1, TimeUnit.MINUTES)
         nodeConfiguration.timeProvider = ntpTimeProvider
         nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
     }
@@ -168,7 +168,7 @@ class MainActivity : AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("ht
         startService(intentOpenCV)
 
         //Start Ros Activity
-        mROSMain.initMain()
+//        mROSMain.initMain()
 
 
         mLoomoControl.mControllerThread.start()
@@ -186,9 +186,9 @@ class MainActivity : AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("ht
 //        viewModel.imgFishEyeBitmap.observe(this, Observer {
 //            camView.setImageBitmap(it)
 //        })
-        imgBuffer.observe(getLifecycleOwner(), Observer {
-            camView.setImageBitmap(it)
-        })
+//        imgBuffer.observe(this, Observer {
+//            camView.setImageBitmap(it)
+//        })
 
 
 //        viewModel.text.value = "Service not started"
