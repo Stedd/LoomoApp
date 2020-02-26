@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
 
 //class ROSMain (base: LoomoBase, sensor: LoomoSensor, realSense: LoomoRealSense): RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
-class ROSMain (handler: Handler, base: LoomoBase, sensor: LoomoSensor, realsense: LoomoRealsense): RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
+class ROSMain (handler: Handler, base: LoomoBase, sensor: LoomoSensor, realsense: LoomoRealSense): RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
 
     private val TAG = "RosMain"
 

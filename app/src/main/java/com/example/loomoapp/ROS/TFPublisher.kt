@@ -385,7 +385,7 @@ class TFPublisher(
                 ) // tablet_link to plat_cam_link
             Log.d(TAG, "TFpublisher before while");
             while (sensor_.isBind) {
-                Log.d(TAG, "TFpublisher insite while $mDepthRosStamps");
+//                Log.d(TAG, "TFpublisher insite while $mDepthRosStamps");
                 // TODO: 26/02/2020 This condition is not true
                 if (mDepthRosStamps == null) {
                     Log.d(TAG, "TFpublisher mDepthRosStamps continue");

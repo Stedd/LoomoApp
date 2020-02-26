@@ -12,10 +12,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.*
-import com.example.loomoapp.Loomo.LoomoBase
-import com.example.loomoapp.Loomo.LoomoControl
-import com.example.loomoapp.Loomo.LoomoRealsense
-import com.example.loomoapp.Loomo.LoomoSensor
+import androidx.lifecycle.Observer
+import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
 import com.example.loomoapp.viewModel.MainActivityViewModel
@@ -33,14 +31,22 @@ import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
 
 
-class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
+class MainActivity : AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
+
+//    private fun getLifecycleOwner(): LifecycleOwner {
+//        var context: Context = this
+//        while (context !is LifecycleOwner) {
+//            context = (context as ContextWrapper).baseContext
+//        }
+//        return context
+//    }
 
     private val UIThreadHandler = Handler() //Used to post messages to UI Thread
 
     //Variables
     private val TAG = "MainActivity"
 
-    //Initialize loomo classes
+    //Declare loomo classes
     lateinit var mLoomoBase: LoomoBase
     lateinit var mLoomoRealSense: LoomoRealSense
     lateinit var mLoomoSensor: LoomoSensor
@@ -49,7 +55,7 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
     var imgBuffer = MutableLiveData<Bitmap>()
 
     //ROS classes
-    lateinit var mROSMain: ROSMain
+//    lateinit var mROSMain: ROSMain
 
     //OpenCV Variables
     private lateinit var mOpenCVMain: OpenCVMain
@@ -112,10 +118,11 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
             TAG,
             "sys: " + Time.fromMillis(System.currentTimeMillis())
         )
-        ntpTimeProvider.startPeriodicUpdates(1, TimeUnit.SECONDS)
+        ntpTimeProvider.startPeriodicUpdates(1, TimeUnit.MINUTES)
         nodeConfiguration.timeProvider = ntpTimeProvider
         nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
     }
+
     private val camView by lazy {
         findViewById<ImageView>(R.id.camView)
     }
@@ -128,14 +135,13 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
 
         //Initialize classes
         mLoomoBase = LoomoBase()
-        mLoomoRealsense = LoomoRealsense()
+        mLoomoRealSense = LoomoRealSense()
         mLoomoSensor = LoomoSensor()
         mLoomoControl = LoomoControl(mLoomoBase, mLoomoSensor)
 
         //Publishers
-        mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps, mLoomoRealsense)
-        mTFPublisher =
-            TFPublisher(mDepthStamps, mDepthRosStamps, mLoomoBase, mLoomoSensor, mLoomoRealsense)
+        mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps, mLoomoRealSense)
+        mTFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps, mLoomoBase, mLoomoSensor, mLoomoRealSense)
         mSensorPublisher = SensorPublisher(mLoomoSensor)
         mRosBridgeConsumers = listOf(mRealsensePublisher, mTFPublisher, mSensorPublisher)
 
@@ -162,16 +168,16 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
         startService(intentOpenCV)
 
         //Start Ros Activity
-        mROSMain.initMain()
+//        mROSMain.initMain()
 
 
         mLoomoControl.mControllerThread.start()
 
         mOpenCVMain.onCreate(this, findViewById(R.id.javaCam))
 
-        viewModel.text.observe(this, Observer {
-            textView.text = it
-        })
+//        viewModel.text.observe(this, Observer {
+//            textView.text = it
+//        })
 
 //        viewModel.realSenseColorImage.observe(this, Observer {
 //            camView.setImageBitmap(it)
@@ -180,12 +186,12 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
 //        viewModel.imgFishEyeBitmap.observe(this, Observer {
 //            camView.setImageBitmap(it)
 //        })
-        imgBuffer.observe(this, Observer {
-            camView.setImageBitmap(it)
-        })
+//        imgBuffer.observe(this, Observer {
+//            camView.setImageBitmap(it)
+//        })
 
 
-        viewModel.text.value = "Service not started"
+//        viewModel.text.value = "Service not started"
 
         // Onclicklisteners
         btnStartService.setOnClickListener {
@@ -221,7 +227,7 @@ class MainActivity : RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.
 
         mLoomoSensor.bind(this)
 
-        mLoomoRealsense.bind(this)
+        mLoomoRealSense.bind(this)
 
         mLoomoBase.bind(this)
 

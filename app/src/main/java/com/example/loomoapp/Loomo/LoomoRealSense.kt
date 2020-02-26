@@ -8,12 +8,10 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
-import com.example.loomoapp.viewModel.MainActivityViewModel
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.lang.IllegalArgumentException
 
@@ -44,19 +42,24 @@ class LoomoRealSense {
         if (!mVision.isBind and !waitingForServiceToBind) {
             Log.d(TAG, "Started Vision.bindService")
             waitingForServiceToBind = true
-            mVision.bindService(context.applicationContext, object : ServiceBinder.BindStateListener {
-                override fun onBind() {
-                    Log.d(TAG, "Vision onBind")
-                    waitingForServiceToBind = false
-                }
+            mVision.bindService(
+                context.applicationContext,
+                object : ServiceBinder.BindStateListener {
+                    override fun onBind() {
+                        Log.d(TAG, "Vision onBind")
+                        waitingForServiceToBind = false
+                    }
 
-                override fun onUnbind(reason: String?) {
-                    Log.d(TAG, "Vision onUnbind")
-                    stopActiveCameras()
-                }
-            })
+                    override fun onUnbind(reason: String?) {
+                        Log.d(TAG, "Vision onUnbind")
+                        stopActiveCameras()
+                    }
+                })
         } else {
-            Log.d(TAG, "Vision.isBind = ${mVision.isBind}${if (waitingForServiceToBind) ", but binding is in progress" else ""}")
+            Log.d(
+                TAG,
+                "Vision.isBind = ${mVision.isBind}${if (waitingForServiceToBind) ", but binding is in progress" else ""}"
+            )
         }
     }
 
@@ -152,7 +155,10 @@ class LoomoRealSense {
                 while (!mVision.isBind) {
                 }
                 stopActiveCameras()
-                startDepthCamera(threadHandler, imgBuffer) // This recursion is safe. The while loop on the previous line however...
+                startDepthCamera(
+                    threadHandler,
+                    imgBuffer
+                ) // This recursion is safe. The while loop on the previous line however...
             } else {
                 Log.d(TAG, "Depth cam not started. Bind Vision service first")
             }
