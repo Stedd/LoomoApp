@@ -9,14 +9,11 @@ import android.util.Log
 import android.util.Pair
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.*
 import androidx.lifecycle.Observer
 import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
-import com.example.loomoapp.viewModel.MainActivityViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import org.ros.address.InetAddressFactory
 import org.ros.android.AppCompatRosActivity
@@ -31,7 +28,8 @@ import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
 
 
-class MainActivity : AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
+class MainActivity :
+    AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
 
 //    private fun getLifecycleOwner(): LifecycleOwner {
 //        var context: Context = this
@@ -141,7 +139,8 @@ class MainActivity : AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("ht
 
         //Publishers
         mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps, mLoomoRealSense)
-        mTFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps, mLoomoBase, mLoomoSensor, mLoomoRealSense)
+        mTFPublisher =
+            TFPublisher(mDepthStamps, mDepthRosStamps, mLoomoBase, mLoomoSensor, mLoomoRealSense)
         mSensorPublisher = SensorPublisher(mLoomoSensor)
         mRosBridgeConsumers = listOf(mRealsensePublisher, mTFPublisher, mSensorPublisher)
 
@@ -175,29 +174,15 @@ class MainActivity : AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("ht
 
         mOpenCVMain.onCreate(this, findViewById(R.id.javaCam))
 
-//        viewModel.text.observe(this, Observer {
-//            textView.text = it
-//        })
-
-//        viewModel.realSenseColorImage.observe(this, Observer {
-//            camView.setImageBitmap(it)
-//        })
-
-//        viewModel.imgFishEyeBitmap.observe(this, Observer {
-//            camView.setImageBitmap(it)
-//        })
-//        imgBuffer.observe(this, Observer {
-//            camView.setImageBitmap(it)
-//        })
-
-
-//        viewModel.text.value = "Service not started"
+        imgBuffer.observeForever { camView.setImageBitmap(it) }
 
         // Onclicklisteners
         btnStartService.setOnClickListener {
+            Log.d(TAG, "ServStartBtn clicked")
             mLoomoControl.startController(this, "ControllerThread start command")
         }
         btnStopService.setOnClickListener {
+            Log.d(TAG, "ServStopBtn clicked")
             mLoomoControl.stopController(this, "ControllerThread stop command")
         }
         btnStartCamera.setOnClickListener {
