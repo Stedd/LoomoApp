@@ -6,7 +6,7 @@ import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
 import com.example.loomoapp.Loomo.LoomoBase
-import com.example.loomoapp.Loomo.LoomoRealsense
+import com.example.loomoapp.Loomo.LoomoRealSense
 import com.example.loomoapp.Loomo.LoomoSensor
 
 class ROSService() : Service() {
@@ -34,7 +34,7 @@ class ROSService() : Service() {
         handler: Handler,
         base: LoomoBase,
         sensor: LoomoSensor,
-        realsense: LoomoRealsense
+        realsense: LoomoRealSense
     ) {
         mROSMain = ROSMain(handler, base, sensor, realsense)
         mROSMain.initMain()
