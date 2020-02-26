@@ -7,20 +7,18 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.Handler
 import android.util.Log
+import androidx.lifecycle.MutableLiveData
 import com.example.loomoapp.viewModel.MainActivityViewModel
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.lang.IllegalArgumentException
 
 
-class LoomoRealSense(
-    context: Context,
-    private val viewModel: MainActivityViewModel,
-    private val viewModelHandler: Handler
-) {
+class LoomoRealSense {
     companion object {
         const val TAG = "LoomoRealSense"
 
@@ -46,7 +44,6 @@ class LoomoRealSense(
         if (!mVision.isBind and !waitingForServiceToBind) {
             Log.d(TAG, "Started Vision.bindService")
             waitingForServiceToBind = true
-            stopActiveCameras()
             mVision.bindService(context.applicationContext, object : ServiceBinder.BindStateListener {
                 override fun onBind() {
                     Log.d(TAG, "Vision onBind")
@@ -55,6 +52,7 @@ class LoomoRealSense(
 
                 override fun onUnbind(reason: String?) {
                     Log.d(TAG, "Vision onUnbind")
+                    stopActiveCameras()
                 }
             })
         } else {
@@ -71,84 +69,93 @@ class LoomoRealSense(
         }
     }
 
-    fun startColorCamera() {
-        if (mVision.isBind) {
-            try {
-                mVision.startListenFrame(
-                    StreamType.COLOR
-                ) { streamType, frame ->
-                    mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
-                    viewModelHandler.post {
-                        viewModel.imgColorBitmap.value = mImgColor
+    fun startColorCamera(threadHandler: Handler, imgBuffer: MutableLiveData<Bitmap>) {
+        GlobalScope.launch {
+            if (mVision.isBind) {
+                try {
+                    mVision.startListenFrame(
+                        StreamType.COLOR
+                    ) { streamType, frame ->
+                        mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
+                        threadHandler.post {
+                            imgBuffer.value = mImgColor
+                        }
                     }
+                } catch (e: IllegalArgumentException) {
+                    Log.d(
+                        TAG,
+                        "Exception in Vision.startListenFrame: Probably already listening to COLOR(1): $e"
+                    )
                 }
-            } catch (e: IllegalArgumentException) {
-                Log.d(
-                    TAG,
-                    "Exception in Vision.startListenFrame: Probably already listening to COLOR(1): $e"
-                )
+            } else if (!mVision.isBind and waitingForServiceToBind) {
+                Log.d(TAG, "Waiting for service to bind before starting camera")
+                while (!mVision.isBind) {
+                }
+                stopActiveCameras()
+                startColorCamera(threadHandler, imgBuffer) // This recursion is safe.
+            } else {
+                Log.d(TAG, "Color camera not started. Bind Vision service first")
             }
-        } else if (!mVision.isBind and waitingForServiceToBind) {
-            Log.d(TAG, "Waiting for service to bind before starting camera")
-            while (!mVision.isBind) {
-            }
-            startColorCamera() // This recursion is safe. The while loop on the previous line however...
-        } else {
-            Log.d(TAG, "Color camera not started. Bind Vision service first")
         }
     }
 
-    fun startFishEyeCamera() {
-        if (mVision.isBind) {
-            try {
-                mVision.startListenFrame(
-                    StreamType.FISH_EYE
-                ) { streamType, frame ->
-                    mImgFishEye.copyPixelsFromBuffer(frame.byteBuffer)
-                    viewModelHandler.post {
-                        viewModel.imgFishEyeBitmap.value = mImgFishEye
+    fun startFishEyeCamera(threadHandler: Handler, imgBuffer: MutableLiveData<Bitmap>) {
+        GlobalScope.launch {
+            if (mVision.isBind) {
+                try {
+                    mVision.startListenFrame(
+                        StreamType.FISH_EYE
+                    ) { streamType, frame ->
+                        mImgFishEye.copyPixelsFromBuffer(frame.byteBuffer)
+                        threadHandler.post {
+                            imgBuffer.value = mImgFishEye
+                        }
                     }
+                } catch (e: IllegalArgumentException) {
+                    Log.d(
+                        TAG,
+                        "Exception in Vision.startListenFrame: Probably already listening to FISH_EYE(256): $e"
+                    )
                 }
-            } catch (e: IllegalArgumentException) {
-                Log.d(
-                    TAG,
-                    "Exception in Vision.startListenFrame: Probably already listening to FISH_EYE(256): $e"
-                )
+            } else if (!mVision.isBind and waitingForServiceToBind) {
+                Log.d(TAG, "Waiting for service to bind before starting camera")
+                while (!mVision.isBind) {
+                }
+                stopActiveCameras()
+                startFishEyeCamera(threadHandler, imgBuffer) // This recursion is safe.
+            } else {
+                Log.d(TAG, "FishEye cam not started. Bind Vision service first")
             }
-        } else if (!mVision.isBind and waitingForServiceToBind) {
-            Log.d(TAG, "Waiting for service to bind before starting camera")
-            while (!mVision.isBind) {
-            }
-            startFishEyeCamera() // This recursion is safe. The while loop on the previous line however...
-        } else {
-            Log.d(TAG, "FishEye cam not started: Vision !isBind")
         }
     }
 
-    fun startDepthCamera() {
-        if (mVision.isBind) {
-            try {
-                mVision.startListenFrame(
-                    StreamType.DEPTH
-                ) { streamType, frame ->
-                    mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
-                    viewModelHandler.post {
-                        viewModel.imgDepthBitmap.value = mImgDepth
+    fun startDepthCamera(threadHandler: Handler, imgBuffer: MutableLiveData<Bitmap>) {
+        GlobalScope.launch {
+            if (mVision.isBind) {
+                try {
+                    mVision.startListenFrame(
+                        StreamType.DEPTH
+                    ) { streamType, frame ->
+                        mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
+                        threadHandler.post {
+                            imgBuffer.value = mImgDepth
+                        }
                     }
+                } catch (e: IllegalArgumentException) {
+                    Log.d(
+                        TAG,
+                        "Exception in Vision.startListenFrame: Probably already listening to DEPTH(2): $e"
+                    )
                 }
-            } catch (e: IllegalArgumentException) {
-                Log.d(
-                    TAG,
-                    "Exception in Vision.startListenFrame: Probably already listening to DEPTH(2): $e"
-                )
+            } else if (!mVision.isBind and waitingForServiceToBind) {
+                Log.d(TAG, "Waiting for service to bind before starting camera")
+                while (!mVision.isBind) {
+                }
+                stopActiveCameras()
+                startDepthCamera(threadHandler, imgBuffer) // This recursion is safe. The while loop on the previous line however...
+            } else {
+                Log.d(TAG, "Depth cam not started. Bind Vision service first")
             }
-        } else if (!mVision.isBind and waitingForServiceToBind) {
-            Log.d(TAG, "Waiting for service to bind before starting camera")
-            while (!mVision.isBind) {
-            }
-            startDepthCamera() // This recursion is safe. The while loop on the previous line however...
-        } else {
-            Log.d(TAG, "Depth cam not started: Vision !isBind")
         }
     }
 }

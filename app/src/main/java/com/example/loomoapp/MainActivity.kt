@@ -1,11 +1,13 @@
 package com.example.loomoapp
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.*
 import android.util.Log
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.example.loomoapp.Loomo.*
@@ -28,6 +30,8 @@ class MainActivity : AppCompatActivity() {
     lateinit var mLoomoRealSense: LoomoRealSense
     lateinit var mLoomoSensor: LoomoSensor
 //    lateinit var mLoomoControl: LoomoControl
+
+    var imgBuffer = MutableLiveData<Bitmap>()
 
     //ROS classes
     lateinit var mROSMain: ROSMain
@@ -63,7 +67,7 @@ class MainActivity : AppCompatActivity() {
 
         //Initialize classes
         mLoomoBase      = LoomoBase     (viewModel)
-        mLoomoRealSense = LoomoRealSense(this, viewModel, UIThreadHandler)
+        mLoomoRealSense = LoomoRealSense()
         mLoomoSensor    = LoomoSensor   (viewModel)
 //        mLoomoControl   = LoomoControl  (viewModel, mLoomoBase, mLoomoSensor)
 
@@ -91,7 +95,10 @@ class MainActivity : AppCompatActivity() {
 //            camView.setImageBitmap(it)
 //        })
 
-        viewModel.imgFishEyeBitmap.observe(this, Observer {
+//        viewModel.imgFishEyeBitmap.observe(this, Observer {
+//            camView.setImageBitmap(it)
+//        })
+        imgBuffer.observe(this, Observer {
             camView.setImageBitmap(it)
         })
 
@@ -107,7 +114,7 @@ class MainActivity : AppCompatActivity() {
         }
         btnStartCamera.setOnClickListener {
             Log.d(TAG, "CamStartBtn clicked")
-            mLoomoRealSense.startFishEyeCamera()
+            mLoomoRealSense.startFishEyeCamera(UIThreadHandler, imgBuffer)
         }
         btnStopCamera.setOnClickListener {
             Log.d(TAG, "CamStopBtn clicked")
