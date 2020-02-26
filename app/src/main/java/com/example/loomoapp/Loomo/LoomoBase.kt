@@ -9,7 +9,7 @@ import com.example.loomoapp.viewModel.Velocity
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.locomotion.sbv.Base
 
-class LoomoBase(viewModel: MainActivityViewModel) {
+class LoomoBase() {
     private val TAG = "LoomoBase"
 
     val mBase :Base = Base.getInstance()
@@ -25,9 +25,6 @@ class LoomoBase(viewModel: MainActivityViewModel) {
                 Log.d(TAG, "Base unBind. Reason: $reason")
             }
         })
-        // TODO: 25/02/2020 Does this work
-
-
     }
 
 

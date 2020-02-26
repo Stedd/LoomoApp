@@ -12,9 +12,8 @@ import com.example.loomoapp.LoopedThread
 import com.example.loomoapp.Runnables.PController
 import com.example.loomoapp.viewModel.MainActivityViewModel
 
-class LoomoControl(viewModel: MainActivityViewModel, base: LoomoBase, sensor: LoomoSensor) {
+class LoomoControl(base: LoomoBase, sensor: LoomoSensor) {
     private val TAG = "LoomoControl"
-    private val viewModel_ = viewModel
     private val sensor_ = sensor
     private val base_ = base
 

@@ -1,5 +1,6 @@
 package com.example.loomoapp.ROS
 
+import android.os.Handler
 import android.util.Log
 import android.util.Pair
 import com.example.loomoapp.Loomo.LoomoBase
@@ -16,14 +17,15 @@ import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
 
-class ROSMain (base: LoomoBase, sensor: LoomoSensor, realSense: LoomoRealSense): RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
+//class ROSMain (base: LoomoBase, sensor: LoomoSensor, realSense: LoomoRealSense): RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
+class ROSMain (handler: Handler, base: LoomoBase, sensor: LoomoSensor, realsense: LoomoRealsense): RosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
 
     private val TAG = "RosMain"
 
-    val base_ = base
-    val sensor_ = sensor
-    val vision_ = realSense
-
+    private val base_ = base
+    private val sensor_ = sensor
+    private val vision_ = realsense
+    private val handler_ = handler
 
     // Keep track of timestamps when images published, so corresponding TFs can be published too
     // Stores a co-ordinated platform time and ROS time to help manage the offset
@@ -42,8 +44,8 @@ class ROSMain (base: LoomoBase, sensor: LoomoSensor, realSense: LoomoRealSense):
     private val mRosBridgeConsumers: List<RosBridge> =
         listOf(mRealsensePublisher, mTFPublisher, mSensorPublisher)
 
-
     fun initMain() {
+        Log.d(TAG, "Ros Initialized ")
         // TODO: 25/02/2020 Not sure what these are used for
         mOnNodeStarted = Runnable {
             // Node has started, so we can now tell publishers and subscribers that ROS has initialized
@@ -58,7 +60,10 @@ class ROSMain (base: LoomoBase, sensor: LoomoSensor, realSense: LoomoRealSense):
         mOnNodeShutdown = Runnable { }
 
         // Start an instance of the RosBridgeNode
-        mBridgeNode = RosBridgeNode(mOnNodeStarted, mOnNodeShutdown)
+        mBridgeNode = RosBridgeNode()
+        runOnUiThread{
+            init()
+        }
     }
 
     override fun init(nodeMainExecutor: NodeMainExecutor) {
@@ -93,8 +98,7 @@ class ROSMain (base: LoomoBase, sensor: LoomoSensor, realSense: LoomoRealSense):
         nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
     }
 
-
-    fun startConsumers() {
+    open fun startConsumers() {
         for (consumer in mRosBridgeConsumers) {
             consumer.node_started(mBridgeNode)
             // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)

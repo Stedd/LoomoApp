@@ -20,7 +20,10 @@ import std_msgs.Int8
 import tf2_msgs.TFMessage
 
 
-class RosBridgeNode(onStarted: Runnable, onShutdown: Runnable) :AbstractNodeMain() {
+class RosBridgeNode() :AbstractNodeMain() {
+
+    private val TAG = "RosBridge"
+
 
     var RsDepthOpticalFrame = "rs_depth_optical_frame"
     var RsColorOpticalFrame = "rs_color_optical_frame"
@@ -55,8 +58,8 @@ class RosBridgeNode(onStarted: Runnable, onShutdown: Runnable) :AbstractNodeMain
     var should_pub_base_pitch = true
     var use_tf_prefix = true
     private val is_started = false
-    private val mOnStarted: Runnable
-    private val mOnShutdown: Runnable
+//    private val mOnStarted: Runnable
+//    private val mOnShutdown: Runnable
     override fun onStart(connectedNode: ConnectedNode) {
         Log.d(TAG, "onStart() $connectedNode")
         super.onStart(connectedNode)
@@ -132,7 +135,7 @@ class RosBridgeNode(onStarted: Runnable, onShutdown: Runnable) :AbstractNodeMain
 
     override fun onShutdown(node: Node) {
         super.onShutdown(node)
-        mOnShutdown.run()
+//        mOnShutdown.run()
     }
 
     override fun onShutdownComplete(node: Node) {
@@ -160,8 +163,8 @@ class RosBridgeNode(onStarted: Runnable, onShutdown: Runnable) :AbstractNodeMain
             TAG,
             "Created instance of RosBridgeNode()."
         )
-        mOnStarted = onStarted
-        mOnShutdown = onShutdown
+//        mOnStarted = onStarted
+//        mOnShutdown = onShutdown
     }
 
 }
