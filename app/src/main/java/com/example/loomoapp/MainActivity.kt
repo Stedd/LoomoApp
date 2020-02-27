@@ -199,8 +199,6 @@ class MainActivity :
                     camViewDepth.visibility = ImageView.GONE
                 }
             }
-//            mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeImgBuffer)
-//            mLoomoRealSense.startColorCamera(UIThreadHandler, imgBuffer)
         }
         btnStopCamera.setOnClickListener {
             Log.d(TAG, "CamStopBtn clicked")
