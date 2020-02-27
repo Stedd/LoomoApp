@@ -10,6 +10,8 @@ import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
+import com.segway.robot.sdk.vision.calibration.ColorDepthCalibration
+import com.segway.robot.sdk.vision.calibration.Intrinsic
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -28,6 +30,8 @@ class LoomoRealSense {
 
         const val DEPTH_WIDTH = 320
         const val DEPTH_HEIGHT = 240
+
+        val mColorDepthCalibration = ColorDepthCalibration()
     }
 
     var mVision = Vision.getInstance()
@@ -48,6 +52,10 @@ class LoomoRealSense {
                     override fun onBind() {
                         Log.d(TAG, "Vision onBind")
                         waitingForServiceToBind = false
+                        Log.i(TAG, "ColorDepthCalibration:\n" +
+                                "Color ${mColorDepthCalibration.colorIntrinsic}\n" +
+                                "Depth ${mColorDepthCalibration.depthIntrinsic}\n" +
+                                "${mColorDepthCalibration.depthToColorExtrinsic}")
                     }
 
                     override fun onUnbind(reason: String?) {
@@ -114,6 +122,8 @@ class LoomoRealSense {
                             imgBuffer.value = mImgFishEye
                         }
                     }
+//                    val a = Intrinsic()
+//                    Log.i(TAG, "Focal length: ${a.focalLength}, Distortion coef: ${a.distortion}, Principal: ${a.principal}")
                 } catch (e: IllegalArgumentException) {
                     Log.d(
                         TAG,

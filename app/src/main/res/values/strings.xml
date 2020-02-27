@@ -2,8 +2,8 @@
     <string name="app_name">LoomoApp</string>
     <string name="btnStringStartService">StartServ</string>
     <string name="btnStringStopService">StopServ</string>
-    <string name="btnStringStartCamera">StartCam</string>
-    <string name="btnStringStopCamera">StopCam</string>
+    <string name="btnStringStartCamera">Cycle Cam</string>
+    <string name="btnStringStopCamera">Hide Cam</string>
 
 
     <string name="hello_blank_fragment">Hello blank fragment</string>
