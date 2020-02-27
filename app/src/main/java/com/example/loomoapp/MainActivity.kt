@@ -1,7 +1,5 @@
 package com.example.loomoapp
 
-import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.*
@@ -10,14 +8,12 @@ import android.util.Pair
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.lifecycle.*
-import androidx.lifecycle.Observer
 import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
 import kotlinx.android.synthetic.main.activity_main.*
 import org.ros.address.InetAddressFactory
 import org.ros.android.AppCompatRosActivity
-import org.ros.android.RosActivity
 import org.ros.message.Time
 import org.ros.node.NodeConfiguration
 import org.ros.node.NodeMainExecutor
@@ -50,7 +46,9 @@ class MainActivity :
     lateinit var mLoomoSensor: LoomoSensor
     lateinit var mLoomoControl: LoomoControl
 
-    var imgBuffer = MutableLiveData<Bitmap>()
+    var fishEyeImgBuffer = MutableLiveData<Bitmap>()
+    var colorImgBuffer = MutableLiveData<Bitmap>()
+    var depthImgBuffer = MutableLiveData<Bitmap>()
 
     //ROS classes
 //    lateinit var mROSMain: ROSMain
@@ -121,10 +119,6 @@ class MainActivity :
         nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
     }
 
-    private val camView by lazy {
-        findViewById<ImageView>(R.id.camView)
-    }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -174,9 +168,49 @@ class MainActivity :
 
         mOpenCVMain.onCreate(this, findViewById(R.id.javaCam))
 
-        imgBuffer.observeForever { camView.setImageBitmap(it) }
+        colorImgBuffer.observeForever { camViewColor.setImageBitmap(it) }
+        fishEyeImgBuffer.observeForever { camViewFishEye.setImageBitmap(it) }
+        depthImgBuffer.observeForever { camViewDepth.setImageBitmap(it) }
+        camViewColor.visibility = ImageView.GONE
+        camViewFishEye.visibility = ImageView.GONE
+        camViewDepth.visibility = ImageView.GONE
+
 
         // Onclicklisteners
+        var camViewState = 0
+        btnStartCamera.setOnClickListener {
+            Log.d(TAG, "CamStartBtn clicked")
+            ++camViewState
+            when (camViewState) {
+                1 -> {
+                    camViewColor.visibility = ImageView.GONE
+                    camViewFishEye.visibility = ImageView.GONE
+                    camViewDepth.visibility = ImageView.VISIBLE
+                }
+                2 -> {
+                    camViewColor.visibility = ImageView.VISIBLE
+                    camViewFishEye.visibility = ImageView.GONE
+                    camViewDepth.visibility = ImageView.GONE
+                }
+                else -> {
+                    camViewState = 0
+                    camViewColor.visibility = ImageView.GONE
+                    camViewFishEye.visibility = ImageView.VISIBLE
+                    camViewDepth.visibility = ImageView.GONE
+                }
+            }
+//            mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeImgBuffer)
+//            mLoomoRealSense.startColorCamera(UIThreadHandler, imgBuffer)
+        }
+        btnStopCamera.setOnClickListener {
+            Log.d(TAG, "CamStopBtn clicked")
+            --camViewState
+            camViewColor.visibility = ImageView.GONE
+            camViewFishEye.visibility = ImageView.GONE
+            camViewDepth.visibility = ImageView.GONE
+
+//            mLoomoRealSense.stopActiveCameras()
+        }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
             mLoomoControl.startController(this, "ControllerThread start command")
@@ -184,15 +218,6 @@ class MainActivity :
         btnStopService.setOnClickListener {
             Log.d(TAG, "ServStopBtn clicked")
             mLoomoControl.stopController(this, "ControllerThread stop command")
-        }
-        btnStartCamera.setOnClickListener {
-            Log.d(TAG, "CamStartBtn clicked")
-            mLoomoRealSense.startFishEyeCamera(UIThreadHandler, imgBuffer)
-//            mLoomoRealSense.startColorCamera(UIThreadHandler, imgBuffer)
-        }
-        btnStopCamera.setOnClickListener {
-            Log.d(TAG, "CamStopBtn clicked")
-            mLoomoRealSense.stopActiveCameras()
         }
 
         //Helloworld from c++
@@ -214,11 +239,26 @@ class MainActivity :
         mLoomoSensor.bind(this)
 
         mLoomoRealSense.bind(this)
+        mLoomoRealSense.startColorCamera(UIThreadHandler, colorImgBuffer)
+        mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeImgBuffer)
+        mLoomoRealSense.startDepthCamera(UIThreadHandler, depthImgBuffer)
 
         mLoomoBase.bind(this)
 
         super.onResume()
     }
+
+    private val camViewFishEye by lazy {
+        findViewById<ImageView>(R.id.camViewFishEye)
+    }
+    private val camViewColor by lazy {
+        findViewById<ImageView>(R.id.camViewColor)
+    }
+    private val camViewDepth by lazy {
+        findViewById<ImageView>(R.id.camViewDepth)
+    }
+
+
 
     override fun onDestroy() {
         stopThreads()
