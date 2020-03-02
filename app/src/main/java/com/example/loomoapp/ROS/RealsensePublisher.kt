@@ -52,7 +52,7 @@ class RealsensePublisher(
     private val mFisheyeWidth = 640
     private val mFisheyeHeight = 480
     private val mRsColorOutStream: ChannelBufferOutputStream =
-        ChannelBufferOutputStream(MessageBuffers.dynamicBuffer())
+        ChannelBufferOutputStream(MessageBuffers.dynamicBuffer()) //todo Hva er dette? Hva er forskjellen på dette og MutableLiveData?
     private val mRsDepthOutStream: ChannelBufferOutputStream =
         ChannelBufferOutputStream(MessageBuffers.dynamicBuffer())
     private val mFisheyeOutStream: ChannelBufferOutputStream =
@@ -100,67 +100,67 @@ class RealsensePublisher(
 //        // Get color-depth extrinsic and publish as a TF
 //    }
 
-    @Synchronized
-    fun start_all() {
-        if (!vision_.isBind || mBridgeNode == null) {
-            Log.d(
-                TAG,
-                "Cannot start_listening yet, a required service is not ready"
-            )
-            return
-        }
-        Log.d(TAG, "start_all() called")
-        val infos = vision_.activatedStreamInfo
-        for (info in infos) {
-            when (info.streamType) {
-                StreamType.COLOR -> {
-                    updateCameraInfo(
-                        2, vision_.colorDepthCalibrationData.colorIntrinsic,
-                        info.width, info.height
-                    )
-                    vision_.startListenFrame(
-                        StreamType.COLOR,
-                        mRsColorListener
-                    )
-                }
-                StreamType.DEPTH -> {
-                    updateCameraInfo(
-                        3, vision_.colorDepthCalibrationData.depthIntrinsic,
-                        info.width, info.height
-                    )
-                    vision_.startListenFrame(
-                        StreamType.DEPTH,
-                        mRsDepthListener
-                    )
-                }
-            }
-        }
-        Log.w(TAG, "start_all() done.")
-    }
-
-    @Synchronized
-    fun stop_all() {
-        if (!vision_.isBind || mBridgeNode == null) {
-            Log.d(
-                TAG,
-                "Cannot start_listening yet, a required service is not ready"
-            )
-            return
-        }
-        Log.d(TAG, "stop_all() called")
-        val streamInfos = vision_.activatedStreamInfo
-        for (info in streamInfos) {
-            when (info.streamType) {
-                StreamType.COLOR ->  // Stop color listener
-                    vision_.stopListenFrame(StreamType.COLOR)
-                StreamType.DEPTH ->  // Stop depth listener
-                    vision_.stopListenFrame(StreamType.DEPTH)
-            }
-        }
-        mColorStarted = false
-        mDepthStarted = false
-        mFisheyeStarted = false
-    }
+//    @Synchronized
+//    fun start_all() {
+//        if (!vision_.isBind || mBridgeNode == null) {
+//            Log.d(
+//                TAG,
+//                "Cannot start_listening yet, a required service is not ready"
+//            )
+//            return
+//        }
+//        Log.d(TAG, "start_all() called")
+//        val infos = vision_.activatedStreamInfo
+//        for (info in infos) {
+//            when (info.streamType) {
+//                StreamType.COLOR -> {
+//                    updateCameraInfo(
+//                        2, vision_.colorDepthCalibrationData.colorIntrinsic,
+//                        info.width, info.height
+//                    )
+//                    vision_.startListenFrame(
+//                        StreamType.COLOR,
+//                        mRsColorListener
+//                    )
+//                }
+//                StreamType.DEPTH -> {
+//                    updateCameraInfo(
+//                        3, vision_.colorDepthCalibrationData.depthIntrinsic,
+//                        info.width, info.height
+//                    )
+//                    vision_.startListenFrame(
+//                        StreamType.DEPTH,
+//                        mRsDepthListener
+//                    )
+//                }
+//            }
+//        }
+//        Log.w(TAG, "start_all() done.")
+//    }
+//
+//    @Synchronized
+//    fun stop_all() {
+//        if (!vision_.isBind || mBridgeNode == null) {
+//            Log.d(
+//                TAG,
+//                "Cannot start_listening yet, a required service is not ready"
+//            )
+//            return
+//        }
+//        Log.d(TAG, "stop_all() called")
+//        val streamInfos = vision_.activatedStreamInfo
+//        for (info in streamInfos) {
+//            when (info.streamType) {
+//                StreamType.COLOR ->  // Stop color listener
+//                    vision_.stopListenFrame(StreamType.COLOR)
+//                StreamType.DEPTH ->  // Stop depth listener
+//                    vision_.stopListenFrame(StreamType.DEPTH)
+//            }
+//        }
+//        mColorStarted = false
+//        mDepthStarted = false
+//        mFisheyeStarted = false
+//    }
 
     @Synchronized
     fun start_imu() {
@@ -174,108 +174,108 @@ class RealsensePublisher(
         vision_.setIMUCallback(this)
     }
 
-    @Synchronized
-    fun start_color() {
-        if (!vision_.isBind || mBridgeNode == null || mColorStarted) {
-            Log.d(
-                TAG,
-                "Cannot start_listening yet, a required service is not ready"
-            )
-            return
-        }
-        mColorStarted = true
-        Log.d(TAG, "start_color() called")
-        updateCameraInfo(
-            2, vision_.colorDepthCalibrationData.colorIntrinsic,
-            mRsColorWidth, mRsColorHeight
-        )
-        vision_.startListenFrame(
-            StreamType.COLOR,
-            mRsColorListener
-        )
-    }
-
-    @Synchronized
-    fun start_depth() {
-        if (!vision_.isBind || mBridgeNode == null || mDepthStarted) {
-            Log.d(
-                TAG,
-                "Cannot start_listening yet, a required service is not ready"
-            )
-            return
-        }
-        mDepthStarted = true
-        Log.d(TAG, "start_depth() called")
-        updateCameraInfo(
-            3, vision_.colorDepthCalibrationData.depthIntrinsic,
-            mRsDepthWidth, mRsDepthHeight
-        )
-        vision_.startListenFrame(
-            StreamType.DEPTH,
-            mRsDepthListener
-        )
-    }
-
-    @Synchronized
-    fun start_fisheye() {
-        if (!vision_.isBind) {
-            Log.d(
-                TAG,
-                "Cannot start_listening yet, a required service is not ready"
-            )
-            return
-        }
-        mFisheyeStarted = true
-        Log.d(TAG, "start_fisheye() called")
-        //        updateCameraInfo(1, vision_.getColorDepthCalibrationData().colorIntrinsic,
-//                mFisheyeWidth, mFisheyeHeight);
-        vision_.startListenFrame(
-            StreamType.FISH_EYE,
-            mFisheyeListener
-        )
-    }
-
-    @Synchronized
-    fun stop_color() {
-        if (!vision_.isBind || !mColorStarted) {
-            Log.d(
-                TAG,
-                "Cannot start_listening yet, a required service is not ready"
-            )
-            return
-        }
-        Log.d(TAG, "stop_color() called")
-        vision_.stopListenFrame(StreamType.COLOR)
-        mColorStarted = false
-    }
-
-    @Synchronized
-    fun stop_depth() {
-        if (!vision_.isBind || !mDepthStarted) {
-            Log.d(
-                TAG,
-                "Cannot start_listening yet, a required service is not ready"
-            )
-            return
-        }
-        Log.d(TAG, "stop_depth() called")
-        vision_.stopListenFrame(StreamType.DEPTH)
-        mDepthStarted = false
-    }
-
-    @Synchronized
-    fun stop_fisheye() {
-        if (!vision_.isBind || !mFisheyeStarted) {
-            Log.d(
-                TAG,
-                "Cannot start_listening yet, a required service is not ready"
-            )
-            return
-        }
-        Log.d(TAG, "stop_fisheye() called")
-        vision_.stopListenFrame(StreamType.FISH_EYE)
-        mFisheyeStarted = false
-    }
+//    @Synchronized
+//    fun start_color() {
+//        if (!vision_.isBind || mBridgeNode == null || mColorStarted) {
+//            Log.d(
+//                TAG,
+//                "Cannot start_listening yet, a required service is not ready"
+//            )
+//            return
+//        }
+//        mColorStarted = true
+//        Log.d(TAG, "start_color() called")
+//        updateCameraInfo(
+//            2, vision_.colorDepthCalibrationData.colorIntrinsic,
+//            mRsColorWidth, mRsColorHeight
+//        )
+//        vision_.startListenFrame(
+//            StreamType.COLOR,
+//            mRsColorListener
+//        )
+//    }
+//
+//    @Synchronized
+//    fun start_depth() {
+//        if (!vision_.isBind || mBridgeNode == null || mDepthStarted) {
+//            Log.d(
+//                TAG,
+//                "Cannot start_listening yet, a required service is not ready"
+//            )
+//            return
+//        }
+//        mDepthStarted = true
+//        Log.d(TAG, "start_depth() called")
+//        updateCameraInfo(
+//            3, vision_.colorDepthCalibrationData.depthIntrinsic,
+//            mRsDepthWidth, mRsDepthHeight
+//        )
+//        vision_.startListenFrame(
+//            StreamType.DEPTH,
+//            mRsDepthListener
+//        )
+//    }
+//
+//    @Synchronized
+//    fun start_fisheye() {
+//        if (!vision_.isBind) {
+//            Log.d(
+//                TAG,
+//                "Cannot start_listening yet, a required service is not ready"
+//            )
+//            return
+//        }
+//        mFisheyeStarted = true
+//        Log.d(TAG, "start_fisheye() called")
+//        //        updateCameraInfo(1, vision_.getColorDepthCalibrationData().colorIntrinsic,
+////                mFisheyeWidth, mFisheyeHeight);
+//        vision_.startListenFrame(
+//            StreamType.FISH_EYE,
+//            mFisheyeListener
+//        )
+//    }
+//
+//    @Synchronized
+//    fun stop_color() {
+//        if (!vision_.isBind || !mColorStarted) {
+//            Log.d(
+//                TAG,
+//                "Cannot start_listening yet, a required service is not ready"
+//            )
+//            return
+//        }
+//        Log.d(TAG, "stop_color() called")
+//        vision_.stopListenFrame(StreamType.COLOR)
+//        mColorStarted = false
+//    }
+//
+//    @Synchronized
+//    fun stop_depth() {
+//        if (!vision_.isBind || !mDepthStarted) {
+//            Log.d(
+//                TAG,
+//                "Cannot start_listening yet, a required service is not ready"
+//            )
+//            return
+//        }
+//        Log.d(TAG, "stop_depth() called")
+//        vision_.stopListenFrame(StreamType.DEPTH)
+//        mDepthStarted = false
+//    }
+//
+//    @Synchronized
+//    fun stop_fisheye() {
+//        if (!vision_.isBind || !mFisheyeStarted) {
+//            Log.d(
+//                TAG,
+//                "Cannot start_listening yet, a required service is not ready"
+//            )
+//            return
+//        }
+//        Log.d(TAG, "stop_fisheye() called")
+//        vision_.stopListenFrame(StreamType.FISH_EYE)
+//        mFisheyeStarted = false
+//    }
 
     @Synchronized
     private fun process_metadata(

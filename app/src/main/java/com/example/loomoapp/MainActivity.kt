@@ -27,14 +27,6 @@ import java.util.concurrent.TimeUnit
 class MainActivity :
     AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.20:11311/")) {
 
-//    private fun getLifecycleOwner(): LifecycleOwner {
-//        var context: Context = this
-//        while (context !is LifecycleOwner) {
-//            context = (context as ContextWrapper).baseContext
-//        }
-//        return context
-//    }
-
     private val UIThreadHandler = Handler() //Used to post messages to UI Thread
 
     //Variables
@@ -50,8 +42,6 @@ class MainActivity :
     var colorImgBuffer = MutableLiveData<Bitmap>()
     var depthImgBuffer = MutableLiveData<Bitmap>()
 
-    //ROS classes
-//    lateinit var mROSMain: ROSMain
 
     //OpenCV Variables
     private lateinit var mOpenCVMain: OpenCVMain
@@ -229,7 +219,6 @@ class MainActivity :
         UIThreadHandler.postDelayed({
             for (consumer in mRosBridgeConsumers) {
                 consumer.node_started(mBridgeNode)
-                // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
                 consumer.start()
             }
         }, 10000)

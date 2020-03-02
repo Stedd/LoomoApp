@@ -13,7 +13,7 @@ import java.util.*
 class SensorPublisher(sensor: LoomoSensor) : RosBridge {
     var mIsStarted = false
     val sensor_ = sensor.mSensor
-//    private var mSensor: Sensor? = null
+    //    private var mSensor: Sensor? = null
     private var mBridgeNode: RosBridgeNode? = null
     private var mSensorPublishThread = SensorPublisherThread()
 //    fun loomo_started(sensor_: Sensor) {
@@ -29,41 +29,18 @@ class SensorPublisher(sensor: LoomoSensor) : RosBridge {
     }
 
     override fun start() {
-        if (!sensor_.isBind || mBridgeNode == null || mIsStarted) {
-            Log.d(
-                TAG,
-                "SensorPublisher Cannot start_listening yet, a required service is not ready"
-            )
-            return
-        }else {
-            Log.d(
-                TAG,
-                "SensorPublisher started"
-            )
-        }
         mIsStarted = true
         Log.d(TAG, "start_sensor() $mIsStarted")
-//        if (!mSensorPublishThread.isAlive) {
-//            mSensorPublishThread = SensorPublisherThread()
-//        }
-//        mSensorPublishThread = SensorPublisherThread()
+//        todo probably need some sanity check
         mSensorPublishThread.start()
     }
 
     override fun stop() {
-        if (!mIsStarted) {
-            Log.d(TAG, "Cannot stop without starting")
-            return
-        }
         Log.d(TAG, "stop_sensor()")
         try {
-            mSensorPublishThread.join()
+            mSensorPublishThread.join() //todo Hva skjer her?
         } catch (e: InterruptedException) {
-            Log.w(
-                TAG,
-                "onUnbind: mSensorPublishThread.join() ",
-                e
-            )
+            Log.w(TAG, "onUnbind: mSensorPublishThread.join() ", e)
         }
         mIsStarted = false
     }
@@ -74,19 +51,17 @@ class SensorPublisher(sensor: LoomoSensor) : RosBridge {
 //            super.run()
             while (mIsStarted) { // No metadata for this frame yet
 //                Log.d(TAG, "run: SensorPublisherThread")
-// Get an appropriate ROS time to match the platform time of this stamp
-                val currentRosTime =
-                    mBridgeNode!!.mConnectedNode!!.currentTime
-                val currentSystemTime =
-                    Time.fromMillis(System.currentTimeMillis())
-                val rosToSystemTimeOffset =
-                    currentRosTime.subtract(currentSystemTime)
-                if (mBridgeNode!!.should_pub_ultrasonic) { //                    TODO: Her hentes ultralyd sensor data gjennom Loomo API
+                // Get an appropriate ROS time to match the platform time of this stamp
+                val currentRosTime          = mBridgeNode!!.mConnectedNode!!.currentTime
+                val currentSystemTime       = Time.fromMillis(System.currentTimeMillis())
+                val rosToSystemTimeOffset   = currentRosTime.subtract(currentSystemTime)
+                if (mBridgeNode!!.should_pub_ultrasonic) {
                     val mUltrasonicData =
-                        sensor_.querySensorData(Arrays.asList(Sensor.ULTRASONIC_BODY))[0]
+//                        sensor_.getSurroundings().UltraSonic
+                        sensor_.querySensorData(listOf(Sensor.ULTRASONIC_BODY))[0]
+
                     var mUltrasonicDistance = mUltrasonicData.intData[0].toFloat()
-                    val ultrasonicMessage =
-                        mBridgeNode!!.mUltrasonicPubr!!.newMessage()
+                    val ultrasonicMessage = mBridgeNode!!.mUltrasonicPubr!!.newMessage()
                     val stampTime =
                         Time.fromNano(Utils.platformStampInNano(mUltrasonicData.timestamp))
                     val correctedStampTime =
@@ -134,7 +109,7 @@ class SensorPublisher(sensor: LoomoSensor) : RosBridge {
                 }
                 if (mBridgeNode!!.should_pub_base_pitch) {
                     val mBaseImu =
-                        sensor_.querySensorData(Arrays.asList(Sensor.BASE_IMU))[0]
+                        sensor_.querySensorData(listOf(Sensor.BASE_IMU))[0]
                     val mBasePitch = mBaseImu.floatData[0]
                     //                    float mBaseRoll = mBaseImu.getFloatData()[1];
 //                    float mBaseYaw = mBaseImu.getFloatData()[2];
