@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
+import com.example.loomoapp.ROS.RealsensePublisher
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.calibration.ColorDepthCalibration
@@ -17,7 +18,9 @@ import kotlinx.coroutines.launch
 import java.lang.IllegalArgumentException
 
 
-class LoomoRealSense {
+class LoomoRealSense(publisher: RealsensePublisher) {
+    val publisher_ = publisher
+
     companion object {
         const val TAG = "LoomoRealSense"
 
@@ -34,10 +37,12 @@ class LoomoRealSense {
     }
 
     var mVision = Vision.getInstance()
+
     private var waitingForServiceToBind = false
 
     private var mImgColor = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
-    private var mImgFishEye = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
+    private var mImgFishEye =
+        Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
     private var mImgDepth = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
 
 
@@ -64,6 +69,10 @@ class LoomoRealSense {
                 "Vision.isBind = ${mVision.isBind}${if (waitingForServiceToBind) ", but binding is in progress" else ""}"
             )
         }
+
+        publisher_.setVision(mVision)
+        publisher_.setBitmaps(mImgColor, mImgFishEye, mImgDepth)
+
     }
 
 
@@ -83,6 +92,11 @@ class LoomoRealSense {
                         StreamType.COLOR
                     ) { streamType, frame ->
                         mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
+                        //send frame to publisher
+//                            publisher_.start_color(mVision, frame)
+                        if (frame.info.frameNum % 60 == 0) {
+                            publisher_.newColorFrame(frame)
+                        }
                         threadHandler.post {
                             imgBuffer.value = mImgColor
                         }
@@ -161,7 +175,7 @@ class LoomoRealSense {
                 while (!mVision.isBind) {
                 }
                 mVision.stopListenFrame(StreamType.DEPTH)
-                startDepthCamera(threadHandler,imgBuffer) // This recursion is safe
+                startDepthCamera(threadHandler, imgBuffer) // This recursion is safe
             } else {
                 Log.d(TAG, "Depth cam not started. Bind Vision service first")
             }

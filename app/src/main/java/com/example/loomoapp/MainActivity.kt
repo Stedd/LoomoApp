@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
 
 
 class MainActivity :
-    AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.20:11311/")) {
+    AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
 
     private val UIThreadHandler = Handler() //Used to post messages to UI Thread
 
@@ -56,11 +56,10 @@ class MainActivity :
     private val mDepthStamps: Queue<Long> = ConcurrentLinkedDeque<Long>()
 
     //Rosbridge
-//    private lateinit var mOnNodeStarted: Runnable
-//    private lateinit var mOnNodeShutdown: Runnable
     private lateinit var mBridgeNode: RosBridgeNode
 
     //Publishers
+    private lateinit var mRealSensePublisherThread: LoopedThread
     private lateinit var mRealsensePublisher: RealsensePublisher
     private lateinit var mTFPublisher: TFPublisher
     private lateinit var mSensorPublisher: SensorPublisher
@@ -104,7 +103,7 @@ class MainActivity :
             TAG,
             "sys: " + Time.fromMillis(System.currentTimeMillis())
         )
-        ntpTimeProvider.startPeriodicUpdates(1, TimeUnit.MINUTES)
+        ntpTimeProvider.startPeriodicUpdates(1, TimeUnit.SECONDS)
         nodeConfiguration.timeProvider = ntpTimeProvider
         nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
     }
@@ -115,31 +114,23 @@ class MainActivity :
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
 
+        mRealSensePublisherThread =
+            LoopedThread("Publisher_Thread", android.os.Process.THREAD_PRIORITY_FOREGROUND)
+        mRealSensePublisherThread.start()
+        mRealsensePublisher =
+            RealsensePublisher(mDepthStamps, mDepthRosStamps, mRealSensePublisherThread)
+
         //Initialize classes
         mLoomoBase = LoomoBase()
-        mLoomoRealSense = LoomoRealSense()
+        mLoomoRealSense = LoomoRealSense(mRealsensePublisher)
         mLoomoSensor = LoomoSensor()
         mLoomoControl = LoomoControl(mLoomoBase, mLoomoSensor)
 
         //Publishers
-        mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps, mLoomoRealSense)
         mTFPublisher =
             TFPublisher(mDepthStamps, mDepthRosStamps, mLoomoBase, mLoomoSensor, mLoomoRealSense)
         mSensorPublisher = SensorPublisher(mLoomoSensor)
         mRosBridgeConsumers = listOf(mRealsensePublisher, mTFPublisher, mSensorPublisher)
-
-        // TODO: 25/02/2020 Not sure what these are used for
-//        mOnNodeStarted = Runnable {
-//            // Node has started, so we can now tell publishers and subscribers that ROS has initialized
-//            for (consumer in mRosBridgeConsumers) {
-//                consumer.node_started(mBridgeNode)
-//                // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
-//                consumer.start()
-//            }
-//        }
-//
-//        // TODO: shutdown consumers correctly
-//        mOnNodeShutdown = Runnable { }
 
         // Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode()
@@ -149,9 +140,6 @@ class MainActivity :
 
         //Start OpenCV Service
         startService(intentOpenCV)
-
-        //Start Ros Activity
-//        mROSMain.initMain()
 
 
         mLoomoControl.mControllerThread.start()
@@ -217,10 +205,13 @@ class MainActivity :
         mOpenCVMain.resume()
 
         UIThreadHandler.postDelayed({
-            for (consumer in mRosBridgeConsumers) {
-                consumer.node_started(mBridgeNode)
-                consumer.start()
-            }
+            //            for (consumer in mRosBridgeConsumers) {
+//                consumer.node_started(mBridgeNode)
+//                consumer.start()
+//            }
+            mRealsensePublisher.node_started(mBridgeNode)
+//                mTFPublisher.node_started(mBridgeNode)
+//                mSensorPublisher.node_started(mBridgeNode)
         }, 10000)
 
         mLoomoSensor.bind(this)
@@ -244,7 +235,6 @@ class MainActivity :
     private val camViewDepth by lazy {
         findViewById<ImageView>(R.id.camViewDepth)
     }
-
 
 
     override fun onDestroy() {

@@ -62,6 +62,7 @@ class TFPublisher(
             TAG,
             "TFPublisher node_started"
         )
+        start()
     }
 
     override fun start() {

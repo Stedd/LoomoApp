@@ -26,6 +26,7 @@ class SensorPublisher(sensor: LoomoSensor) : RosBridge {
             TAG,
             "SensorPublisher node_started"
         )
+        start()
     }
 
     override fun start() {
