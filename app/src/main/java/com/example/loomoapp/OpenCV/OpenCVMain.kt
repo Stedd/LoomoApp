@@ -9,11 +9,12 @@ import android.util.Log
 import android.view.SurfaceView
 import org.opencv.android.*
 import org.opencv.core.Mat
+import org.opencv.core.MatOfByte
 import org.opencv.core.MatOfKeyPoint
 import org.opencv.features2d.ORB
 
 class OpenCVMain: Service(), CameraBridgeViewBase.CvCameraViewListener2 {
-    private val TAG = "OpenCV"
+    private val TAG = "OpenCVClass"
 
     init {
         //Load OpenCV

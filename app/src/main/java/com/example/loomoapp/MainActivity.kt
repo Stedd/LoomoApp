@@ -12,6 +12,8 @@ import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.ros.address.InetAddressFactory
 import org.ros.android.AppCompatRosActivity
 import org.ros.message.Time
@@ -47,6 +49,7 @@ class MainActivity :
     lateinit var mLoomoControl: LoomoControl
 
     var fishEyeImgBuffer = MutableLiveData<Bitmap>()
+    var fishEyeByteBuffer = MutableLiveData<ByteArray>()
     var colorImgBuffer = MutableLiveData<Bitmap>()
     var depthImgBuffer = MutableLiveData<Bitmap>()
 
@@ -171,6 +174,7 @@ class MainActivity :
         colorImgBuffer.observeForever { camViewColor.setImageBitmap(it) }
         fishEyeImgBuffer.observeForever { camViewFishEye.setImageBitmap(it) }
         depthImgBuffer.observeForever { camViewDepth.setImageBitmap(it) }
+//        fishEyeByteBuffer.observeForever {  }
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.GONE
         camViewDepth.visibility = ImageView.GONE
@@ -207,7 +211,27 @@ class MainActivity :
             camViewFishEye.visibility = ImageView.GONE
             camViewDepth.visibility = ImageView.GONE
 
-//            mLoomoRealSense.stopActiveCameras()
+            val tmpArr = fishEyeByteBuffer.value
+            if (tmpArr == null) {
+                Log.d(TAG, "tmpArr = null")
+                return@setOnClickListener
+            } else {
+                Log.d(TAG, "tmpArr size = ${tmpArr.size}")
+            }
+
+//            GlobalScope.launch {
+//                Log.d(TAG, "start")
+//                var str = "[\n"
+//                for ( (indx, num) in tmpArr.withIndex()) {
+//                    str += num.toString() + "\t"
+//                    if (indx%640 == 0) {
+//                        Log.d(TAG, str)
+//                        str = ""
+//                    }
+//                }
+//                str += "\n]"
+//                Log.d(TAG, str)
+//            }
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
@@ -238,7 +262,7 @@ class MainActivity :
 
         mLoomoRealSense.bind(this)
         mLoomoRealSense.startColorCamera(UIThreadHandler, colorImgBuffer)
-        mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeImgBuffer)
+        mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeImgBuffer, fishEyeByteBuffer)
         mLoomoRealSense.startDepthCamera(UIThreadHandler, depthImgBuffer)
 
         mLoomoBase.bind(this)
