@@ -316,8 +316,8 @@ class MainActivity :
             var tmp = 0
             when (bytesPrPixel) {
                 1 -> tmp += arr[it].toInt() shl 24
-                2 -> tmp += arr[it*2].toInt() + (arr[it*2 + 1].toInt() shl 8)
-                3 -> tmp += arr[it*4].toInt() + (arr[it*4 + 1].toInt() shl 8) + (arr[it*4 + 2].toInt() shl 16) + (0xff shl 24)
+                2 -> tmp += (arr[it*2].toInt() + (arr[it*2 + 1].toInt() shl 8) ) // Needs more work in order to display colors correctly
+                3 -> tmp += (0xff shl 24) + (arr[it*4].toInt() shl 16) + (arr[it*4 + 1].toInt() shl 8) + (arr[it*4 + 2].toInt())
             }
             tmp
         }
