@@ -9,6 +9,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.lifecycle.*
 import com.example.loomoapp.Loomo.*
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_HEIGHT
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_WIDTH
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
 import kotlinx.android.synthetic.main.activity_main.*
@@ -46,9 +52,9 @@ class MainActivity :
     lateinit var mLoomoSensor: LoomoSensor
     lateinit var mLoomoControl: LoomoControl
 
-    var fishEyeImgBuffer = MutableLiveData<Bitmap>()
-    var colorImgBuffer = MutableLiveData<Bitmap>()
-    var depthImgBuffer = MutableLiveData<Bitmap>()
+    var fishEyeByteBuffer = MutableLiveData<ByteArray>()
+    var colorByteBuffer = MutableLiveData<ByteArray>()
+    var depthByteBuffer = MutableLiveData<ByteArray>()
 
     //ROS classes
 //    lateinit var mROSMain: ROSMain
@@ -168,9 +174,9 @@ class MainActivity :
 
         mOpenCVMain.onCreate(this, findViewById(R.id.javaCam))
 
-        colorImgBuffer.observeForever { camViewColor.setImageBitmap(it) }
-        fishEyeImgBuffer.observeForever { camViewFishEye.setImageBitmap(it) }
-        depthImgBuffer.observeForever { camViewDepth.setImageBitmap(it) }
+        colorByteBuffer.observeForever { camViewColor.setImageBitmap(byteArrToBitmap(it, 3, COLOR_WIDTH, COLOR_HEIGHT)) }
+        fishEyeByteBuffer.observeForever { camViewFishEye.setImageBitmap(byteArrToBitmap(it, 1, FISHEYE_WIDTH, FISHEYE_HEIGHT)) }
+        depthByteBuffer.observeForever { camViewDepth.setImageBitmap(byteArrToBitmap(it, 2, DEPTH_WIDTH, DEPTH_HEIGHT)) }
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.GONE
         camViewDepth.visibility = ImageView.GONE
@@ -207,7 +213,27 @@ class MainActivity :
             camViewFishEye.visibility = ImageView.GONE
             camViewDepth.visibility = ImageView.GONE
 
-//            mLoomoRealSense.stopActiveCameras()
+            val tmpArr = fishEyeByteBuffer.value
+            if (tmpArr == null) {
+                Log.d(TAG, "tmpArr = null")
+                return@setOnClickListener
+            } else {
+                Log.d(TAG, "tmpArr size = ${tmpArr.size}")
+            }
+
+//            GlobalScope.launch {
+//                Log.d(TAG, "start")
+//                var str = "[\n"
+//                for ( (indx, num) in tmpArr.withIndex()) {
+//                    str += num.toString() + "\t"
+//                    if (indx%640 == 0) {
+//                        Log.d(TAG, str)
+//                        str = ""
+//                    }
+//                }
+//                str += "\n]"
+//                Log.d(TAG, str)
+//            }
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
@@ -237,9 +263,9 @@ class MainActivity :
         mLoomoSensor.bind(this)
 
         mLoomoRealSense.bind(this)
-        mLoomoRealSense.startColorCamera(UIThreadHandler, colorImgBuffer)
-        mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeImgBuffer)
-        mLoomoRealSense.startDepthCamera(UIThreadHandler, depthImgBuffer)
+        mLoomoRealSense.startColorCamera(UIThreadHandler, colorByteBuffer)
+        mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeByteBuffer)
+        mLoomoRealSense.startDepthCamera(UIThreadHandler, depthByteBuffer)
 
         mLoomoBase.bind(this)
 
@@ -275,6 +301,31 @@ class MainActivity :
 
     }
 
+
+    private fun byteArrToBitmap(arr: ByteArray, bytesPrPixel: Int, width: Int, height: Int): Bitmap {
+        val conf = when(bytesPrPixel) {
+            1 -> Bitmap.Config.ARGB_8888
+            2 -> Bitmap.Config.RGB_565
+            3 -> Bitmap.Config.ARGB_8888
+            else -> {
+                throw RuntimeException("$bytesPrPixel bytes per pixel does not yield a valid Bitmap configuration")
+            }
+        }
+        val pixels = IntArray(width*height) {
+//            var tmp = if (bytesPrPixel == 3) {0xff000000} else {0}
+            var tmp = 0
+            when (bytesPrPixel) {
+                1 -> tmp += arr[it].toInt() shl 24
+                2 -> tmp += arr[it*2].toInt() + (arr[it*2 + 1].toInt() shl 8)
+                3 -> tmp += arr[it*4].toInt() + (arr[it*4 + 1].toInt() shl 8) + (arr[it*4 + 2].toInt() shl 16) + (0xff shl 24)
+            }
+            tmp
+        }
+        val bmp = Bitmap.createBitmap(width, height, conf)
+        bmp.setPixels(pixels, 0, width, 0, 0, width, height)
+
+        return bmp
+    }
 }
 
 

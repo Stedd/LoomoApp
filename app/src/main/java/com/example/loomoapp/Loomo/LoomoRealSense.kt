@@ -14,7 +14,7 @@ import com.segway.robot.sdk.vision.calibration.ColorDepthCalibration
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import java.lang.IllegalArgumentException
+import java.nio.ByteBuffer
 
 
 class LoomoRealSense {
@@ -37,7 +37,8 @@ class LoomoRealSense {
     private var waitingForServiceToBind = false
 
     private var mImgColor = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
-    private var mImgFishEye = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
+    private var mImgFishEye =
+        Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
     private var mImgDepth = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
 
 
@@ -75,16 +76,17 @@ class LoomoRealSense {
         }
     }
 
-    fun startColorCamera(threadHandler: Handler, imgBuffer: MutableLiveData<Bitmap>) {
+    fun startColorCamera(threadHandler: Handler, receiver: MutableLiveData<ByteArray>) {
         GlobalScope.launch {
             if (mVision.isBind) {
                 try {
                     mVision.startListenFrame(
                         StreamType.COLOR
                     ) { streamType, frame ->
-                        mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
+                        //                        mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
+                        val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
                         threadHandler.post {
-                            imgBuffer.value = mImgColor
+                            receiver.value = byteArr
                         }
                     }
                     Log.d(TAG, "Color cam started")
@@ -99,23 +101,23 @@ class LoomoRealSense {
                 while (!mVision.isBind) {
                 }
                 mVision.stopListenFrame(StreamType.COLOR)
-                startColorCamera(threadHandler, imgBuffer) // This recursion is safe.
+                startColorCamera(threadHandler, receiver) // This recursion is safe.
             } else {
                 Log.d(TAG, "Color camera not started. Bind Vision service first")
             }
         }
     }
 
-    fun startFishEyeCamera(threadHandler: Handler, imgBuffer: MutableLiveData<Bitmap>) {
+    fun startFishEyeCamera(threadHandler: Handler, receiver: MutableLiveData<ByteArray>) {
         GlobalScope.launch {
             if (mVision.isBind) {
                 try {
                     mVision.startListenFrame(
                         StreamType.FISH_EYE
                     ) { streamType, frame ->
-                        mImgFishEye.copyPixelsFromBuffer(frame.byteBuffer)
+                        val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
                         threadHandler.post {
-                            imgBuffer.value = mImgFishEye
+                            receiver.value = byteArr
                         }
                     }
                     Log.d(TAG, "Fish Eye cam started")
@@ -130,23 +132,23 @@ class LoomoRealSense {
                 while (!mVision.isBind) {
                 }
                 mVision.stopListenFrame(StreamType.FISH_EYE)
-                startFishEyeCamera(threadHandler, imgBuffer) // This recursion is safe.
+                startFishEyeCamera(threadHandler, receiver) // This recursion is safe.
             } else {
                 Log.d(TAG, "FishEye cam not started. Bind Vision service first")
             }
         }
     }
 
-    fun startDepthCamera(threadHandler: Handler, imgBuffer: MutableLiveData<Bitmap>) {
+    fun startDepthCamera(threadHandler: Handler, receiver: MutableLiveData<ByteArray>) {
         GlobalScope.launch {
             if (mVision.isBind) {
                 try {
                     mVision.startListenFrame(
                         StreamType.DEPTH
                     ) { streamType, frame ->
-                        mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
+                        val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
                         threadHandler.post {
-                            imgBuffer.value = mImgDepth
+                            receiver.value = byteArr
                         }
                     }
                     Log.d(TAG, "Depth cam started")
@@ -161,10 +163,15 @@ class LoomoRealSense {
                 while (!mVision.isBind) {
                 }
                 mVision.stopListenFrame(StreamType.DEPTH)
-                startDepthCamera(threadHandler,imgBuffer) // This recursion is safe
+                startDepthCamera(threadHandler, receiver) // This recursion is safe
             } else {
                 Log.d(TAG, "Depth cam not started. Bind Vision service first")
             }
         }
+    }
+
+    private fun getByteArrFromByteBuf(src: ByteBuffer): ByteArray {
+        val bytesInBuffer = src.remaining()
+        return ByteArray(bytesInBuffer) { src.get() }
     }
 }
