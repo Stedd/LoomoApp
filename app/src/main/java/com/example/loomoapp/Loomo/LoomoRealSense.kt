@@ -76,16 +76,17 @@ class LoomoRealSense {
         }
     }
 
-    fun startColorCamera(threadHandler: Handler, imgBuffer: MutableLiveData<Bitmap>) {
+    fun startColorCamera(threadHandler: Handler, receiver: MutableLiveData<ByteArray>) {
         GlobalScope.launch {
             if (mVision.isBind) {
                 try {
                     mVision.startListenFrame(
                         StreamType.COLOR
                     ) { streamType, frame ->
-                        mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
+                        //                        mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
+                        val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
                         threadHandler.post {
-                            imgBuffer.value = mImgColor
+                            receiver.value = byteArr
                         }
                     }
                     Log.d(TAG, "Color cam started")
@@ -100,30 +101,23 @@ class LoomoRealSense {
                 while (!mVision.isBind) {
                 }
                 mVision.stopListenFrame(StreamType.COLOR)
-                startColorCamera(threadHandler, imgBuffer) // This recursion is safe.
+                startColorCamera(threadHandler, receiver) // This recursion is safe.
             } else {
                 Log.d(TAG, "Color camera not started. Bind Vision service first")
             }
         }
     }
 
-    fun startFishEyeCamera(
-        threadHandler: Handler,
-        imgBuffer: MutableLiveData<Bitmap>,
-        byteBuffer: MutableLiveData<ByteArray>
-    ) {
+    fun startFishEyeCamera(threadHandler: Handler, receiver: MutableLiveData<ByteArray>) {
         GlobalScope.launch {
             if (mVision.isBind) {
                 try {
                     mVision.startListenFrame(
                         StreamType.FISH_EYE
                     ) { streamType, frame ->
-                        mImgFishEye.copyPixelsFromBuffer(frame.byteBuffer)
-                        frame.byteBuffer.rewind()
-                        val tmpBuffer = getByteArrFromByteBuf(frame.byteBuffer)
+                        val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
                         threadHandler.post {
-                            imgBuffer.value = mImgFishEye
-                            byteBuffer.value = tmpBuffer
+                            receiver.value = byteArr
                         }
                     }
                     Log.d(TAG, "Fish Eye cam started")
@@ -138,23 +132,23 @@ class LoomoRealSense {
                 while (!mVision.isBind) {
                 }
                 mVision.stopListenFrame(StreamType.FISH_EYE)
-                startFishEyeCamera(threadHandler, imgBuffer, byteBuffer) // This recursion is safe.
+                startFishEyeCamera(threadHandler, receiver) // This recursion is safe.
             } else {
                 Log.d(TAG, "FishEye cam not started. Bind Vision service first")
             }
         }
     }
 
-    fun startDepthCamera(threadHandler: Handler, imgBuffer: MutableLiveData<Bitmap>) {
+    fun startDepthCamera(threadHandler: Handler, receiver: MutableLiveData<ByteArray>) {
         GlobalScope.launch {
             if (mVision.isBind) {
                 try {
                     mVision.startListenFrame(
                         StreamType.DEPTH
                     ) { streamType, frame ->
-                        mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
+                        val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
                         threadHandler.post {
-                            imgBuffer.value = mImgDepth
+                            receiver.value = byteArr
                         }
                     }
                     Log.d(TAG, "Depth cam started")
@@ -169,7 +163,7 @@ class LoomoRealSense {
                 while (!mVision.isBind) {
                 }
                 mVision.stopListenFrame(StreamType.DEPTH)
-                startDepthCamera(threadHandler, imgBuffer) // This recursion is safe
+                startDepthCamera(threadHandler, receiver) // This recursion is safe
             } else {
                 Log.d(TAG, "Depth cam not started. Bind Vision service first")
             }
