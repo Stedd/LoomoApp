@@ -103,7 +103,7 @@ class MainActivity :
             TAG,
             "sys: " + Time.fromMillis(System.currentTimeMillis())
         )
-        ntpTimeProvider.startPeriodicUpdates(1, TimeUnit.SECONDS)
+        ntpTimeProvider.startPeriodicUpdates(1, TimeUnit.MINUTES)
         nodeConfiguration.timeProvider = ntpTimeProvider
         nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
     }
@@ -115,7 +115,7 @@ class MainActivity :
         Log.i(TAG, "Activity created")
 
         mRealSensePublisherThread =
-            LoopedThread("Publisher_Thread", android.os.Process.THREAD_PRIORITY_FOREGROUND)
+            LoopedThread("Publisher_Thread", Process.THREAD_PRIORITY_FOREGROUND)
         mRealSensePublisherThread.start()
         mRealsensePublisher =
             RealsensePublisher(mDepthStamps, mDepthRosStamps, mRealSensePublisherThread)
@@ -210,8 +210,8 @@ class MainActivity :
 //                consumer.start()
 //            }
             mRealsensePublisher.node_started(mBridgeNode)
-//                mTFPublisher.node_started(mBridgeNode)
-//                mSensorPublisher.node_started(mBridgeNode)
+//            mTFPublisher.node_started(mBridgeNode)
+//            mSensorPublisher.node_started(mBridgeNode)
         }, 10000)
 
         mLoomoSensor.bind(this)

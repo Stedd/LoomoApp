@@ -1,79 +1,82 @@
 package com.example.loomoapp.Runnables
 
-import android.graphics.Bitmap
 import android.util.Log
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_HEIGHT
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_WIDTH
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
 import com.example.loomoapp.ROS.RosBridgeNode
 import com.segway.robot.sdk.vision.calibration.Intrinsic
 import com.segway.robot.sdk.vision.frame.Frame
-import org.jboss.netty.buffer.ChannelBuffer
 import org.jboss.netty.buffer.ChannelBufferOutputStream
 import org.ros.node.topic.Publisher
 import sensor_msgs.CameraInfo
+import sensor_msgs.Image
 import std_msgs.Header
-import java.io.IOException
-import java.nio.channels.Channels
 
 class PublishNewFrame(
-
+    private val source:Int,
+    private val byteArray: ByteArray,
     private val frame: Frame,
     private val bridgeNode: RosBridgeNode,
-    private val bufferStream: ChannelBufferOutputStream
+    private var bufferStream: ChannelBufferOutputStream
 ) : Runnable {
     companion object {
         private const val TAG = "PublishNewFrame"
     }
 
-//    private var tmpBitmap = camBitmap
-    private val channel = Channels.newChannel(bufferStream)
-    lateinit var aChannel: ChannelBuffer
-
     override fun run() {
-//        Log.d(TAG, "New frame");
+        lateinit var image : Image
+        bufferStream.write(byteArray)
+        Log.d(TAG, "image data:${bufferStream.writtenBytes()}")
+        when (source) {
+            1 -> {
+                //sensor_msgs/Image Message
+                //https://docs.ros.org/melodic/api/sensor_msgs/html/msg/Image.html
+                image = bridgeNode.mFisheyeCamPubr!!.newMessage()
+                image.width = FISHEYE_WIDTH             //# image width, that is, number of columns
+                image.height = FISHEYE_HEIGHT           //# image height, that is, number of rows
+                image.step = FISHEYE_HEIGHT/8           //# Full row length in bytes
+                image.encoding = "mono8"
+                image.header.frameId = bridgeNode.FisheyeOpticalFrame
 
-        val compressedImage = bridgeNode.mRsColorCompressedPubr!!.newMessage()
-        val image = bridgeNode.mRsColorPubr!!.newMessage()
-        compressedImage.format = "jpeg"
-//        Log.d(TAG, "COLOR FRAME NUM: " + frame.info.frameNum);
-//        Log.d(TAG, "COLOR FRAME PLATFORM STAMP: " + frame.info.platformTimeStamp);
-        // If process_metadata doesn't want us to publish the frame, bail out now
-//        if (!process_metadata(
-//                RealsenseMetadataSource.COLOR,
-//                frame.info,
-//                compressedImage.header
-//            )
-//        ) {
-//            Log.d(
-//                TAG,
-//                "WARNING: Skipping Color Frame " + frame.info.frameNum
-//            )
-////            return@FrameListener
-//        }
-        // Publish compressed image
-//        compressedImage.header.frameId = bridgeNode.RsColorOpticalFrame
-//        tmpBitmap.compress(Bitmap.CompressFormat.JPEG, 100, bufferStream)
-//        compressedImage.data = bufferStream.buffer().copy()
-//        bridgeNode.mRsColorCompressedPubr!!.publish(compressedImage)
-//        Log.d(TAG, "Publishing compressed color camera frame: " + frame.info.frameNum);
-//        bufferStream.buffer().clear()
+                image.data = bufferStream.buffer().copy()
+                Log.d(TAG, "Publishing FishEye camera frame: " + frame.info.frameNum);
+                bridgeNode.mFisheyeCamPubr!!.publish(image)
+            }
+            2 -> {
+                image = bridgeNode.mRsColorPubr!!.newMessage()
+                image.width = COLOR_WIDTH
+                image.height = COLOR_HEIGHT
+                image.step = COLOR_HEIGHT/8
+                image.encoding = "rgba8"
+                image.header.frameId = bridgeNode.RsColorOpticalFrame
 
-        // Publish raw image
+                image.data = bufferStream.buffer().copy()
+                Log.d(TAG, "Publishing color camera frame: " + frame.info.frameNum);
+                bridgeNode.mRsColorPubr!!.publish(image)
+            }
+            3 -> {
+                image = bridgeNode.mRsDepthPubr!!.newMessage()
+                image.width = DEPTH_WIDTH
+                image.height = DEPTH_HEIGHT
+                image.step = DEPTH_HEIGHT/8
+                image.encoding = "8uc2"
+                image.header.frameId = bridgeNode.RsDepthOpticalFrame
 
-        try {
-            channel.write(frame.byteBuffer)
-            Log.d(TAG, "writing buffer to channel:${frame.byteBuffer}. Channel: $channel" )
-
-        } catch (e: IOException) {
-            Log.e(TAG, "publishRsDepth: IO Exception:${e.message}")
+                image.data = bufferStream.buffer().copy()
+                Log.d(TAG, "Publishing Depth camera frame: " + frame.info.frameNum);
+                bridgeNode.mRsDepthPubr!!.publish(image)
+            }else -> {}
         }
-        image.data = bufferStream.buffer().copy()
-        Log.d(TAG, "image data:${bufferStream.writtenBytes()}" )
-        image.header.frameId = bridgeNode.RsColorOpticalFrame
-
-        bridgeNode.mRsColorPubr!!.publish(image)
-        Log.d(TAG, "Publishing color camera frame: " + frame.info.frameNum);
+        publishCameraInfo(source, image.header)
         bufferStream.buffer().clear()
+    }
 
-        publishCameraInfo(2, compressedImage.header)
+    private fun writeImageData(msg:Publisher<Image>, ):Image{
+
     }
 
     private fun publishCameraInfo(type: Int, header: Header) {

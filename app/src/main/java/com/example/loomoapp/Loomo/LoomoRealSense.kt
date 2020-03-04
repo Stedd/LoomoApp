@@ -15,7 +15,7 @@ import com.segway.robot.sdk.vision.calibration.ColorDepthCalibration
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import java.lang.IllegalArgumentException
+import java.nio.ByteBuffer
 
 
 class LoomoRealSense(publisher: RealsensePublisher) {
@@ -23,7 +23,6 @@ class LoomoRealSense(publisher: RealsensePublisher) {
 
     companion object {
         const val TAG = "LoomoRealSense"
-
         const val COLOR_WIDTH = 640
         const val COLOR_HEIGHT = 480
 
@@ -32,7 +31,6 @@ class LoomoRealSense(publisher: RealsensePublisher) {
 
         const val DEPTH_WIDTH = 320
         const val DEPTH_HEIGHT = 240
-
         val mColorDepthCalibration = ColorDepthCalibration()
     }
 
@@ -71,7 +69,6 @@ class LoomoRealSense(publisher: RealsensePublisher) {
         }
 
         publisher_.setVision(mVision)
-        publisher_.setBitmaps(mImgColor, mImgFishEye, mImgDepth)
 
     }
 
@@ -91,15 +88,14 @@ class LoomoRealSense(publisher: RealsensePublisher) {
                     mVision.startListenFrame(
                         StreamType.COLOR
                     ) { streamType, frame ->
-                        mImgColor.copyPixelsFromBuffer(frame.byteBuffer)
-                        //send frame to publisher
-//                            publisher_.start_color(mVision, frame)
-                        if (frame.info.frameNum % 60 == 0) {
-                            publisher_.newColorFrame(frame)
+                        val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
+                        //send to ROS publisher
+                        if (frame.info.frameNum % 5 == 0) {
+                            publisher_.newColorFrame(byteArr, frame)
                         }
-                        threadHandler.post {
-                            imgBuffer.value = mImgColor
-                        }
+//                        threadHandler.post {
+//                            imgBuffer.value = mImgColor
+//                        }
                     }
                     Log.d(TAG, "Color cam started")
                 } catch (e: IllegalArgumentException) {
@@ -127,10 +123,14 @@ class LoomoRealSense(publisher: RealsensePublisher) {
                     mVision.startListenFrame(
                         StreamType.FISH_EYE
                     ) { streamType, frame ->
-                        mImgFishEye.copyPixelsFromBuffer(frame.byteBuffer)
-                        threadHandler.post {
-                            imgBuffer.value = mImgFishEye
+                        val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
+                        //send to ROS publisher
+                        if (frame.info.frameNum % 5 == 0) {
+                            publisher_.newFishEyeFrame(byteArr, frame)
                         }
+//                        threadHandler.post {
+//                            imgBuffer.value = mImgFishEye
+//                        }
                     }
                     Log.d(TAG, "Fish Eye cam started")
                 } catch (e: IllegalArgumentException) {
@@ -158,10 +158,14 @@ class LoomoRealSense(publisher: RealsensePublisher) {
                     mVision.startListenFrame(
                         StreamType.DEPTH
                     ) { streamType, frame ->
-                        mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
-                        threadHandler.post {
-                            imgBuffer.value = mImgDepth
+                        val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
+                        //send to ROS publisher
+                        if (frame.info.frameNum % 5 == 0) {
+                            publisher_.newDepthFrame(byteArr, frame)
                         }
+//                        threadHandler.post {
+//                            imgBuffer.value = mImgDepth
+//                        }
                     }
                     Log.d(TAG, "Depth cam started")
                 } catch (e: IllegalArgumentException) {
@@ -180,5 +184,10 @@ class LoomoRealSense(publisher: RealsensePublisher) {
                 Log.d(TAG, "Depth cam not started. Bind Vision service first")
             }
         }
+    }
+
+    private fun getByteArrFromByteBuf(src: ByteBuffer): ByteArray {
+        val bytesInBuffer = src.remaining()
+        return ByteArray(bytesInBuffer) { src.get() }
     }
 }

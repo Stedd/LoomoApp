@@ -15,11 +15,9 @@ package com.example.loomoapp.Loomo
 
 import android.content.Context
 import android.util.Log
-import com.example.loomoapp.viewModel.*
 import com.segway.robot.sdk.base.bind.ServiceBinder.BindStateListener
 import com.segway.robot.sdk.perception.sensor.RobotAllSensors
 import com.segway.robot.sdk.perception.sensor.Sensor
-import java.util.logging.Handler
 
 
 open class LoomoSensor() {

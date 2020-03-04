@@ -1,5 +1,11 @@
 package com.example.loomoapp.ROS
 
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_HEIGHT
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_WIDTH
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
 import android.graphics.Bitmap
 import android.util.Log
 import android.util.Pair
@@ -49,12 +55,6 @@ class RealsensePublisher(
     lateinit var mRsColorIntrinsic: Intrinsic
     lateinit var mRsDepthIntrinsic: Intrinsic
     lateinit var mFisheyeIntrinsic: Intrinsic
-    private var mRsColorWidth = 640
-    private var mRsColorHeight = 480
-    private var mRsDepthWidth = 320
-    private var mRsDepthHeight = 240
-    private val mFisheyeWidth = 640
-    private val mFisheyeHeight = 480
     private val mRsColorOutStream: ChannelBufferOutputStream =
         ChannelBufferOutputStream(MessageBuffers.dynamicBuffer()) //todo Hva er dette? Hva er forskjellen på dette og MutableLiveData?
     private val mRsDepthOutStream: ChannelBufferOutputStream =
@@ -62,15 +62,6 @@ class RealsensePublisher(
     private val mFisheyeOutStream: ChannelBufferOutputStream =
         ChannelBufferOutputStream(MessageBuffers.dynamicBuffer())
     private var mRealsenseMeta: RealsenseMetadata? = null
-    lateinit var mRsColorBitmap: Bitmap
-    lateinit var mFisheyeBitmap: Bitmap
-    lateinit var mDepthBitmap: Bitmap
-    var mIsPubRsColor = false
-    var mIsPubRsDepth = false
-    var mIsPubFisheye = false
-    private var mColorStarted = false
-    private var mDepthStarted = false
-    private var mFisheyeStarted = false
     private val mLatestDepthStamp = 0L
 
 
@@ -82,14 +73,6 @@ class RealsensePublisher(
         start()
 // TODO: 03/03/2020 Check what this is used for
 //        start_imu()
-    }
-
-    fun setBitmaps(color: Bitmap, fisheye: Bitmap, depth: Bitmap) {
-        mRsColorBitmap = color
-        mFisheyeBitmap = fisheye
-        mDepthBitmap = depth
-        Log.d(TAG, "Bitmaps set")
-
     }
 
     fun setVision(vision: Vision) {
@@ -120,7 +103,16 @@ class RealsensePublisher(
     override fun stop() { // No generic de-initialization is required
 
     }
-
+    // source: 1 for fisheye, 2 for Color, 3 for Depth
+    fun newColorFrame(byteArray: ByteArray, frame: Frame) {
+        handlerThread.handler.post(PublishNewFrame(2, byteArray, frame, mBridgeNode!!, mRsColorOutStream))
+    }
+    fun newDepthFrame(byteArray: ByteArray, frame: Frame) {
+        handlerThread.handler.post(PublishNewFrame(3, byteArray, frame, mBridgeNode!!, mRsDepthOutStream))
+    }
+    fun newFishEyeFrame(byteArray: ByteArray, frame: Frame) {
+        handlerThread.handler.post(PublishNewFrame(1, byteArray, frame, mBridgeNode!!, mFisheyeOutStream))
+    }
 
 //    @Synchronized
 //    fun start_all() {
@@ -408,9 +400,7 @@ class RealsensePublisher(
     }
 
 
-    fun newColorFrame(frame: Frame) {
-        handlerThread.handler.post(PublishNewFrame(frame, mBridgeNode!!, mRsColorOutStream))
-    }
+
 
 //    var mRsColorListener =
 //        vision_.FrameListener { streamType, frame ->
@@ -539,6 +529,7 @@ class RealsensePublisher(
 //            //            publishCameraInfo(2, image.getHeader());
 //        }
 
+    // TODO: 04/03/2020 Possible to Run config from menu on UI? Or at INIT. Calibration etc..
     fun updateCameraInfo(
         type: Int,
         ins: Intrinsic,
@@ -552,12 +543,10 @@ class RealsensePublisher(
             )
         } else if (type == 2) {
             mRsColorIntrinsic = ins
-            mRsColorWidth = width
-            mRsColorHeight = height
+
         } else {
             mRsDepthIntrinsic = ins
-            mRsDepthWidth = width
-            mRsDepthHeight = height
+
         }
     }
 
@@ -578,13 +567,13 @@ class RealsensePublisher(
         } else if (type == 2) {
             pubr = mBridgeNode!!.mRsColorInfoPubr
 //            intrinsic = mRsColorIntrinsic
-            width = mRsColorWidth
-            height = mRsColorHeight
+            width = COLOR_WIDTH
+            height = COLOR_HEIGHT
         } else {
             pubr = mBridgeNode!!.mRsDepthInfoPubr
             intrinsic = mRsDepthIntrinsic
-            width = mRsDepthWidth
-            height = mRsDepthHeight
+            width = DEPTH_WIDTH
+            height = DEPTH_HEIGHT
         }
         info = pubr!!.newMessage()
         val k = DoubleArray(9)
