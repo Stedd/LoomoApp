@@ -79,39 +79,36 @@ class LoomoRealSense {
         }
     }
 
-    fun startColorCamera(threadHandler: Handler, receiver: MutableLiveData<ByteArray>) {
+    fun startColorCamera(threadHandler: Handler, receiver: MutableLiveData<ByteBuffer>) {
         startCamera(StreamType.COLOR, threadHandler, receiver)
     }
 
-    fun startFishEyeCamera(threadHandler: Handler, receiver: MutableLiveData<ByteArray>) {
+    fun startFishEyeCamera(threadHandler: Handler, receiver: MutableLiveData<ByteBuffer>) {
         startCamera(StreamType.FISH_EYE, threadHandler, receiver)
     }
 
-    fun startDepthCamera(threadHandler: Handler, receiver: MutableLiveData<ByteArray>) {
+    fun startDepthCamera(threadHandler: Handler, receiver: MutableLiveData<ByteBuffer>) {
         startCamera(StreamType.DEPTH, threadHandler, receiver)
     }
 
-    private fun getByteArrFromByteBuf(src: ByteBuffer): ByteArray {
-        val bytesInBuffer = src.remaining()
-        return ByteArray(bytesInBuffer) { src.get() }
-    }
 
 
     @Suppress("ControlFlowWithEmptyBody")
     private fun startCamera(
         streamType: Int,
         threadHandler: Handler,
-        receiver: MutableLiveData<ByteArray>
+        receiver: MutableLiveData<ByteBuffer>
     ) {
-        //TODO("Check if 'receiver' is unique. If several cameras try to write to the same MutableLiveData, the app crashes")
         GlobalScope.launch {
             when {
                 mVision.isBind -> {
                     try {
                         mVision.startListenFrame(streamType)
                         { streamType, frame ->
-                            val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
-                            threadHandler.post { receiver.value = byteArr }
+                            threadHandler.post {
+                                receiver.value = copyBuffer(frame.byteBuffer)
+//                                receiver.value.position(frame.byteBuffer.position())
+                            }
                         }
                     } catch (e: IllegalArgumentException) {
                         Log.d(
@@ -135,5 +132,21 @@ class LoomoRealSense {
                 }
             }
         }
+    }
+
+    fun getByteBufferAsByteArray(src: ByteBuffer): ByteArray {
+        val bytesInBuffer = src.remaining()
+        val tmpArr = ByteArray(bytesInBuffer) { src.get() }
+        src.rewind()
+        return tmpArr
+    }
+
+    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
+        val copy = ByteBuffer.allocate(src.capacity())
+        src.rewind()
+        copy.put(src)
+        src.rewind()
+        copy.flip()
+        return copy
     }
 }
