@@ -212,28 +212,6 @@ class MainActivity :
             camViewColor.visibility = ImageView.GONE
             camViewFishEye.visibility = ImageView.GONE
             camViewDepth.visibility = ImageView.GONE
-
-            val tmpArr = fishEyeByteBuffer.value
-            if (tmpArr == null) {
-                Log.d(TAG, "tmpArr = null")
-                return@setOnClickListener
-            } else {
-                Log.d(TAG, "tmpArr size = ${tmpArr.size}")
-            }
-
-//            GlobalScope.launch {
-//                Log.d(TAG, "start")
-//                var str = "[\n"
-//                for ( (indx, num) in tmpArr.withIndex()) {
-//                    str += num.toString() + "\t"
-//                    if (indx%640 == 0) {
-//                        Log.d(TAG, str)
-//                        str = ""
-//                    }
-//                }
-//                str += "\n]"
-//                Log.d(TAG, str)
-//            }
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
@@ -246,6 +224,16 @@ class MainActivity :
 
         //Helloworld from c++
         sample_text.text = stringFromJNI()
+    }
+
+    private val camViewFishEye by lazy {
+        findViewById<ImageView>(R.id.camViewFishEye)
+    }
+    private val camViewColor by lazy {
+        findViewById<ImageView>(R.id.camViewColor)
+    }
+    private val camViewDepth by lazy {
+        findViewById<ImageView>(R.id.camViewDepth)
     }
 
     override fun onResume() {
@@ -272,17 +260,6 @@ class MainActivity :
         super.onResume()
     }
 
-    private val camViewFishEye by lazy {
-        findViewById<ImageView>(R.id.camViewFishEye)
-    }
-    private val camViewColor by lazy {
-        findViewById<ImageView>(R.id.camViewColor)
-    }
-    private val camViewDepth by lazy {
-        findViewById<ImageView>(R.id.camViewDepth)
-    }
-
-
 
     override fun onDestroy() {
         stopThreads()
@@ -296,9 +273,6 @@ class MainActivity :
 
     private fun stopThreads() {
         mLoomoControl.stopController(this, "App paused, Controller thread stopping")
-
-//        mLoomoRealSense.stopCamera(this, "App paused, Camera thread stopping")
-
     }
 
 
@@ -312,7 +286,6 @@ class MainActivity :
             }
         }
         val pixels = IntArray(width*height) {
-//            var tmp = if (bytesPrPixel == 3) {0xff000000} else {0}
             var tmp = 0
             when (bytesPrPixel) {
                 1 -> tmp += arr[it].toInt() shl 24
