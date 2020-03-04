@@ -18,6 +18,8 @@ import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.ros.address.InetAddressFactory
 import org.ros.android.AppCompatRosActivity
 import org.ros.message.Time
@@ -25,6 +27,7 @@ import org.ros.node.NodeConfiguration
 import org.ros.node.NodeMainExecutor
 import org.ros.time.NtpTimeProvider
 import java.net.URI
+import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
@@ -52,9 +55,10 @@ class MainActivity :
     lateinit var mLoomoSensor: LoomoSensor
     lateinit var mLoomoControl: LoomoControl
 
-    var fishEyeByteBuffer = MutableLiveData<ByteArray>()
-    var colorByteBuffer = MutableLiveData<ByteArray>()
-    var depthByteBuffer = MutableLiveData<ByteArray>()
+    private val fishEyeByteBuffer = MutableLiveData<ByteBuffer>()
+    private val colorByteBuffer = MutableLiveData<ByteBuffer>()
+    private val depthByteBuffer = MutableLiveData<ByteBuffer>()
+
 
     //ROS classes
 //    lateinit var mROSMain: ROSMain
@@ -116,10 +120,7 @@ class MainActivity :
         }
         Log.d(TAG, "master uri: " + masterUri.host)
         Log.d(TAG, "ros: " + ntpTimeProvider.currentTime.toString())
-        Log.d(
-            TAG,
-            "sys: " + Time.fromMillis(System.currentTimeMillis())
-        )
+        Log.d(TAG, "sys: " + Time.fromMillis(System.currentTimeMillis()))
         ntpTimeProvider.startPeriodicUpdates(1, TimeUnit.MINUTES)
         nodeConfiguration.timeProvider = ntpTimeProvider
         nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
@@ -139,8 +140,7 @@ class MainActivity :
 
         //Publishers
         mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps, mLoomoRealSense)
-        mTFPublisher =
-            TFPublisher(mDepthStamps, mDepthRosStamps, mLoomoBase, mLoomoSensor, mLoomoRealSense)
+        mTFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps, mLoomoBase, mLoomoSensor, mLoomoRealSense)
         mSensorPublisher = SensorPublisher(mLoomoSensor)
         mRosBridgeConsumers = listOf(mRealsensePublisher, mTFPublisher, mSensorPublisher)
 
@@ -160,11 +160,12 @@ class MainActivity :
         // Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode()
 
+        //Start OpenCV Service
         mOpenCVMain = OpenCVMain()
         intentOpenCV = Intent(this, mOpenCVMain::class.java)
-
-        //Start OpenCV Service
         startService(intentOpenCV)
+        mOpenCVMain.onCreate(this, findViewById(R.id.javaCam))
+
 
         //Start Ros Activity
 //        mROSMain.initMain()
@@ -172,11 +173,23 @@ class MainActivity :
 
         mLoomoControl.mControllerThread.start()
 
-        mOpenCVMain.onCreate(this, findViewById(R.id.javaCam))
+//        colorByteBuffer.observeForever { camViewColor.setImageBitmap(byteArrToBitmap(getByteArrFromByteBuf(it), 3, COLOR_WIDTH, COLOR_HEIGHT)) }
+        colorByteBuffer.observeForever {
+            val bmp = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
+            bmp.copyPixelsFromBuffer(it)
+            camViewColor.setImageBitmap(bmp)
+        }
+        fishEyeByteBuffer.observeForever {
+            val bmp = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
+            bmp.copyPixelsFromBuffer(it)
+            camViewFishEye.setImageBitmap(bmp)
+        }
+        depthByteBuffer.observeForever {
+            val bmp = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
+            bmp.copyPixelsFromBuffer(it)
+            camViewDepth.setImageBitmap(bmp)
+        }
 
-        colorByteBuffer.observeForever { camViewColor.setImageBitmap(byteArrToBitmap(it, 3, COLOR_WIDTH, COLOR_HEIGHT)) }
-        fishEyeByteBuffer.observeForever { camViewFishEye.setImageBitmap(byteArrToBitmap(it, 1, FISHEYE_WIDTH, FISHEYE_HEIGHT)) }
-        depthByteBuffer.observeForever { camViewDepth.setImageBitmap(byteArrToBitmap(it, 2, DEPTH_WIDTH, DEPTH_HEIGHT)) }
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.GONE
         camViewDepth.visibility = ImageView.GONE
@@ -212,28 +225,6 @@ class MainActivity :
             camViewColor.visibility = ImageView.GONE
             camViewFishEye.visibility = ImageView.GONE
             camViewDepth.visibility = ImageView.GONE
-
-            val tmpArr = fishEyeByteBuffer.value
-            if (tmpArr == null) {
-                Log.d(TAG, "tmpArr = null")
-                return@setOnClickListener
-            } else {
-                Log.d(TAG, "tmpArr size = ${tmpArr.size}")
-            }
-
-//            GlobalScope.launch {
-//                Log.d(TAG, "start")
-//                var str = "[\n"
-//                for ( (indx, num) in tmpArr.withIndex()) {
-//                    str += num.toString() + "\t"
-//                    if (indx%640 == 0) {
-//                        Log.d(TAG, str)
-//                        str = ""
-//                    }
-//                }
-//                str += "\n]"
-//                Log.d(TAG, str)
-//            }
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
@@ -247,6 +238,7 @@ class MainActivity :
         //Helloworld from c++
         sample_text.text = stringFromJNI()
     }
+
 
     override fun onResume() {
 
@@ -272,17 +264,6 @@ class MainActivity :
         super.onResume()
     }
 
-    private val camViewFishEye by lazy {
-        findViewById<ImageView>(R.id.camViewFishEye)
-    }
-    private val camViewColor by lazy {
-        findViewById<ImageView>(R.id.camViewColor)
-    }
-    private val camViewDepth by lazy {
-        findViewById<ImageView>(R.id.camViewDepth)
-    }
-
-
 
     override fun onDestroy() {
         stopThreads()
@@ -296,35 +277,6 @@ class MainActivity :
 
     private fun stopThreads() {
         mLoomoControl.stopController(this, "App paused, Controller thread stopping")
-
-//        mLoomoRealSense.stopCamera(this, "App paused, Camera thread stopping")
-
-    }
-
-
-    private fun byteArrToBitmap(arr: ByteArray, bytesPrPixel: Int, width: Int, height: Int): Bitmap {
-        val conf = when(bytesPrPixel) {
-            1 -> Bitmap.Config.ARGB_8888
-            2 -> Bitmap.Config.RGB_565
-            3 -> Bitmap.Config.ARGB_8888
-            else -> {
-                throw RuntimeException("$bytesPrPixel bytes per pixel does not yield a valid Bitmap configuration")
-            }
-        }
-        val pixels = IntArray(width*height) {
-//            var tmp = if (bytesPrPixel == 3) {0xff000000} else {0}
-            var tmp = 0
-            when (bytesPrPixel) {
-                1 -> tmp += arr[it].toInt() shl 24
-                2 -> tmp += arr[it*2].toInt() + (arr[it*2 + 1].toInt() shl 8)
-                3 -> tmp += arr[it*4].toInt() + (arr[it*4 + 1].toInt() shl 8) + (arr[it*4 + 2].toInt() shl 16) + (0xff shl 24)
-            }
-            tmp
-        }
-        val bmp = Bitmap.createBitmap(width, height, conf)
-        bmp.setPixels(pixels, 0, width, 0, 0, width, height)
-
-        return bmp
     }
 }
 

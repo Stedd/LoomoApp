@@ -13,7 +13,8 @@ import org.opencv.core.MatOfByte
 import org.opencv.core.MatOfKeyPoint
 import org.opencv.features2d.ORB
 
-class OpenCVMain: Service(), CameraBridgeViewBase.CvCameraViewListener2 {
+//class OpenCVMain: Service(), CameraBridgeViewBase.CvCameraViewListener2 {
+class OpenCVMain: Service() {
     private val TAG = "OpenCVClass"
 
     init {
@@ -39,20 +40,12 @@ class OpenCVMain: Service(), CameraBridgeViewBase.CvCameraViewListener2 {
         return Binder()
     }
 
-    fun onCreate(context: Context, camFrame: JavaCameraView){
-        //Initialize OpenCV camera view
-        camFrame.setCameraPermissionGranted()
-        camFrame.visibility = SurfaceView.INVISIBLE
-        camFrame.setCameraIndex(-1)
-        camFrame.setCvCameraViewListener(this)
-
+    fun onCreate(context: Context, camFrame: JavaCameraView) {
         mLoaderCallback = object : BaseLoaderCallback(context) {
             override fun onManagerConnected(status: Int) {
                 when (status) {
                     LoaderCallbackInterface.SUCCESS -> {
-                        Log.i(TAG, "OpenCV loaded successfully, enabling camera view")
-                        camFrame.enableView()
-                        camFrame.visibility = SurfaceView.VISIBLE
+                        Log.d(TAG, "OpenCV loaded successfully")
                     }
                     else -> {
                         super.onManagerConnected(status)
@@ -61,10 +54,32 @@ class OpenCVMain: Service(), CameraBridgeViewBase.CvCameraViewListener2 {
             }
         }
     }
+//    fun onCreate(context: Context, camFrame: JavaCameraView){
+//        //Initialize OpenCV camera view
+//        camFrame.setCameraPermissionGranted()
+//        camFrame.visibility = SurfaceView.INVISIBLE
+//        camFrame.setCameraIndex(-1)
+//        camFrame.setCvCameraViewListener(this)
+//
+//        mLoaderCallback = object : BaseLoaderCallback(context) {
+//            override fun onManagerConnected(status: Int) {
+//                when (status) {
+//                    LoaderCallbackInterface.SUCCESS -> {
+//                        Log.i(TAG, "OpenCV loaded successfully, enabling camera view")
+//                        camFrame.enableView()
+//                        camFrame.visibility = SurfaceView.VISIBLE
+//                    }
+//                    else -> {
+//                        super.onManagerConnected(status)
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     fun resume(){
         //Start OpenCV
-        Log.i(TAG, "Activity resumed")
+        Log.d(TAG, "Activity resumed")
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization")
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback)
@@ -74,15 +89,19 @@ class OpenCVMain: Service(), CameraBridgeViewBase.CvCameraViewListener2 {
         }
     }
 
-    override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
-        return inputFrame.gray()
+    fun newFrame(byteArr: ByteArray) {
+        val frame = MatOfByte(*byteArr)
     }
 
-    override fun onCameraViewStarted(width: Int, height: Int) {
-
-    }
-
-    override fun onCameraViewStopped() {
-    }
+//    override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
+//        return inputFrame.rgba()
+//    }
+//
+//    override fun onCameraViewStarted(width: Int, height: Int) {
+//
+//    }
+//
+//    override fun onCameraViewStopped() {
+//    }
 
 }
