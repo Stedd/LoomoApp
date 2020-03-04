@@ -6,7 +6,6 @@ import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
-import android.graphics.Bitmap
 import android.util.Log
 import android.util.Pair
 import com.example.loomoapp.LoopedThread
@@ -23,7 +22,6 @@ import org.ros.node.topic.Publisher
 import sensor_msgs.CameraInfo
 import std_msgs.Header
 import java.nio.ByteBuffer
-import java.nio.channels.Channels
 import java.util.*
 
 class RealsensePublisher(
@@ -37,6 +35,7 @@ class RealsensePublisher(
     companion object {
         const val TAG = "RealsensePublisher"
     }
+
     private enum class RealsenseMetadataSource {
         DEPTH, COLOR, FISHEYE
     }
@@ -48,8 +47,6 @@ class RealsensePublisher(
         var source: RealsenseMetadataSource? = null
     }
 
-
-    //    private var mVision: Vision? = null
     private var mBridgeNode: RosBridgeNode? = null
     private lateinit var vision_: Vision
     lateinit var mRsColorIntrinsic: Intrinsic
@@ -63,9 +60,6 @@ class RealsensePublisher(
         ChannelBufferOutputStream(MessageBuffers.dynamicBuffer())
     private var mRealsenseMeta: RealsenseMetadata? = null
     private val mLatestDepthStamp = 0L
-
-
-//    lateinit var mPublisherHandler: Handler
 
     override fun node_started(mBridgeNode: RosBridgeNode) {
         this.mBridgeNode = mBridgeNode
@@ -81,20 +75,9 @@ class RealsensePublisher(
 
     override fun start() { // No generic initialization is required
         if (mBridgeNode == null || !vision_.isBind) {
-            Log.d(
-                TAG,
-                "RealsensePublisher Cannot start , ROS or Loomo SDK is not ready"
-            )
+            Log.d(TAG, "RealsensePublisher Cannot start , ROS or Loomo SDK is not ready")
             return
         } else {
-//            mPublisherThread = LoopedThread("Publisher_Thread", android.os.Process.THREAD_PRIORITY_FOREGROUND)
-//            mPublisherThread.start()
-            Log.d(TAG, "Publisherthread running on:${handlerThread.threadId}")
-
-            if (handlerThread.isAlive) {
-//                mPublisherHandler = mPublisherThread.getHandler()
-                Log.d(TAG, "RealsensePublisher Publisher handler started")
-            }
             Log.d(TAG, "RealsensePublisher started")
         }
 
@@ -103,78 +86,49 @@ class RealsensePublisher(
     override fun stop() { // No generic de-initialization is required
 
     }
+
     // source: 1 for fisheye, 2 for Color, 3 for Depth
-    fun newColorFrame(byteArray: ByteArray, frame: Frame) {
-        handlerThread.handler.post(PublishNewFrame(2, byteArray, frame, mBridgeNode!!, mRsColorOutStream))
-    }
-    fun newDepthFrame(byteArray: ByteArray, frame: Frame) {
-        handlerThread.handler.post(PublishNewFrame(3, byteArray, frame, mBridgeNode!!, mRsDepthOutStream))
-    }
-    fun newFishEyeFrame(byteArray: ByteArray, frame: Frame) {
-        handlerThread.handler.post(PublishNewFrame(1, byteArray, frame, mBridgeNode!!, mFisheyeOutStream))
+
+//    fun publishFishEyeImage(frame: Frame) {
+//        handlerThread.handler.post(
+//            PublishNewFrame(
+//                1,
+//                frame,
+//                mBridgeNode!!,
+//                mFisheyeOutStream
+//            )
+//        )
+//    }
+
+    fun publishColorImage(byteBuffer: ByteBuffer, info:FrameInfo) {
+        handlerThread.handler.post(
+            PublishNewFrame(
+                2,
+                getByteBufferAsByteArray(byteBuffer),
+                info,
+                mBridgeNode!!,
+                mRsColorOutStream
+            )
+        )
     }
 
-//    @Synchronized
-//    fun start_all() {
-//        if (!vision_.isBind || mBridgeNode == null) {
-//            Log.d(
-//                TAG,
-//                "Cannot start_listening yet, a required service is not ready"
+//    fun publishDepthImage(frame: Frame) {
+//        handlerThread.handler.post(
+//            PublishNewFrame(
+//                3,
+//                frame,
+//                mBridgeNode!!,
+//                mRsDepthOutStream
 //            )
-//            return
-//        }
-//        Log.d(TAG, "start_all() called")
-//        val infos = vision_.activatedStreamInfo
-//        for (info in infos) {
-//            when (info.streamType) {
-//                StreamType.COLOR -> {
-//                    updateCameraInfo(
-//                        2, vision_.colorDepthCalibrationData.colorIntrinsic,
-//                        info.width, info.height
-//                    )
-//                    vision_.startListenFrame(
-//                        StreamType.COLOR,
-//                        mRsColorListener
-//                    )
-//                }
-//                StreamType.DEPTH -> {
-//                    updateCameraInfo(
-//                        3, vision_.colorDepthCalibrationData.depthIntrinsic,
-//                        info.width, info.height
-//                    )
-//                    vision_.startListenFrame(
-//                        StreamType.DEPTH,
-//                        mRsDepthListener
-//                    )
-//                }
-//            }
-//        }
-//        Log.w(TAG, "start_all() done.")
+//        )
 //    }
-//
-//    @Synchronized
-//    fun stop_all() {
-//        if (!vision_.isBind || mBridgeNode == null) {
-//            Log.d(
-//                TAG,
-//                "Cannot start_listening yet, a required service is not ready"
-//            )
-//            return
-//        }
-//        Log.d(TAG, "stop_all() called")
-//        val streamInfos = vision_.activatedStreamInfo
-//        for (info in streamInfos) {
-//            when (info.streamType) {
-//                StreamType.COLOR ->  // Stop color listener
-//                    vision_.stopListenFrame(StreamType.COLOR)
-//                StreamType.DEPTH ->  // Stop depth listener
-//                    vision_.stopListenFrame(StreamType.DEPTH)
-//            }
-//        }
-//        mColorStarted = false
-//        mDepthStarted = false
-//        mFisheyeStarted = false
-//    }
+
+    private fun getByteBufferAsByteArray(src: ByteBuffer): ByteArray {
+        val bytesInBuffer = src.remaining()
+        val tmpArr = ByteArray(bytesInBuffer) { src.get() }
+//        src.rewind()
+        return tmpArr
+    }
 
     @Synchronized
     fun start_imu() {
@@ -187,110 +141,6 @@ class RealsensePublisher(
         }
         vision_.setIMUCallback(this)
     }
-
-//    @Synchronized
-//    fun start_color(frame: Frame) {
-////        if (!vision_.mVision.isBind || mBridgeNode == null || mColorStarted) {
-////            Log.d(
-////                TAG,
-////                "Cannot start_listening yet, a required service is not ready"
-////            )
-////            return
-////        }
-//        mColorStarted = true
-//        Log.d(TAG, "start_color() called")
-//        updateCameraInfo(
-//            2, vision_.mVision.colorDepthCalibrationData.colorIntrinsic,
-//            mRsColorWidth, mRsColorHeight
-//        )
-//        vision_.mVision.startListenFrame(
-//            StreamType.COLOR,
-//            mRsColorListener
-//        )
-//        Log.d(TAG, "start_color() called")
-//    }
-//
-//    @Synchronized
-//    fun start_depth() {
-//        if (!vision_.isBind || mBridgeNode == null || mDepthStarted) {
-//            Log.d(
-//                TAG,
-//                "Cannot start_listening yet, a required service is not ready"
-//            )
-//            return
-//        }
-//        mDepthStarted = true
-//        Log.d(TAG, "start_depth() called")
-//        updateCameraInfo(
-//            3, vision_.colorDepthCalibrationData.depthIntrinsic,
-//            mRsDepthWidth, mRsDepthHeight
-//        )
-//        vision_.startListenFrame(
-//            StreamType.DEPTH,
-//            mRsDepthListener
-//        )
-//    }
-//
-//    @Synchronized
-//    fun start_fisheye() {
-//        if (!vision_.isBind) {
-//            Log.d(
-//                TAG,
-//                "Cannot start_listening yet, a required service is not ready"
-//            )
-//            return
-//        }
-//        mFisheyeStarted = true
-//        Log.d(TAG, "start_fisheye() called")
-//        //        updateCameraInfo(1, vision_.getColorDepthCalibrationData().colorIntrinsic,
-////                mFisheyeWidth, mFisheyeHeight);
-//        vision_.startListenFrame(
-//            StreamType.FISH_EYE,
-//            mFisheyeListener
-//        )
-//    }
-//
-//    @Synchronized
-//    fun stop_color() {
-//        if (!vision_.isBind || !mColorStarted) {
-//            Log.d(
-//                TAG,
-//                "Cannot start_listening yet, a required service is not ready"
-//            )
-//            return
-//        }
-//        Log.d(TAG, "stop_color() called")
-//        vision_.stopListenFrame(StreamType.COLOR)
-//        mColorStarted = false
-//    }
-//
-//    @Synchronized
-//    fun stop_depth() {
-//        if (!vision_.isBind || !mDepthStarted) {
-//            Log.d(
-//                TAG,
-//                "Cannot start_listening yet, a required service is not ready"
-//            )
-//            return
-//        }
-//        Log.d(TAG, "stop_depth() called")
-//        vision_.stopListenFrame(StreamType.DEPTH)
-//        mDepthStarted = false
-//    }
-//
-//    @Synchronized
-//    fun stop_fisheye() {
-//        if (!vision_.isBind || !mFisheyeStarted) {
-//            Log.d(
-//                TAG,
-//                "Cannot start_listening yet, a required service is not ready"
-//            )
-//            return
-//        }
-//        Log.d(TAG, "stop_fisheye() called")
-//        vision_.stopListenFrame(StreamType.FISH_EYE)
-//        mFisheyeStarted = false
-//    }
 
     @Synchronized
     private fun process_metadata(
@@ -398,136 +248,6 @@ class RealsensePublisher(
         imageHeader.stamp = correctedStampTime
         return true
     }
-
-
-
-
-//    var mRsColorListener =
-//        vision_.FrameListener { streamType, frame ->
-//              //        Log.d(TAG, "New frame from color camera");
-////        if (streamType != StreamType.COLOR) {
-////            Log.e(
-////                TAG,
-////                "onNewFrame@mRsColorListener: stream type not COLOR! THIS IS A BUG"
-////            )
-//////            return@FrameListener
-////        }
-////
-////        if (mRsColorBitmap == null) {
-////            mRsColorBitmap =
-////                Bitmap.createBitmap(mRsColorWidth, mRsColorHeight, Bitmap.Config.ARGB_8888)
-////        }
-//        val compressedImage = mBridgeNode!!.mRsColorCompressedPubr!!.newMessage()
-////        val image           = mBridgeNode!!.mRsColorPubr!!.newMessage()
-//        compressedImage.format = "png"
-//        Log.d(TAG, "COLOR FRAME NUM: " + frame.info.frameNum);
-//        Log.d(TAG, "COLOR FRAME PLATFORM STAMP: " + frame.info.platformTimeStamp);
-//        // If process_metadata doesn't want us to publish the frame, bail out now
-//        if (!process_metadata(
-//                RealsenseMetadataSource.COLOR,
-//                frame.info,
-//                compressedImage.header
-//            )
-//        ) {
-//            Log.d(
-//                TAG,
-//                "WARNING: Skipping Color Frame " + frame.info.frameNum
-//            )
-////            return@FrameListener
-//        }
-//        // Publish compressed image
-//        compressedImage.header.frameId = mBridgeNode!!.RsColorOpticalFrame
-////        mRsColorBitmap.copyPixelsFromBuffer(frame.byteBuffer)
-//        mRsColorBitmap = img
-//        mRsColorBitmap.compress(Bitmap.CompressFormat.PNG, 100, mRsColorOutStream)
-//        compressedImage.data = mRsColorOutStream.buffer().copy()
-//        mRsColorOutStream.buffer().clear()
-//        Log.d(TAG, "Publishing color camera frame: " + frame.info.frameNum);
-//        publishCameraInfo(2, compressedImage.header)
-//    }
-//    }
-
-
-//    var mRsDepthListener =
-//        vision_.FrameListener { streamType, frame ->
-//            if (!mIsPubRsDepth) return@FrameListener
-//            if (streamType != StreamType.DEPTH) {
-//                Log.e(
-//                    TAG,
-//                    "onNewFrame@mRsDepthListener: stream type not DEPTH! THIS IS A BUG"
-//                )
-//                return@FrameListener
-//            }
-//            Log.d(TAG, "DEPTH FRAME NUM: " + frame.getInfo().getFrameNum());
-//            //Log.d(TAG, "DEPTH FRAME PLATFORM STAMP: " + frame.getInfo().getPlatformTimeStamp());
-//            val image = mBridgeNode!!.mRsDepthPubr!!.newMessage()
-//            image.width = mRsDepthWidth
-//            image.height = mRsDepthHeight
-//            image.step = mRsDepthWidth * 2
-//            image.encoding = "16UC1"
-//            image.header.frameId = mBridgeNode!!.RsDepthOpticalFrame
-//            // If process_metadata doesn't want us to publish the frame, bail out now
-//            if (!process_metadata(
-//                    RealsenseMetadataSource.DEPTH,
-//                    frame.info,
-//                    image.header
-//                )
-//            ) {
-//                Log.d(
-//                    TAG,
-//                    "WARNING: Skipping Depth Frame " + frame.info.frameNum
-//                )
-//                return@FrameListener
-//            }
-//            try {
-//                val channel =
-//                    Channels.newChannel(mRsDepthOutStream)
-//                channel.write(frame.byteBuffer)
-//            } catch (exception: IOException) {
-//                Log.e(
-//                    TAG,
-//                    String.format("publishRsDepth: IO Exception[%s]", exception.message)
-//                )
-//                return@FrameListener
-//            }
-//            image.data = mRsDepthOutStream.buffer().copy()
-//            mRsDepthOutStream.buffer().clear()
-//            mBridgeNode!!.mRsDepthPubr!!.publish(image)
-//            publishCameraInfo(3, image.header)
-//        }
-//    var mFisheyeListener =
-//        Vision.FrameListener { streamType, frame ->
-//            //            Log.d(TAG, "mRsColorListener onNewFrame...");
-////            if (streamType != StreamType.FISH_EYE) {
-////                Log.d(
-////                    TAG,
-////                    "mFisheyeListener: !mIsPubFisheye"
-////                )
-////                return@FrameListener
-////            }
-//            if (streamType != StreamType.FISH_EYE) {
-//                Log.e(
-//                    TAG,
-//                    "onNewFrame@mFisheyeListener: stream type not FISH_EYE! THIS IS A BUG"
-//                )
-//                return@FrameListener
-//            }
-//            if (mFisheyeBitmap == null || mFisheyeBitmap!!.width != mFisheyeWidth || mFisheyeBitmap!!.height != mFisheyeHeight
-//            ) {
-//                mFisheyeBitmap =
-//                    Bitmap.createBitmap(mFisheyeWidth, mFisheyeHeight, Bitmap.Config.ALPHA_8)
-//            }
-//            mFisheyeBitmap!!.copyPixelsFromBuffer(frame.byteBuffer) // copy once
-//            val image = mBridgeNode!!.mFisheyeCompressedPubr!!.newMessage()
-//            image.format = "jpeg"
-//            image.header.stamp = Time.fromNano(platformStampInNano(frame.info.platformTimeStamp))
-//            image.header.frameId = mBridgeNode!!.FisheyeOpticalFrame
-//            mFisheyeBitmap!!.compress(Bitmap.CompressFormat.JPEG, 100, mFisheyeOutStream)
-//            image.data = mFisheyeOutStream.buffer().copy() // copy twice
-//            mFisheyeOutStream.buffer().clear()
-//            mBridgeNode!!.mFisheyeCompressedPubr!!.publish(image)
-//            //            publishCameraInfo(2, image.getHeader());
-//        }
 
     // TODO: 04/03/2020 Possible to Run config from menu on UI? Or at INIT. Calibration etc..
     fun updateCameraInfo(

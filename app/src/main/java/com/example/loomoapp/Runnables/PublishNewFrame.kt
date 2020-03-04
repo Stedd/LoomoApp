@@ -10,16 +10,18 @@ import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
 import com.example.loomoapp.ROS.RosBridgeNode
 import com.segway.robot.sdk.vision.calibration.Intrinsic
 import com.segway.robot.sdk.vision.frame.Frame
+import com.segway.robot.sdk.vision.frame.FrameInfo
 import org.jboss.netty.buffer.ChannelBufferOutputStream
 import org.ros.node.topic.Publisher
 import sensor_msgs.CameraInfo
 import sensor_msgs.Image
 import std_msgs.Header
+import java.nio.ByteBuffer
 
 class PublishNewFrame(
     private val source:Int,
     private val byteArray: ByteArray,
-    private val frame: Frame,
+    private val info: FrameInfo,
     private val bridgeNode: RosBridgeNode,
     private var bufferStream: ChannelBufferOutputStream
 ) : Runnable {
@@ -43,7 +45,7 @@ class PublishNewFrame(
                 image.header.frameId = bridgeNode.FisheyeOpticalFrame
 
                 image.data = bufferStream.buffer().copy()
-                Log.d(TAG, "Publishing FishEye camera frame: " + frame.info.frameNum);
+//                Log.d(TAG, "Publishing FishEye camera frame: " + frame.info.frameNum);
                 bridgeNode.mFisheyeCamPubr!!.publish(image)
             }
             2 -> {
@@ -55,7 +57,7 @@ class PublishNewFrame(
                 image.header.frameId = bridgeNode.RsColorOpticalFrame
 
                 image.data = bufferStream.buffer().copy()
-                Log.d(TAG, "Publishing color camera frame: " + frame.info.frameNum);
+//                Log.d(TAG, "Publishing color camera frame: " + frame.info.frameNum);
                 bridgeNode.mRsColorPubr!!.publish(image)
             }
             3 -> {
@@ -63,20 +65,16 @@ class PublishNewFrame(
                 image.width = DEPTH_WIDTH
                 image.height = DEPTH_HEIGHT
                 image.step = DEPTH_HEIGHT/8
-                image.encoding = "8uc2"
+                image.encoding = "16u1"
                 image.header.frameId = bridgeNode.RsDepthOpticalFrame
 
                 image.data = bufferStream.buffer().copy()
-                Log.d(TAG, "Publishing Depth camera frame: " + frame.info.frameNum);
+//                Log.d(TAG, "Publishing Depth camera frame: " + frame.info.frameNum);
                 bridgeNode.mRsDepthPubr!!.publish(image)
             }else -> {}
         }
         publishCameraInfo(source, image.header)
         bufferStream.buffer().clear()
-    }
-
-    private fun writeImageData(msg:Publisher<Image>, ):Image{
-
     }
 
     private fun publishCameraInfo(type: Int, header: Header) {
@@ -149,3 +147,4 @@ class PublishNewFrame(
     }
 
 }
+

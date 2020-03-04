@@ -21,7 +21,21 @@ import com.segway.robot.sdk.perception.sensor.Sensor
 
 
 open class LoomoSensor() {
-    private val TAG = "LoomoSensor"
+
+    companion object {
+        private val TAG = "LoomoSensor"
+
+        const val ULTRASONIC_MIN_RANGE = 0.250f
+        const val ULTRASONIC_MAX_RANGE = 1.5f
+        const val ULTRASONIC_FOV = 40.0F
+
+        const val INFRARED_MIN_RANGE = 40.0F
+        const val INFRARED_MAX_RANGE = 40.0F
+        const val INFRARED_FOV = 40.0F
+
+    }
+
+
     val mSensor: Sensor = Sensor.getInstance()
 
     fun bind (context: Context){

@@ -12,14 +12,15 @@ import com.example.loomoapp.ROS.RealsensePublisher
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.calibration.ColorDepthCalibration
+import com.segway.robot.sdk.vision.frame.Frame
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 
 
-class LoomoRealSense(publisher: RealsensePublisher) {
-    val publisher_ = publisher
+class LoomoRealSense(private val publisher_: RealsensePublisher) {
+//    val publisher_ = publisher
 
     companion object {
         const val TAG = "LoomoRealSense"
@@ -31,18 +32,21 @@ class LoomoRealSense(publisher: RealsensePublisher) {
 
         const val DEPTH_WIDTH = 320
         const val DEPTH_HEIGHT = 240
-        val mColorDepthCalibration = ColorDepthCalibration()
+
+        val streamTypeMap = mapOf(
+            1 to "Color",
+            2 to "Depth",
+            4 to "IR",
+            4 to "Left",
+            16 to "Right",
+            32 to "Ext Depth L",
+            64 to "Ext Depth R",
+            256 to "Fish Eye"
+        )
     }
 
-    var mVision = Vision.getInstance()
-
+    var mVision: Vision = Vision.getInstance()
     private var waitingForServiceToBind = false
-
-    private var mImgColor = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
-    private var mImgFishEye =
-        Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
-    private var mImgDepth = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
-
 
     fun bind(context: Context) {
         if (!mVision.isBind and !waitingForServiceToBind) {
@@ -63,8 +67,8 @@ class LoomoRealSense(publisher: RealsensePublisher) {
                 })
         } else {
             Log.d(
-                TAG,
-                "Vision.isBind = ${mVision.isBind}${if (waitingForServiceToBind) ", but binding is in progress" else ""}"
+                TAG, "Vision.isBind = ${mVision.isBind}" +
+                        if (waitingForServiceToBind) ", but binding is in progress" else ""
             )
         }
 
@@ -81,113 +85,69 @@ class LoomoRealSense(publisher: RealsensePublisher) {
         }
     }
 
-    fun startColorCamera(threadHandler: Handler, imgBuffer: MutableLiveData<Bitmap>) {
+    fun startColorCamera(threadHandler: Handler, receiver: MutableLiveData<Frame>) {
+        startCamera(StreamType.COLOR, threadHandler, receiver)
+    }
+
+    fun startFishEyeCamera(threadHandler: Handler, receiver: MutableLiveData<Frame>) {
+        startCamera(StreamType.FISH_EYE, threadHandler, receiver)
+    }
+
+    fun startDepthCamera(threadHandler: Handler, receiver: MutableLiveData<Frame>) {
+        startCamera(StreamType.DEPTH, threadHandler, receiver)
+    }
+
+
+
+    @Suppress("ControlFlowWithEmptyBody")
+    private fun startCamera(
+        streamType: Int,
+        threadHandler: Handler,
+        receiver: MutableLiveData<Frame>
+    ) {
         GlobalScope.launch {
-            if (mVision.isBind) {
-                try {
-                    mVision.startListenFrame(
-                        StreamType.COLOR
-                    ) { streamType, frame ->
-                        val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
-                        //send to ROS publisher
-                        if (frame.info.frameNum % 5 == 0) {
-                            publisher_.newColorFrame(byteArr, frame)
+            when {
+                mVision.isBind -> {
+                    try {
+                        mVision.startListenFrame(streamType)
+                        { streamType, frame ->
+                            threadHandler.post {
+//                                    receiver.value = copyBuffer(frame.byteBuffer)
+//                                Log.d(TAG, "frame: $frame: ");
+                                receiver.value = frame
+//                                receiver.value.position(frame.byteBuffer.position())
+                            }
                         }
-//                        threadHandler.post {
-//                            imgBuffer.value = mImgColor
-//                        }
+                    } catch (e: IllegalArgumentException) {
+                        Log.d(
+                            TAG,
+                            "Exception in Vision.startListenFrame ignored because probably already listening ($streamType = ${streamTypeMap[streamType]}): $e"
+                        )
                     }
-                    Log.d(TAG, "Color cam started")
-                } catch (e: IllegalArgumentException) {
+                }
+                !mVision.isBind and waitingForServiceToBind -> {
+                    Log.d(TAG, "Waiting for service to bind before starting ${streamTypeMap[streamType]} camera")
+                    while (!mVision.isBind) {
+                    }
+                    mVision.stopListenFrame(streamType)
+                    startCamera(streamType, threadHandler, receiver) // This recursion is safe.
+                }
+                else -> {
                     Log.d(
                         TAG,
-                        "Exception in Vision.startListenFrame: Probably already listening to COLOR(1): $e"
+                        "${streamTypeMap[streamType]} not started. Bind Vision service first"
                     )
                 }
-            } else if (!mVision.isBind and waitingForServiceToBind) {
-                Log.d(TAG, "Waiting for service to bind before starting color camera")
-                while (!mVision.isBind) {
-                }
-                mVision.stopListenFrame(StreamType.COLOR)
-                startColorCamera(threadHandler, imgBuffer) // This recursion is safe.
-            } else {
-                Log.d(TAG, "Color camera not started. Bind Vision service first")
             }
         }
     }
 
-    fun startFishEyeCamera(threadHandler: Handler, imgBuffer: MutableLiveData<Bitmap>) {
-        GlobalScope.launch {
-            if (mVision.isBind) {
-                try {
-                    mVision.startListenFrame(
-                        StreamType.FISH_EYE
-                    ) { streamType, frame ->
-                        val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
-                        //send to ROS publisher
-                        if (frame.info.frameNum % 5 == 0) {
-                            publisher_.newFishEyeFrame(byteArr, frame)
-                        }
-//                        threadHandler.post {
-//                            imgBuffer.value = mImgFishEye
-//                        }
-                    }
-                    Log.d(TAG, "Fish Eye cam started")
-                } catch (e: IllegalArgumentException) {
-                    Log.d(
-                        TAG,
-                        "Exception in Vision.startListenFrame: Probably already listening to FISH_EYE(256): $e"
-                    )
-                }
-            } else if (!mVision.isBind and waitingForServiceToBind) {
-                Log.d(TAG, "Waiting for service to bind before starting fish eye camera")
-                while (!mVision.isBind) {
-                }
-                mVision.stopListenFrame(StreamType.FISH_EYE)
-                startFishEyeCamera(threadHandler, imgBuffer) // This recursion is safe.
-            } else {
-                Log.d(TAG, "FishEye cam not started. Bind Vision service first")
-            }
-        }
-    }
-
-    fun startDepthCamera(threadHandler: Handler, imgBuffer: MutableLiveData<Bitmap>) {
-        GlobalScope.launch {
-            if (mVision.isBind) {
-                try {
-                    mVision.startListenFrame(
-                        StreamType.DEPTH
-                    ) { streamType, frame ->
-                        val byteArr = getByteArrFromByteBuf(frame.byteBuffer)
-                        //send to ROS publisher
-                        if (frame.info.frameNum % 5 == 0) {
-                            publisher_.newDepthFrame(byteArr, frame)
-                        }
-//                        threadHandler.post {
-//                            imgBuffer.value = mImgDepth
-//                        }
-                    }
-                    Log.d(TAG, "Depth cam started")
-                } catch (e: IllegalArgumentException) {
-                    Log.d(
-                        TAG,
-                        "Exception in Vision.startListenFrame: Probably already listening to DEPTH(2): $e"
-                    )
-                }
-            } else if (!mVision.isBind and waitingForServiceToBind) {
-                Log.d(TAG, "Waiting for service to bind before starting depth camera")
-                while (!mVision.isBind) {
-                }
-                mVision.stopListenFrame(StreamType.DEPTH)
-                startDepthCamera(threadHandler, imgBuffer) // This recursion is safe
-            } else {
-                Log.d(TAG, "Depth cam not started. Bind Vision service first")
-            }
-        }
-    }
-
-    private fun getByteArrFromByteBuf(src: ByteBuffer): ByteArray {
-        val bytesInBuffer = src.remaining()
-        return ByteArray(bytesInBuffer) { src.get() }
+    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
+        val copy = ByteBuffer.allocate(src.capacity())
+        src.rewind()
+        copy.put(src)
+        src.rewind()
+        copy.flip()
+        return copy
     }
 }
