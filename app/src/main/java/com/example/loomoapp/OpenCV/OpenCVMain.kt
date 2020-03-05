@@ -8,8 +8,8 @@ import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import android.view.SurfaceView
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_HEIGHT
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_WIDTH
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
 import org.opencv.android.*
 import org.opencv.android.Utils.matToBitmap
 import org.opencv.core.*
@@ -30,7 +30,6 @@ class OpenCVMain: Service() {
     }
 
     private lateinit var mLoaderCallback: BaseLoaderCallback
-    private lateinit var camFrame: JavaCameraView
     private var frame = Mat()
 
     private val detectorAndroidCam: ORB = ORB.create(10, 1.9F)
@@ -61,7 +60,6 @@ class OpenCVMain: Service() {
 //    }
     fun onCreate(context: Context, camFrame: JavaCameraView) {
         //Initialize OpenCV camera view
-//        camFrame = camFrame1
         camFrame.setCameraPermissionGranted()
         camFrame.visibility = SurfaceView.INVISIBLE
         camFrame.setCameraIndex(-1)
@@ -93,23 +91,10 @@ class OpenCVMain: Service() {
             Log.d(TAG, "OpenCV library found inside package. Using it!")
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
-//        val data = ByteBuffer.allocate(16)
-//        data.position(0)
-//        for (i in 0..15) {
-//            data.put(i.toByte())
-//        }
-//        data.rewind()
-//        frame = Mat(2,2,CvType.CV_8UC4, data)
     }
 
     fun newFrame(byteBuf: ByteBuffer) {
-//        frame = Mat(COLOR_WIDTH, COLOR_HEIGHT, CvType.CV_8SC4, byteBuf)
-        frame.create(COLOR_HEIGHT, COLOR_WIDTH, CvType.CV_8UC1)
-//        for (i in 0..byteBuf.remaining()) {
-//            val x = i% COLOR_WIDTH
-//            val y = i/ COLOR_WIDTH
-//            frame.put(x,y, byteBuf)
-//        }
+        frame.create(FISHEYE_HEIGHT, FISHEYE_WIDTH, CvType.CV_8UC1)
         frame.put(0,0, getByteBufferAsByteArray(byteBuf))
     }
 
