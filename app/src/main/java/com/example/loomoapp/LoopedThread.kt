@@ -9,9 +9,11 @@ import android.os.Handler
 import android.os.HandlerThread
 
 class LoopedThread(name: String, priority: Int) : HandlerThread(name, priority) {
-    lateinit var handler: Handler
+    var handler = Handler()
+
     override fun onLooperPrepared() {
         handler = @SuppressLint("HandlerLeak")
         object : Handler() {}
     }
+
 }

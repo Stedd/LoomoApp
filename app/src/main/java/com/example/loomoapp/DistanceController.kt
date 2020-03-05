@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.loomoapp.Loomo.LoomoSensor
-import com.example.loomoapp.viewModel.Velocity
 import java.lang.System.currentTimeMillis
 import kotlin.math.sin
 

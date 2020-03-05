@@ -8,19 +8,22 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
+import com.example.loomoapp.ROS.RealsensePublisher
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.calibration.ColorDepthCalibration
+import com.segway.robot.sdk.vision.frame.Frame
+import com.segway.robot.sdk.vision.frame.FrameInfo
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 
 
-class LoomoRealSense {
+class LoomoRealSense(private val publisher_: RealsensePublisher) {
+
     companion object {
         const val TAG = "LoomoRealSense"
-
         const val COLOR_WIDTH = 640
         const val COLOR_HEIGHT = 480
 
@@ -42,7 +45,7 @@ class LoomoRealSense {
         )
     }
 
-    var mVision = Vision.getInstance()
+    var mVision: Vision = Vision.getInstance()
     private var waitingForServiceToBind = false
 
     fun bind(context: Context) {
@@ -68,6 +71,7 @@ class LoomoRealSense {
                         if (waitingForServiceToBind) ", but binding is in progress" else ""
             )
         }
+        publisher_.setVision(mVision)
     }
 
 
@@ -79,25 +83,29 @@ class LoomoRealSense {
         }
     }
 
-    fun startColorCamera(threadHandler: Handler, receiver: MutableLiveData<ByteBuffer>) {
-        startCamera(StreamType.COLOR, threadHandler, receiver)
+
+    fun startColorCamera(threadHandler: Handler, receiverBuffer: MutableLiveData<ByteBuffer>, receiverInfo: MutableLiveData<FrameInfo>) {
+        startCamera(StreamType.COLOR, threadHandler, receiverBuffer, receiverInfo)
     }
 
-    fun startFishEyeCamera(threadHandler: Handler, receiver: MutableLiveData<ByteBuffer>) {
-        startCamera(StreamType.FISH_EYE, threadHandler, receiver)
+    fun startFishEyeCamera(threadHandler: Handler, receiverBuffer: MutableLiveData<ByteBuffer>, receiverInfo: MutableLiveData<FrameInfo>) {
+        startCamera(StreamType.FISH_EYE, threadHandler, receiverBuffer, receiverInfo)
     }
 
-    fun startDepthCamera(threadHandler: Handler, receiver: MutableLiveData<ByteBuffer>) {
-        startCamera(StreamType.DEPTH, threadHandler, receiver)
+    fun startDepthCamera(threadHandler: Handler, receiverBuffer: MutableLiveData<ByteBuffer>, receiverInfo: MutableLiveData<FrameInfo>) {
+        startCamera(StreamType.DEPTH, threadHandler, receiverBuffer, receiverInfo)
     }
-
 
     //TODO: check that 'receiver' is unique (two camera streams writing to the same var has caused crashes
+
     @Suppress("ControlFlowWithEmptyBody")
     private fun startCamera(
         streamType: Int,
         threadHandler: Handler,
-        receiver: MutableLiveData<ByteBuffer>
+
+        receiverBuffer: MutableLiveData<ByteBuffer>,
+        receiverInfo: MutableLiveData<FrameInfo>
+
     ) {
         GlobalScope.launch {
             when {
@@ -106,7 +114,8 @@ class LoomoRealSense {
                         mVision.startListenFrame(streamType)
                         { streamType, frame ->
                             threadHandler.post {
-                                receiver.value = copyBuffer(frame.byteBuffer)
+                                receiverBuffer.value = copyBuffer(frame.byteBuffer)
+                                receiverInfo.value = frame.info
                             }
                         }
                     } catch (e: IllegalArgumentException) {
@@ -121,7 +130,7 @@ class LoomoRealSense {
                     while (!mVision.isBind) {
                     }
                     mVision.stopListenFrame(streamType)
-                    startCamera(streamType, threadHandler, receiver) // This recursion is safe.
+                    startCamera(streamType, threadHandler, receiverBuffer, receiverInfo) // This recursion is safe.
                 }
                 else -> {
                     Log.d(
@@ -132,14 +141,6 @@ class LoomoRealSense {
             }
         }
     }
-
-    fun getByteBufferAsByteArray(src: ByteBuffer): ByteArray {
-        val bytesInBuffer = src.remaining()
-        val tmpArr = ByteArray(bytesInBuffer) { src.get() }
-        src.rewind()
-        return tmpArr
-    }
-
     private fun copyBuffer(src: ByteBuffer): ByteBuffer {
         val copy = ByteBuffer.allocate(src.capacity())
         src.rewind()

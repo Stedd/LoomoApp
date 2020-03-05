@@ -15,15 +15,27 @@ package com.example.loomoapp.Loomo
 
 import android.content.Context
 import android.util.Log
-import com.example.loomoapp.viewModel.*
 import com.segway.robot.sdk.base.bind.ServiceBinder.BindStateListener
 import com.segway.robot.sdk.perception.sensor.RobotAllSensors
 import com.segway.robot.sdk.perception.sensor.Sensor
-import java.util.logging.Handler
 
 
 open class LoomoSensor() {
-    private val TAG = "LoomoSensor"
+
+    companion object {
+        private val TAG = "LoomoSensor"
+
+        const val ULTRASONIC_MIN_RANGE = 0.250f
+        const val ULTRASONIC_MAX_RANGE = 1.5f
+        const val ULTRASONIC_FOV = 40.0F
+
+        const val INFRARED_MIN_RANGE = 40.0F
+        const val INFRARED_MAX_RANGE = 40.0F
+        const val INFRARED_FOV = 40.0F
+
+    }
+
+
     val mSensor: Sensor = Sensor.getInstance()
 
     fun bind (context: Context){
