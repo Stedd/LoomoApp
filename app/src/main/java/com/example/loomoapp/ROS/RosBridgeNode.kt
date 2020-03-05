@@ -24,7 +24,6 @@ class RosBridgeNode() :AbstractNodeMain() {
 
     private val TAG = "RosBridge"
 
-
     var RsDepthOpticalFrame = "rs_depth_optical_frame"
     var RsColorOpticalFrame = "rs_color_optical_frame"
     var FisheyeOpticalFrame = "fisheye_optical_frame"

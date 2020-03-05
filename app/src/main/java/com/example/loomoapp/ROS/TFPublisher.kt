@@ -13,6 +13,7 @@ import com.segway.robot.sdk.perception.sensor.Sensor
 import com.segway.robot.sdk.vision.calibration.ColorDepthCalibration
 import com.segway.robot.sdk.vision.calibration.Extrinsic
 import com.segway.robot.sdk.vision.calibration.MotionModuleCalibration
+import com.segway.robot.sdk.vision.frame.FrameInfo
 import geometry_msgs.Quaternion
 import geometry_msgs.Transform
 import geometry_msgs.TransformStamped
@@ -91,33 +92,33 @@ class TFPublisher(
         mStarted = false
     }
 
-    fun publishTF() {
-//        handlerThread.handler.post(PublishTFMessage(mDepthRosStamps!!.poll()))
+    fun publishTF(frameInfo: FrameInfo) {
+        updateTimestamp(frameInfo)
+        handlerThread.handler.post(PublishTFMessage(mDepthRosStamps!!.poll()))
     }
 
-    fun publishOdometry() {
-        Log.d(TAG, "Stamp:${mDepthRosStamps} ");
-//        handlerThread.handler.post(PublishOdometry(mDepthRosStamps!!.poll()))
+    fun publishOdometry(frameInfo: FrameInfo) {
+        updateTimestamp(frameInfo)
+        handlerThread.handler.post(PublishOdometry(mDepthRosStamps!!.poll()))
     }
 
-    fun updateTimestamp(){
-        // TODO: 04/03/2020 This needs the time of a camera frame?
-//        val currentRosTime = mBridgeNode!!.mConnectedNode!!.currentTime
-//        val currentSystemTime = Time.fromMillis(System.currentTimeMillis())
-//        val rosToSystemTimeOffset = currentRosTime.subtract(currentSystemTime)
-//        val stampTime = Time.fromNano(Utils.platformStampInNano(frameInfo.platformTimeStamp))
-//        val correctedStampTime = stampTime.add(rosToSystemTimeOffset)
-//        // Add the platform stamp / actual ROS time pair to the list of times we want TF data for
-//        mDepthRosStamps?.add(
-//            Pair.create(
-//                frameInfo.platformTimeStamp,
-//                correctedStampTime
-//            )
-//        )
+    private fun updateTimestamp(frameInfo: FrameInfo){
+        val currentRosTime = mBridgeNode!!.mConnectedNode!!.currentTime
+        val currentSystemTime = Time.fromMillis(System.currentTimeMillis())
+        val rosToSystemTimeOffset = currentRosTime.subtract(currentSystemTime)
+        val stampTime = Time.fromNano(Utils.platformStampInNano(frameInfo.platformTimeStamp))
+        val correctedStampTime = stampTime.add(rosToSystemTimeOffset)
+        // Add the platform stamp / actual ROS time pair to the list of times we want TF data for
+        mDepthRosStamps?.add(
+            Pair.create(
+                frameInfo.platformTimeStamp,
+                correctedStampTime
+            )
+        )
     }
 
 
-    private inner class PublishOdometry(val stamp: Pair<Long, Time>) : Runnable {
+    inner class PublishOdometry(private val stamp: Pair<Long, Time>) : Runnable {
         override fun run() {
             val tfData = sensor.getTfData(
                 Sensor.BASE_POSE_FRAME,
@@ -160,7 +161,7 @@ class TFPublisher(
             Pair(6, 7)
         ) // tablet_link to plat_cam_link
 
-    private inner class PublishTFMessage(val stamp: Pair<Long, Time>) : Runnable {
+    inner class PublishTFMessage(val stamp: Pair<Long, Time>) : Runnable {
 
         override fun run() {
 
@@ -223,153 +224,6 @@ class TFPublisher(
             }
 
         }
-    }
-
-
-    private inner class TFPublisherThread : Thread() {
-        override fun run() {
-            Log.d(TAG, "run: SensorPublisherThread")
-            super.run()
-            // New TF tree:
-// Sensor.WORLD_ODOM_ORIGIN
-//  | Sensor.BASE_POSE_FRAME                <- base_link, the co-ordinate frame relative to the robot platform
-//     | Sensor.NECK_POSE_FRAME             <- neck_link, the co-ordinate frame relative to the neck attached to the base, not moving
-//        | Sensor.HEAD_POSE_Y_FRAME        <- neck_link_yaw, the co-ordinate frame of the head. O translation, but incorporates the yaw of the head
-//           | Sensor.RS_COLOR_FRAME
-//           | Sensor.RS_DEPTH_FRAME
-//           | Sensor.HEAD_POSE_P_R_FRAME
-//              | Sensor.PLATFORM_CAM_FRAME
-            val frameNames =
-                listOf(
-                    Sensor.WORLD_ODOM_ORIGIN,  // 0, odom
-                    Sensor.BASE_POSE_FRAME,  // 1, base_link
-                    Sensor.NECK_POSE_FRAME,  // 2, neck_link
-                    Sensor.HEAD_POSE_Y_FRAME,  // 3, head_link
-                    Sensor.RS_COLOR_FRAME,  // 4, rs_color
-                    Sensor.RS_DEPTH_FRAME,  // 5, rs_depth
-                    Sensor.HEAD_POSE_P_R_FRAME,  // 6, tablet_link
-                    Sensor.PLATFORM_CAM_FRAME
-                ) // 7, plat_cam_link
-            val frameIndices =
-                listOf(
-                    Pair(0, 1),  // odom to base_link
-                    Pair(1, 2),  // base_link to neck_link
-                    Pair(2, 3),  // neck_link to head_link
-                    Pair(3, 4),  // head_link to rs_color
-                    Pair(3, 5),  // head_link to rs_depth
-                    Pair(3, 6),  // head_link to tablet_link
-                    Pair(6, 7)
-                ) // tablet_link to plat_cam_link
-            Log.d(TAG, "TFpublisher before while");
-            while (sensor.isBind) {
-//                Log.d(TAG, "TFpublisher insite while $mDepthRosStamps");
-                // TODO: 26/02/2020 This condition is not true
-                if (mDepthRosStamps == null) {
-                    Log.d(TAG, "TFpublisher mDepthRosStamps continue");
-                    continue
-                }
-                val stamp =
-                    mDepthRosStamps.poll()
-                if (stamp != null) { // Get an appropriate ROS time to match the platform time of this stamp
-                    Log.d(TAG, "TFpublisher Run:");
-/*
-                    Time currentRosTime = mBridgeNode!!.mConnectedNode.getCurrentTime();
-                    Time currentSystemTime = Time.fromMillis(System.currentTimeMillis());
-                    Time stampTime = Time.fromNano(Utils.platformStampInNano(stamp));
-                    Duration rosToSystemTimeOffset = currentRosTime.subtract(currentSystemTime);
-                    Time correctedStampTime = stampTime.add(rosToSystemTimeOffset);
-
-                    Log.d(TAG, "node: " + currentRosTime.toString());
-                    Log.d(TAG, "sys: " + currentSystemTime.toString());
-                    Log.d(TAG, "node-sys diff: " + rosToSystemTimeOffset.toString());
-
-                    Log.d(TAG, "node: " + currentRosTime.toString());
-                    Log.d(TAG, "stamp: " + stampTime.toString());
-                    Log.d(TAG, "node-stamp diff: " + (currentRosTime.subtract(stampTime)).toString());
-                    Log.d(TAG, "True stamp: " + correctedStampTime.toString());
-                    Log.d(TAG, "True node-stamp diff: " + (currentRosTime.subtract(correctedStampTime)).toString());
-                    */
-                    val tfMessage = mBridgeNode!!.mTfPubr!!.newMessage()
-                    for (index in frameIndices) {
-                        var target = frameNames[index.second]
-                        var source = frameNames[index.first]
-                        // Swapped source/target because it seemed backwards in RViz
-                        val tfData = sensor.getTfData(target, source, stamp.first, 100)
-                        //Log.d(TAG, tfData.toString());
-// ROS usually uses "base_link" and "odom" as fundamental tf names
-// definitely could remove this if you prefer Loomo's names
-                        if (source == Sensor.BASE_POSE_FRAME) {
-                            source = "base_link"
-                        }
-                        if (target == Sensor.BASE_POSE_FRAME) {
-                            target = "base_link"
-                        }
-                        if (source == Sensor.WORLD_ODOM_ORIGIN) {
-                            source = "odom"
-                        }
-                        if (target == Sensor.WORLD_ODOM_ORIGIN) {
-                            target = "odom"
-                        }
-                        // Add tf_prefix to each transform before ROS publishing (in case of multiple loomos on one network)
-                        if (mBridgeNode!!.use_tf_prefix) {
-                            tfData.srcFrameID = mBridgeNode!!.tf_prefix + "_" + source
-                            tfData.tgtFrameID = mBridgeNode!!.tf_prefix + "_" + target
-                        }
-                        if (stamp.first != tfData.timeStamp) {
-                            Log.d(
-                                TAG, String.format(
-                                    "ERROR: getTfData failed for frames[%d]: %s -> %s",
-                                    stamp.first, source, target
-                                )
-                            )
-                            continue
-                        }
-                        val transformStamped =
-                            algoTf2TfStamped(tfData, stamp.second)
-                        tfMessage.transforms.add(transformStamped)
-                    }
-                    // Publish the Sensor.RS_COLOR_FRAME -> RsOpticalFrame transform
-                    val loomoToRsCameraTf =
-                        realsenseColorToOpticalFrame(stamp.second)
-                    tfMessage.transforms.add(loomoToRsCameraTf)
-                    // Publish the RsOpticalFrame -> RsDepthFrame transform
-// TODO: compute statically and just update the timestamp
-                    val rsColorToDepthTf = realsenseColorToDepthExtrinsic(
-                        mDepthCalibration.depthToColorExtrinsic,
-                        stamp.second
-                    )
-                    tfMessage.transforms.add(rsColorToDepthTf)
-                    // Publish the base_link -> ultrasonic frame transform
-// Ultrasonic is static TF, 44cm up, 12cm forward
-                    val ultrasonicTf = baseLinkToUltrasonicTransform(stamp.second)
-                    tfMessage.transforms.add(ultrasonicTf)
-                    if (tfMessage.transforms.size > 0) {
-                        mBridgeNode!!.mTfPubr!!.publish(tfMessage)
-                    }
-                    // Swapped source/target because it seemed backwards in RViz
-// TODO: this isn't capturing the velocity at the sensor timestamp. Consider moving to another thread to publish this as fast as possible
-//                    val tfData = sensor.getTfData(
-//                        Sensor.BASE_POSE_FRAME,
-//                        Sensor.WORLD_ODOM_ORIGIN,
-//                        stamp.first,
-//                        100
-//                    )
-//                    val linearVelocity = base.linearVelocity
-//                    val angularVelocity = base.angularVelocity
-//                    val odom_message = produceOdometryMessage(
-//                        tfData,
-//                        linearVelocity,
-//                        angularVelocity,
-//                        stamp.second
-//                    )
-//                    mBridgeNode!!.mOdometryPubr!!.publish(odom_message)
-//                    Log.d(TAG, odom_message.toString())
-                }
-            }
-            // TODO: 26/02/2020 test this
-//            sleep(50)
-        }
-
     }
 
     private fun realsenseColorToDepthExtrinsic(

@@ -1,6 +1,7 @@
 package com.example.loomoapp.ROS
 
 import android.util.Log
+import android.util.Pair
 import com.example.loomoapp.Loomo.LoomoSensor
 import com.example.loomoapp.Loomo.LoomoSensor.Companion.INFRARED_FOV
 import com.example.loomoapp.Loomo.LoomoSensor.Companion.ULTRASONIC_FOV
@@ -8,6 +9,7 @@ import com.example.loomoapp.Loomo.LoomoSensor.Companion.ULTRASONIC_MAX_RANGE
 import com.example.loomoapp.Loomo.LoomoSensor.Companion.ULTRASONIC_MIN_RANGE
 import com.example.loomoapp.LoopedThread
 import com.segway.robot.sdk.perception.sensor.Sensor
+import com.segway.robot.sdk.vision.frame.FrameInfo
 import org.ros.message.Duration
 import org.ros.message.Time
 import sensor_msgs.Range
@@ -69,7 +71,7 @@ class SensorPublisher(sensor_: LoomoSensor, private val handlerThread: LoopedThr
     }
 
     //Runnables
-    private inner class PublishUltrasonic(val timeDiff:Duration): Runnable {
+    inner class PublishUltrasonic(val timeDiff:Duration): Runnable {
         override fun run() {
             val mUltrasonicData = sensor.querySensorData(listOf(Sensor.ULTRASONIC_BODY))[0]
             var mUltrasonicDistance = mUltrasonicData.intData[0].toFloat()
@@ -93,7 +95,7 @@ class SensorPublisher(sensor_: LoomoSensor, private val handlerThread: LoopedThr
         }
     }
 
-    private inner class PublishInfrared(val timeDiff:Duration): Runnable {
+    inner class PublishInfrared(val timeDiff:Duration): Runnable {
         override fun run() {
             val infraredData = sensor.infraredDistance
             val mInfraredDistanceLeft = infraredData.leftDistance
@@ -118,7 +120,7 @@ class SensorPublisher(sensor_: LoomoSensor, private val handlerThread: LoopedThr
         }
     }
 
-    private inner class PublishBase(): Runnable {
+    inner class PublishBase(): Runnable {
         override fun run() {
             val mBaseImu = sensor.querySensorData(listOf(Sensor.BASE_IMU))[0]
             val mBasePitch = mBaseImu.floatData[0]

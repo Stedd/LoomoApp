@@ -18,6 +18,7 @@ import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
 import com.segway.robot.sdk.vision.frame.Frame
+import com.segway.robot.sdk.vision.frame.FrameInfo
 import kotlinx.android.synthetic.main.activity_main.*
 import org.ros.address.InetAddressFactory
 import org.ros.android.AppCompatRosActivity
@@ -48,10 +49,12 @@ class MainActivity :
     lateinit var mLoomoSensor: LoomoSensor
     lateinit var mLoomoControl: LoomoControl
 
-    private val fishEyeByteBuffer = MutableLiveData<Frame>()
-    private val colorByteBuffer = MutableLiveData<Frame>()
-    private val depthByteBuffer = MutableLiveData<Frame>()
-    private lateinit var colorFrame: Frame
+    private val fishEyeByteBuffer = MutableLiveData<ByteBuffer>()
+    private val colorByteBuffer = MutableLiveData<ByteBuffer>()
+    private val depthByteBuffer = MutableLiveData<ByteBuffer>()
+    private val fishEyeFrameInfo = MutableLiveData<FrameInfo>()
+    private val colorFrameInfo = MutableLiveData<FrameInfo>()
+    private val depthFrameInfo = MutableLiveData<FrameInfo>()
 
 
     //OpenCV Variables
@@ -74,6 +77,7 @@ class MainActivity :
     private lateinit var mRealSensePublisher: RealsensePublisher
     private lateinit var mTFPublisher: TFPublisher
     private lateinit var mSensorPublisher: SensorPublisher
+    private lateinit var mRosMainPublisher: RosMainPublisher
     private lateinit var mRosBridgeConsumers: List<RosBridge>
 
     private val textView by lazy {
@@ -151,6 +155,18 @@ class MainActivity :
         mSensorPublisher = SensorPublisher(mLoomoSensor, mRosPublisherThread)
         mRosBridgeConsumers = listOf(mRealSensePublisher, mTFPublisher, mSensorPublisher)
 
+        mRosMainPublisher = RosMainPublisher(
+            fishEyeByteBuffer,
+            colorByteBuffer,
+            depthByteBuffer,
+            fishEyeFrameInfo,
+            colorFrameInfo,
+            depthFrameInfo,
+            mRealSensePublisher,
+            mSensorPublisher,
+            mTFPublisher
+        )
+
         // Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode()
 
@@ -171,18 +187,24 @@ class MainActivity :
 
         colorByteBuffer.observeForever {
             val bmp = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
-            bmp.copyPixelsFromBuffer(copyBuffer(it.byteBuffer))
+            bmp.copyPixelsFromBuffer(copyBuffer(it))
             camViewColor.setImageBitmap(bmp)
         }
         fishEyeByteBuffer.observeForever {
             val bmp = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
-            bmp.copyPixelsFromBuffer(copyBuffer(it.byteBuffer))
+            bmp.copyPixelsFromBuffer(copyBuffer(it))
             camViewFishEye.setImageBitmap(bmp)
         }
         depthByteBuffer.observeForever {
             val bmp = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
-            bmp.copyPixelsFromBuffer(copyBuffer(it.byteBuffer))
+            bmp.copyPixelsFromBuffer(copyBuffer(it))
             camViewDepth.setImageBitmap(bmp)
+        }
+        colorFrameInfo.observeForever {
+        }
+        fishEyeFrameInfo.observeForever {
+        }
+        depthFrameInfo.observeForever {
         }
 
         camViewColor.visibility = ImageView.GONE
@@ -225,35 +247,12 @@ class MainActivity :
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
-
-            //ROS Publishers Testing
-            //Sensor Publisher
-//            mSensorPublisher.publishSensors()
-
-            //RealSensePublisher
-            colorFrame = colorByteBuffer.value!!
-            mRealSensePublisher.publishColorImage(
-                colorFrame.byteBuffer,
-                colorFrame.info
-            )
-//            mRealSensePublisher.publishFishEyeImage(fishEyeByteBuffer.value!!)
-
-            //TFPublisher
-//            mTFPublisher.publishOdometry()
+            mRosMainPublisher.publishAllCameras()
 
         }
         btnStopService.setOnClickListener {
             Log.d(TAG, "ServStopBtn clicked")
-            //ROS Publishers Testing
-            //Sensor Publisher
-//            mSensorPublisher.publishSensors()
-
-            //RealSensePublisher
-//            mRealSensePublisher.publishColorImage(colorByteBuffer.value!!)
-//            mRealSensePublisher.publishFishEyeImage(fishEyeByteBuffer.value!!)
-
-            //TFPublisher
-            mTFPublisher.publishOdometry()
+            mRosMainPublisher.publishGraph()
         }
 
         //Helloworld from c++
@@ -262,9 +261,9 @@ class MainActivity :
 
     override fun onResume() {
         mLoomoRealSense.bind(this)
-        mLoomoRealSense.startColorCamera(UIThreadHandler, colorByteBuffer)
-        mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeByteBuffer)
-        mLoomoRealSense.startDepthCamera(UIThreadHandler, depthByteBuffer)
+        mLoomoRealSense.startColorCamera(UIThreadHandler, colorByteBuffer, colorFrameInfo)
+        mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeByteBuffer, fishEyeFrameInfo)
+        mLoomoRealSense.startDepthCamera(UIThreadHandler, depthByteBuffer, depthFrameInfo)
 
         mLoomoSensor.bind(this)
 

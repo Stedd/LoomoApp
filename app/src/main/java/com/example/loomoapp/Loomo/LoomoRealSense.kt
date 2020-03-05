@@ -13,6 +13,7 @@ import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.calibration.ColorDepthCalibration
 import com.segway.robot.sdk.vision.frame.Frame
+import com.segway.robot.sdk.vision.frame.FrameInfo
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -20,7 +21,6 @@ import java.nio.ByteBuffer
 
 
 class LoomoRealSense(private val publisher_: RealsensePublisher) {
-//    val publisher_ = publisher
 
     companion object {
         const val TAG = "LoomoRealSense"
@@ -71,9 +71,7 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
                         if (waitingForServiceToBind) ", but binding is in progress" else ""
             )
         }
-
         publisher_.setVision(mVision)
-
     }
 
 
@@ -85,25 +83,24 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
         }
     }
 
-    fun startColorCamera(threadHandler: Handler, receiver: MutableLiveData<Frame>) {
-        startCamera(StreamType.COLOR, threadHandler, receiver)
+    fun startColorCamera(threadHandler: Handler, receiverBuffer: MutableLiveData<ByteBuffer>, receiverInfo: MutableLiveData<FrameInfo>) {
+        startCamera(StreamType.COLOR, threadHandler, receiverBuffer, receiverInfo)
     }
 
-    fun startFishEyeCamera(threadHandler: Handler, receiver: MutableLiveData<Frame>) {
-        startCamera(StreamType.FISH_EYE, threadHandler, receiver)
+    fun startFishEyeCamera(threadHandler: Handler, receiverBuffer: MutableLiveData<ByteBuffer>, receiverInfo: MutableLiveData<FrameInfo>) {
+        startCamera(StreamType.FISH_EYE, threadHandler, receiverBuffer, receiverInfo)
     }
 
-    fun startDepthCamera(threadHandler: Handler, receiver: MutableLiveData<Frame>) {
-        startCamera(StreamType.DEPTH, threadHandler, receiver)
+    fun startDepthCamera(threadHandler: Handler, receiverBuffer: MutableLiveData<ByteBuffer>, receiverInfo: MutableLiveData<FrameInfo>) {
+        startCamera(StreamType.DEPTH, threadHandler, receiverBuffer, receiverInfo)
     }
-
-
 
     @Suppress("ControlFlowWithEmptyBody")
     private fun startCamera(
         streamType: Int,
         threadHandler: Handler,
-        receiver: MutableLiveData<Frame>
+        receiverBuffer: MutableLiveData<ByteBuffer>,
+        receiverInfo: MutableLiveData<FrameInfo>
     ) {
         GlobalScope.launch {
             when {
@@ -112,10 +109,8 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
                         mVision.startListenFrame(streamType)
                         { streamType, frame ->
                             threadHandler.post {
-//                                    receiver.value = copyBuffer(frame.byteBuffer)
-//                                Log.d(TAG, "frame: $frame: ");
-                                receiver.value = frame
-//                                receiver.value.position(frame.byteBuffer.position())
+                                receiverBuffer.value = frame.byteBuffer
+                                receiverInfo.value = frame.info
                             }
                         }
                     } catch (e: IllegalArgumentException) {
@@ -130,7 +125,7 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
                     while (!mVision.isBind) {
                     }
                     mVision.stopListenFrame(streamType)
-                    startCamera(streamType, threadHandler, receiver) // This recursion is safe.
+                    startCamera(streamType, threadHandler, receiverBuffer, receiverInfo) // This recursion is safe.
                 }
                 else -> {
                     Log.d(
