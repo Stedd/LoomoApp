@@ -123,11 +123,23 @@ class MainActivity :
         nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
     }
 
+    inner class CaptureImages():ThreadLoop(){
+        override var interval: Long = 750
+        override fun main() {
+            mRosMainPublisher.publishColorImage()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
+
+        val mCaptureRunnable = CaptureImages()
+        val captureThread = Thread(mCaptureRunnable, "asdf")
+
+
+
 
         mRosPublisherThread =
             LoopedThread("ROS_Pub_Thread", Process.THREAD_PRIORITY_AUDIO)
@@ -258,12 +270,16 @@ class MainActivity :
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
-            mRosMainPublisher.publishAllCameras()
+//            mRosMainPublisher.publishAllCameras()
+            mCaptureRunnable.enable = true
+            captureThread.start()
+
 
         }
         btnStopService.setOnClickListener {
             Log.d(TAG, "ServStopBtn clicked")
-            mRosMainPublisher.publishGraph()
+//            mRosMainPublisher.publishGraph()
+            mCaptureRunnable.enable = false
         }
 
         //Helloworld from c++
