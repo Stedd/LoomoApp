@@ -92,7 +92,7 @@ class LoomoRealSense {
     }
 
 
-
+    //TODO: check that 'receiver' is unique (two camera streams writing to the same var has caused crashes
     @Suppress("ControlFlowWithEmptyBody")
     private fun startCamera(
         streamType: Int,
@@ -107,7 +107,6 @@ class LoomoRealSense {
                         { streamType, frame ->
                             threadHandler.post {
                                 receiver.value = copyBuffer(frame.byteBuffer)
-//                                receiver.value.position(frame.byteBuffer.position())
                             }
                         }
                     } catch (e: IllegalArgumentException) {
