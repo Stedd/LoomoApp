@@ -1,5 +1,5 @@
 /**
- * A class that is meant to make the Intel RealSense available for the rest of the code
+ * A class that makes the Intel RealSense available for the rest of the code
  */
 package com.example.loomoapp.Loomo
 
@@ -83,6 +83,7 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
         }
     }
 
+
     fun startColorCamera(threadHandler: Handler, receiverBuffer: MutableLiveData<ByteBuffer>, receiverInfo: MutableLiveData<FrameInfo>) {
         startCamera(StreamType.COLOR, threadHandler, receiverBuffer, receiverInfo)
     }
@@ -95,12 +96,16 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
         startCamera(StreamType.DEPTH, threadHandler, receiverBuffer, receiverInfo)
     }
 
+    //TODO: check that 'receiver' is unique (two camera streams writing to the same var has caused crashes
+
     @Suppress("ControlFlowWithEmptyBody")
     private fun startCamera(
         streamType: Int,
         threadHandler: Handler,
+
         receiverBuffer: MutableLiveData<ByteBuffer>,
         receiverInfo: MutableLiveData<FrameInfo>
+
     ) {
         GlobalScope.launch {
             when {
@@ -109,7 +114,7 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
                         mVision.startListenFrame(streamType)
                         { streamType, frame ->
                             threadHandler.post {
-                                receiverBuffer.value = frame.byteBuffer
+                                receiverBuffer.value = copyBuffer(frame.byteBuffer)
                                 receiverInfo.value = frame.info
                             }
                         }
@@ -136,7 +141,6 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
             }
         }
     }
-
     private fun copyBuffer(src: ByteBuffer): ByteBuffer {
         val copy = ByteBuffer.allocate(src.capacity())
         src.rewind()

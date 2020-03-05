@@ -20,6 +20,8 @@ import com.example.loomoapp.ROS.*
 import com.segway.robot.sdk.vision.frame.Frame
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.ros.address.InetAddressFactory
 import org.ros.android.AppCompatRosActivity
 import org.ros.message.Time
@@ -55,6 +57,7 @@ class MainActivity :
     private val fishEyeFrameInfo = MutableLiveData<FrameInfo>()
     private val colorFrameInfo = MutableLiveData<FrameInfo>()
     private val depthFrameInfo = MutableLiveData<FrameInfo>()
+
 
 
     //OpenCV Variables
@@ -167,6 +170,7 @@ class MainActivity :
             mTFPublisher
         )
 
+
         // Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode()
 
@@ -186,6 +190,10 @@ class MainActivity :
 //        colorByteBuffer.observeForever { camViewColor.setImageBitmap(byteArrToBitmap(getByteArrFromByteBuf(it), 3, COLOR_WIDTH, COLOR_HEIGHT)) }
 
         colorByteBuffer.observeForever {
+//            if (it != null) {
+//                mOpenCVMain.newFrame(it)
+//                camViewColor.setImageBitmap(mOpenCVMain.getFrame())
+//            }
             val bmp = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
             bmp.copyPixelsFromBuffer(it)
             camViewColor.setImageBitmap(bmp)
@@ -204,6 +212,7 @@ class MainActivity :
             bmp.copyPixelsFromBuffer(it)
             camViewDepth.setImageBitmap(bmp)
         }
+      
         colorFrameInfo.observeForever {
         }
         fishEyeFrameInfo.observeForever {
@@ -246,8 +255,6 @@ class MainActivity :
             camViewColor.visibility = ImageView.GONE
             camViewFishEye.visibility = ImageView.GONE
             camViewDepth.visibility = ImageView.GONE
-
-//            mLoomoRealSense.stopActiveCameras()
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
@@ -262,6 +269,7 @@ class MainActivity :
         //Helloworld from c++
         sample_text.text = stringFromJNI()
     }
+
 
     override fun onResume() {
         mLoomoRealSense.bind(this)
@@ -298,17 +306,6 @@ class MainActivity :
     private fun stopThreads() {
         mLoomoControl.stopController(this, "App paused, Controller thread stopping")
     }
-
-
-    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
-        val copy = ByteBuffer.allocate(src.capacity())
-        src.rewind()
-        copy.put(src)
-        src.rewind()
-        copy.flip()
-        return copy
-    }
-
 }
 
 
