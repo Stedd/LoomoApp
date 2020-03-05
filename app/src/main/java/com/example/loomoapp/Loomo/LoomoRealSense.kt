@@ -114,7 +114,7 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
                         mVision.startListenFrame(streamType)
                         { streamType, frame ->
                             threadHandler.post {
-                                receiverBuffer.value = copyBuffer(frame.byteBuffer)
+                                receiverBuffer.value = frame.byteBuffer
                                 receiverInfo.value = frame.info
                             }
                         }
@@ -140,13 +140,5 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
                 }
             }
         }
-    }
-    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
-        val copy = ByteBuffer.allocate(src.capacity())
-        src.rewind()
-        copy.put(src)
-        src.rewind()
-        copy.flip()
-        return copy
     }
 }

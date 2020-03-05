@@ -195,12 +195,12 @@ class MainActivity :
 //                camViewColor.setImageBitmap(mOpenCVMain.getFrame())
 //            }
             val bmp = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
-            bmp.copyPixelsFromBuffer(it)
+            bmp.copyPixelsFromBuffer(copyBuffer(it))
             camViewColor.setImageBitmap(bmp)
         }
         fishEyeByteBuffer.observeForever {
             if (it != null) {
-                mOpenCVMain.newFrame(it)
+                mOpenCVMain.newFrame(copyBuffer(it))
                 camViewFishEye.setImageBitmap(mOpenCVMain.getFrame())
             }
 //            val bmp = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
@@ -209,7 +209,7 @@ class MainActivity :
         }
         depthByteBuffer.observeForever {
             val bmp = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
-            bmp.copyPixelsFromBuffer(it)
+            bmp.copyPixelsFromBuffer(copyBuffer(it))
             camViewDepth.setImageBitmap(bmp)
         }
       
@@ -305,6 +305,14 @@ class MainActivity :
 
     private fun stopThreads() {
         mLoomoControl.stopController(this, "App paused, Controller thread stopping")
+    }
+    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
+        val copy = ByteBuffer.allocate(src.capacity())
+        src.rewind()
+        copy.put(src)
+        src.rewind()
+        copy.flip()
+        return copy
     }
 }
 

@@ -90,39 +90,18 @@ class RealsensePublisher(
 
     fun publishFishEyeImage(byteArray: ByteArray, info:FrameInfo) {
         handlerThread.handler.post(
-            PublishNewFrame(
-                1,
-                byteArray,
-                info,
-                mBridgeNode!!,
-                mDepthRosStamps,
-                mFisheyeOutStream
-            )
+            PublishNewFrame(1,byteArray,info,mBridgeNode!!,mDepthRosStamps,mFisheyeOutStream)
         )
     }
 
     fun publishColorImage(byteArray: ByteArray, info:FrameInfo) {
-        handlerThread.handler.post(PublishNewFrame(2,byteArray,info,mBridgeNode!!,mDepthRosStamps,mRsColorOutStream))
-    }
-
-    fun publishDepthImage(byteArray: ByteArray, info:FrameInfo) {
-        handlerThread.handler.post(
-            PublishNewFrame(
-                3,
-                byteArray,
-                info,
-                mBridgeNode!!,
-                mDepthRosStamps,
-                mRsDepthOutStream
-            )
+        handlerThread.handler.post(PublishNewFrame(2,byteArray,info,mBridgeNode!!,mDepthRosStamps,mRsColorOutStream)
         )
     }
 
-    private fun getByteBufferAsByteArray(src: ByteBuffer): ByteArray {
-        val bytesInBuffer = src.remaining()
-        val tmpArr = ByteArray(bytesInBuffer) { src.get() }
-        src.rewind()
-        return tmpArr
+    fun publishDepthImage(byteArray: ByteArray, info:FrameInfo) {
+        handlerThread.handler.post(PublishNewFrame(3,byteArray,info,mBridgeNode!!,mDepthRosStamps,mRsDepthOutStream)
+        )
     }
 
     @Synchronized
@@ -166,8 +145,6 @@ class RealsensePublisher(
         Log.d(TAG, "Length: $length")
         Log.d(TAG, "Frame Count: $frameCount")
     }
-
-
 }
 
 
