@@ -187,17 +187,21 @@ class MainActivity :
 
         colorByteBuffer.observeForever {
             val bmp = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
-            bmp.copyPixelsFromBuffer(copyBuffer(it))
+            bmp.copyPixelsFromBuffer(it)
             camViewColor.setImageBitmap(bmp)
         }
         fishEyeByteBuffer.observeForever {
-            val bmp = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
-            bmp.copyPixelsFromBuffer(copyBuffer(it))
-            camViewFishEye.setImageBitmap(bmp)
+            if (it != null) {
+                mOpenCVMain.newFrame(it)
+                camViewFishEye.setImageBitmap(mOpenCVMain.getFrame())
+            }
+//            val bmp = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
+//            bmp.copyPixelsFromBuffer(it)
+//            camViewFishEye.setImageBitmap(bmp)
         }
         depthByteBuffer.observeForever {
             val bmp = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
-            bmp.copyPixelsFromBuffer(copyBuffer(it))
+            bmp.copyPixelsFromBuffer(it)
             camViewDepth.setImageBitmap(bmp)
         }
         colorFrameInfo.observeForever {
