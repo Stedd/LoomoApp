@@ -124,9 +124,9 @@ class MainActivity :
     }
 
     inner class CaptureImages():ThreadLoop(){
-        override var interval: Long = 750
+        override var interval: Long = 1000
         override fun main() {
-            mRosMainPublisher.publishColorImage()
+            mRosMainPublisher.publishFishEyeImage()
         }
     }
 
