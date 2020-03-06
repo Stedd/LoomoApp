@@ -50,7 +50,7 @@ class RosBridgeNode() :AbstractNodeMain() {
     var mCmdVelSubr: Subscriber<Twist>? = null
     var mNtpProvider: NtpTimeProvider? = null
     var node_name = "loomo_ros_bridge_node"
-    var tf_prefix = "LO03"
+    var tf_prefix = "LO02"
     //TODO:Dynamic name
     var should_pub_ultrasonic = true
     var should_pub_infrared = true

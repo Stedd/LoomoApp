@@ -126,7 +126,7 @@ class MainActivity :
     inner class CaptureImages():ThreadLoop(){
         override var interval: Long = 1000
         override fun main() {
-            mRosMainPublisher.publishFishEyeImage()
+            mRosMainPublisher.publishAllCameras()
         }
     }
 
