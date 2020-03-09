@@ -130,7 +130,7 @@ class MainActivity :
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
         // Hacky trick to make the app fullscreen
-        btnStartCamera.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
+        textView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
 
         mRosPublisherThread =
             LoopedThread("ROS_Pub_Thread", Process.THREAD_PRIORITY_AUDIO)
@@ -190,25 +190,31 @@ class MainActivity :
 
         mLoomoControl.mControllerThread.start()
 
-//        colorByteBuffer.observeForever { camViewColor.setImageBitmap(byteArrToBitmap(getByteArrFromByteBuf(it), 3, COLOR_WIDTH, COLOR_HEIGHT)) }
-
         val camObsThread = LoopedThread("Camera observer", Process.THREAD_PRIORITY_DEFAULT)
         camObsThread.start()
-        camObsThread.handler.post {
-            colorByteBuffer.observeForever {
-                mOpenCVMain.newColorFrame(it.copy())
-                camViewColor.setImageBitmap(mOpenCVMain.getColorFrame())
-            }
-            fishEyeByteBuffer.observeForever {
-                mOpenCVMain.newFishEyeFrame(it.copy())
-                camViewFishEye.setImageBitmap(mOpenCVMain.getFishEyeFrame())
-            }
-            depthByteBuffer.observeForever {
+
+        depthByteBuffer.observeForever {
+            camObsThread.handler.post {
                 mOpenCVMain.newDepthFrame(it.copy())
-    //            camViewDepth.setImageBitmap(mOpenCVMain.getDepthFrame())
+//            camViewDepth.setImageBitmap(mOpenCVMain.getDepthFrame())
             }
         }
-
+        colorByteBuffer.observeForever {
+            camObsThread.handler.post {
+                mOpenCVMain.newColorFrame(it.copy())
+                UIThreadHandler.post {
+                    camViewColor.setImageBitmap(mOpenCVMain.getColorFrame())
+                }
+            }
+        }
+        fishEyeByteBuffer.observeForever {
+            camObsThread.handler.post {
+                mOpenCVMain.newFishEyeFrame(it.copy())
+                UIThreadHandler.post {
+                    camViewFishEye.setImageBitmap(mOpenCVMain.getFishEyeFrame())
+                }
+            }
+        }
 
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.GONE
