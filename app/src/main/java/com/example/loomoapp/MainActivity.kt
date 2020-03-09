@@ -17,6 +17,8 @@ import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
+import com.segway.robot.sdk.vision.frame.Frame
+import com.segway.robot.sdk.vision.frame.FrameInfo
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -31,18 +33,12 @@ import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 
 class MainActivity :
-    AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.20:11311/")) {
-
-//    private fun getLifecycleOwner(): LifecycleOwner {
-//        var context: Context = this
-//        while (context !is LifecycleOwner) {
-//            context = (context as ContextWrapper).baseContext
-//        }
-//        return context
-//    }
+    AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
 
     private val UIThreadHandler = Handler() //Used to post messages to UI Thread
 
@@ -58,10 +54,11 @@ class MainActivity :
     private val fishEyeByteBuffer = MutableLiveData<ByteBuffer>()
     private val colorByteBuffer = MutableLiveData<ByteBuffer>()
     private val depthByteBuffer = MutableLiveData<ByteBuffer>()
+    private val fishEyeFrameInfo = MutableLiveData<FrameInfo>()
+    private val colorFrameInfo = MutableLiveData<FrameInfo>()
+    private val depthFrameInfo = MutableLiveData<FrameInfo>()
 
 
-    //ROS classes
-//    lateinit var mROSMain: ROSMain
 
     //OpenCV Variables
     private lateinit var mOpenCVMain: OpenCVMain
@@ -72,18 +69,18 @@ class MainActivity :
 
     // Keep track of timestamps when images published, so corresponding TFs can be published too
     // Stores a co-ordinated platform time and ROS time to help manage the offset
-    private val mDepthRosStamps: Queue<Pair<Long, Time>> = ConcurrentLinkedDeque<Pair<Long, Time>>()
-    private val mDepthStamps: Queue<Long> = ConcurrentLinkedDeque<Long>()
+    private val mDepthRosStamps: Queue<Pair<Long, Time>> = ConcurrentLinkedDeque()
+    private val mDepthStamps: Queue<Long> = ConcurrentLinkedDeque()
 
     //Rosbridge
-//    private lateinit var mOnNodeStarted: Runnable
-//    private lateinit var mOnNodeShutdown: Runnable
     private lateinit var mBridgeNode: RosBridgeNode
 
     //Publishers
-    private lateinit var mRealsensePublisher: RealsensePublisher
+    private lateinit var mRosPublisherThread: LoopedThread
+    private lateinit var mRealSensePublisher: RealsensePublisher
     private lateinit var mTFPublisher: TFPublisher
     private lateinit var mSensorPublisher: SensorPublisher
+    private lateinit var mRosMainPublisher: RosMainPublisher
     private lateinit var mRosBridgeConsumers: List<RosBridge>
 
     private val textView by lazy {
@@ -132,30 +129,47 @@ class MainActivity :
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
 
+        mRosPublisherThread =
+            LoopedThread("ROS_Pub_Thread", Process.THREAD_PRIORITY_AUDIO)
+        mRosPublisherThread.start()
+        mRealSensePublisher =
+            RealsensePublisher(
+                mDepthStamps,
+                mDepthRosStamps,
+                mRosPublisherThread
+            )
+
         //Initialize classes
         mLoomoBase = LoomoBase()
-        mLoomoRealSense = LoomoRealSense()
+        mLoomoRealSense = LoomoRealSense(mRealSensePublisher)
         mLoomoSensor = LoomoSensor()
         mLoomoControl = LoomoControl(mLoomoBase, mLoomoSensor)
 
         //Publishers
-        mRealsensePublisher = RealsensePublisher(mDepthStamps, mDepthRosStamps, mLoomoRealSense)
-        mTFPublisher = TFPublisher(mDepthStamps, mDepthRosStamps, mLoomoBase, mLoomoSensor, mLoomoRealSense)
-        mSensorPublisher = SensorPublisher(mLoomoSensor)
-        mRosBridgeConsumers = listOf(mRealsensePublisher, mTFPublisher, mSensorPublisher)
+        mTFPublisher =
+            TFPublisher(
+                mDepthStamps,
+                mDepthRosStamps,
+                mLoomoBase,
+                mLoomoSensor,
+                mLoomoRealSense,
+                mRosPublisherThread
+            )
+        mSensorPublisher = SensorPublisher(mLoomoSensor, mRosPublisherThread)
+        mRosBridgeConsumers = listOf(mRealSensePublisher, mTFPublisher, mSensorPublisher)
 
-        // TODO: 25/02/2020 Not sure what these are used for
-//        mOnNodeStarted = Runnable {
-//            // Node has started, so we can now tell publishers and subscribers that ROS has initialized
-//            for (consumer in mRosBridgeConsumers) {
-//                consumer.node_started(mBridgeNode)
-//                // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
-//                consumer.start()
-//            }
-//        }
-//
-//        // TODO: shutdown consumers correctly
-//        mOnNodeShutdown = Runnable { }
+        mRosMainPublisher = RosMainPublisher(
+            fishEyeByteBuffer,
+            colorByteBuffer,
+            depthByteBuffer,
+            fishEyeFrameInfo,
+            colorFrameInfo,
+            depthFrameInfo,
+            mRealSensePublisher,
+            mSensorPublisher,
+            mTFPublisher
+        )
+
 
         // Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode()
@@ -174,18 +188,19 @@ class MainActivity :
         mLoomoControl.mControllerThread.start()
 
 //        colorByteBuffer.observeForever { camViewColor.setImageBitmap(byteArrToBitmap(getByteArrFromByteBuf(it), 3, COLOR_WIDTH, COLOR_HEIGHT)) }
+
         colorByteBuffer.observeForever {
 //            if (it != null) {
 //                mOpenCVMain.newFrame(it)
 //                camViewColor.setImageBitmap(mOpenCVMain.getFrame())
 //            }
             val bmp = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
-            bmp.copyPixelsFromBuffer(it)
+            bmp.copyPixelsFromBuffer(copyBuffer(it))
             camViewColor.setImageBitmap(bmp)
         }
         fishEyeByteBuffer.observeForever {
             if (it != null) {
-                mOpenCVMain.newFrame(it)
+                mOpenCVMain.newFrame(copyBuffer(it))
                 camViewFishEye.setImageBitmap(mOpenCVMain.getFrame())
             }
 //            val bmp = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
@@ -194,8 +209,15 @@ class MainActivity :
         }
         depthByteBuffer.observeForever {
             val bmp = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
-            bmp.copyPixelsFromBuffer(it)
+            bmp.copyPixelsFromBuffer(copyBuffer(it))
             camViewDepth.setImageBitmap(bmp)
+        }
+      
+        colorFrameInfo.observeForever {
+        }
+        fishEyeFrameInfo.observeForever {
+        }
+        depthFrameInfo.observeForever {
         }
 
         camViewColor.visibility = ImageView.GONE
@@ -236,11 +258,12 @@ class MainActivity :
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
-            mLoomoControl.startController(this, "ControllerThread start command")
+            mRosMainPublisher.publishAllCameras()
+
         }
         btnStopService.setOnClickListener {
             Log.d(TAG, "ServStopBtn clicked")
-            mLoomoControl.stopController(this, "ControllerThread stop command")
+            mRosMainPublisher.publishGraph()
         }
 
         //Helloworld from c++
@@ -249,25 +272,22 @@ class MainActivity :
 
 
     override fun onResume() {
+        mLoomoRealSense.bind(this)
+        mLoomoRealSense.startColorCamera(UIThreadHandler, colorByteBuffer, colorFrameInfo)
+        mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeByteBuffer, fishEyeFrameInfo)
+        mLoomoRealSense.startDepthCamera(UIThreadHandler, depthByteBuffer, depthFrameInfo)
+
+        mLoomoSensor.bind(this)
+
+        mLoomoBase.bind(this)
 
         mOpenCVMain.resume()
 
         UIThreadHandler.postDelayed({
-            for (consumer in mRosBridgeConsumers) {
-                consumer.node_started(mBridgeNode)
-                // Try a call to start listening, this may fail if the Loomo SDK is not started yet (which is fine)
-                consumer.start()
-            }
+            mRealSensePublisher.node_started(mBridgeNode)
+            mTFPublisher.node_started(mBridgeNode)
+            mSensorPublisher.node_started(mBridgeNode)
         }, 10000)
-
-        mLoomoSensor.bind(this)
-
-        mLoomoRealSense.bind(this)
-        mLoomoRealSense.startColorCamera(UIThreadHandler, colorByteBuffer)
-        mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeByteBuffer)
-        mLoomoRealSense.startDepthCamera(UIThreadHandler, depthByteBuffer)
-
-        mLoomoBase.bind(this)
 
         super.onResume()
     }
@@ -285,6 +305,14 @@ class MainActivity :
 
     private fun stopThreads() {
         mLoomoControl.stopController(this, "App paused, Controller thread stopping")
+    }
+    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
+        val copy = ByteBuffer.allocate(src.capacity())
+        src.rewind()
+        copy.put(src)
+        src.rewind()
+        copy.flip()
+        return copy
     }
 }
 
