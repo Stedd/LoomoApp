@@ -10,8 +10,6 @@ import androidx.lifecycle.MutableLiveData
 import com.example.loomoapp.ROS.RealsensePublisher
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
-import com.segway.robot.sdk.vision.calibration.ColorDepthCalibration
-import com.segway.robot.sdk.vision.frame.Frame
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.coroutines.GlobalScope

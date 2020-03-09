@@ -10,6 +10,7 @@ import android.util.Log
 import android.view.SurfaceView
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
+import com.example.loomoapp.toByteArray
 import org.opencv.android.*
 import org.opencv.android.Utils.matToBitmap
 import org.opencv.core.*
@@ -95,15 +96,15 @@ class OpenCVMain: Service() {
 
     fun newFrame(byteBuf: ByteBuffer) {
         frame.create(FISHEYE_HEIGHT, FISHEYE_WIDTH, CvType.CV_8UC1)
-        frame.put(0,0, getByteBufferAsByteArray(byteBuf))
+        frame.put(0,0, byteBuf.toByteArray())
     }
 
-    private fun getByteBufferAsByteArray(src: ByteBuffer): ByteArray {
-        val bytesInBuffer = src.remaining()
-        val tmpArr = ByteArray(bytesInBuffer) { src.get() }
-        src.rewind()
-        return tmpArr
-    }
+//    private fun getByteBufferAsByteArray(src: ByteBuffer): ByteArray {
+//        val bytesInBuffer = src.remaining()
+//        val tmpArr = ByteArray(bytesInBuffer) { src.get() }
+//        src.rewind()
+//        return tmpArr
+//    }
 
     fun getFrame(): Bitmap {
         val conf = when (frame.channels()) {

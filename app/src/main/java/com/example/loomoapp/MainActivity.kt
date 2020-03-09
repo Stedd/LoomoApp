@@ -200,7 +200,7 @@ class MainActivity :
         }
         fishEyeByteBuffer.observeForever {
             if (it != null) {
-                mOpenCVMain.newFrame(copyBuffer(it))
+                mOpenCVMain.newFrame(it.copy())
                 camViewFishEye.setImageBitmap(mOpenCVMain.getFrame())
             }
 //            val bmp = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
@@ -213,12 +213,12 @@ class MainActivity :
             camViewDepth.setImageBitmap(bmp)
         }
       
-        colorFrameInfo.observeForever {
-        }
-        fishEyeFrameInfo.observeForever {
-        }
-        depthFrameInfo.observeForever {
-        }
+//        colorFrameInfo.observeForever {
+//        }
+//        fishEyeFrameInfo.observeForever {
+//        }
+//        depthFrameInfo.observeForever {
+//        }
 
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.GONE
