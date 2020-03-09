@@ -196,7 +196,9 @@ class MainActivity :
         depthByteBuffer.observeForever {
             camObsThread.handler.post {
                 mOpenCVMain.newDepthFrame(it.copy())
-//            camViewDepth.setImageBitmap(mOpenCVMain.getDepthFrame())
+                UIThreadHandler.post {
+                    camViewDepth.setImageBitmap(mOpenCVMain.getDepthFrame())
+                }
             }
         }
         colorByteBuffer.observeForever {
@@ -250,7 +252,6 @@ class MainActivity :
             camViewColor.visibility = ImageView.GONE
             camViewFishEye.visibility = ImageView.GONE
             camViewDepth.visibility = ImageView.GONE
-            camViewFishEye.setImageResource(R.drawable.ic_videocam)
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")

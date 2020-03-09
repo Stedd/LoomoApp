@@ -14,13 +14,14 @@ import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
 import com.example.loomoapp.toByteArray
-import org.opencv.android.*
+import org.opencv.android.BaseLoaderCallback
+import org.opencv.android.LoaderCallbackInterface
+import org.opencv.android.OpenCVLoader
 import org.opencv.android.Utils.matToBitmap
-import org.opencv.core.*
-import org.opencv.features2d.ORB
-import org.opencv.imgproc.Imgproc
-import org.opencv.imgproc.Imgproc.*
-import java.lang.IllegalArgumentException
+import org.opencv.core.CvType.*
+import org.opencv.core.Mat
+import org.opencv.imgproc.Imgproc.COLOR_BGR5652RGB
+import org.opencv.imgproc.Imgproc.cvtColor
 import java.nio.ByteBuffer
 
 class OpenCVMain: Service() {
@@ -36,18 +37,10 @@ class OpenCVMain: Service() {
     }
 
     private lateinit var mLoaderCallback: BaseLoaderCallback
-//    private var frame = Mat()
     private var fishEyeFrame = Mat()
     private var colorFrame = Mat()
     private var depthFrame = Mat()
 
-    private val detectorAndroidCam: ORB = ORB.create(10, 1.9F)
-    private val keypointsAndroidCam = MatOfKeyPoint()
-//
-    private var img = Mat()
-//    private var imgFisheye = Mat()
-//    private var resultImg = Mat()
-//    private var resultImgFisheye = Mat()
 
     override fun onBind(intent: Intent?): IBinder? {
         return Binder()
@@ -57,12 +50,8 @@ class OpenCVMain: Service() {
         mLoaderCallback = object : BaseLoaderCallback(context) {
             override fun onManagerConnected(status: Int) {
                 when (status) {
-                    LoaderCallbackInterface.SUCCESS -> {
-                        Log.d(TAG, "OpenCV loaded successfully")
-                    }
-                    else -> {
-                        super.onManagerConnected(status)
-                    }
+                    LoaderCallbackInterface.SUCCESS -> Log.d(TAG, "OpenCV loaded successfully")
+                    else -> super.onManagerConnected(status)
                 }
             }
         }
@@ -80,31 +69,15 @@ class OpenCVMain: Service() {
         }
     }
 
-//    fun newFrame(byteBuf: ByteBuffer) {
-//        frame.create(FISHEYE_HEIGHT, FISHEYE_WIDTH, CvType.CV_8UC1)
-//        frame.put(0,0, byteBuf.toByteArray())
-//    }
-
-
-//    fun getFrame(): Bitmap {
-//        val conf = when (frame.channels()) {
-////            1 -> Bitmap.Config.ALPHA_8 // not allowed bmp type
-//            2 -> Bitmap.Config.RGB_565
-//            else -> Bitmap.Config.ARGB_8888
-//        }
-//        val bmp = Bitmap.createBitmap(frame.cols(), frame.rows(), conf)
-//        matToBitmap(frame, bmp)
-//        return bmp
-//    }
 
     fun newFishEyeFrame(byteBuf: ByteBuffer) {
-        newFrame(byteBuf, fishEyeFrame, FISHEYE_WIDTH, FISHEYE_HEIGHT, CvType.CV_8UC1)
+        newFrame(byteBuf, fishEyeFrame, FISHEYE_WIDTH, FISHEYE_HEIGHT, CV_8UC1)
     }
     fun newColorFrame(byteBuf: ByteBuffer) {
-        newFrame(byteBuf, colorFrame, COLOR_WIDTH, COLOR_HEIGHT, CvType.CV_8UC4)
+        newFrame(byteBuf, colorFrame, COLOR_WIDTH, COLOR_HEIGHT, CV_8UC4)
     }
     fun newDepthFrame(byteBuf: ByteBuffer) {
-        newFrame(byteBuf, depthFrame, DEPTH_WIDTH, DEPTH_HEIGHT, CvType.CV_8UC2)
+        newFrame(byteBuf, depthFrame, DEPTH_WIDTH, DEPTH_HEIGHT, CV_8UC2)
     }
 
     fun getFishEyeFrame(): Bitmap {
@@ -123,24 +96,20 @@ class OpenCVMain: Service() {
     }
 
     private fun getFrame(frame: Mat): Bitmap {
-//        val conf = when (frame.channels()) {
-//            2 -> Bitmap.Config.ARGB_8888
-//            else -> Bitmap.Config.ARGB_8888
-//        }
-//
-//        if (frame.channels() == 2) {
-//            val tmp = Mat()
-//            cvtColor(frame, tmp, COLOR_BGR5652RGB) // this is super slow for some reason
-//            val bmp = Bitmap.createBitmap(tmp.cols(), tmp.rows(), conf)
-//            matToBitmap(tmp, bmp)
-//            return bmp
-//        }
-
         val bmp = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888)
-        try {
-            matToBitmap(frame, bmp)
-        } catch (e: IllegalArgumentException) {
+        // matToBitmap() only works for CV_8UC1, CV_8UC3 and CV_8UC4 formats,
+        // so the depth image's color space must be converted
+        if (frame.type() == CV_8UC2) {
+            // The color space conversion for some reason does not change the frame.type(),
+            // so the workaround is make a new 'Mat' with a usable type
+            val tmp = Mat(DEPTH_HEIGHT, DEPTH_WIDTH, CV_8UC3)
+            cvtColor(frame, tmp, COLOR_BGR5652RGB)
+            matToBitmap(tmp, bmp)
+            return bmp
         }
+//        if (!(frame.type() == CV_8UC1 || frame.type() == CV_8UC3 || frame.type() == CV_8UC4)) {
+//        }
+        matToBitmap(frame, bmp)
         return bmp
     }
 }
