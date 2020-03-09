@@ -44,34 +44,12 @@ class OpenCVMain: Service() {
         return Binder()
     }
 
-//    fun onCreate(context: Context, camFrame: JavaCameraView) {
-//        mLoaderCallback = object : BaseLoaderCallback(context) {
-//            override fun onManagerConnected(status: Int) {
-//                when (status) {
-//                    LoaderCallbackInterface.SUCCESS -> {
-//                        Log.d(TAG, "OpenCV loaded successfully")
-//                    }
-//                    else -> {
-//                        super.onManagerConnected(status)
-//                    }
-//                }
-//            }
-//        }
-//    }
     fun onCreate(context: Context, camFrame: JavaCameraView) {
-        //Initialize OpenCV camera view
-        camFrame.setCameraPermissionGranted()
-        camFrame.visibility = SurfaceView.INVISIBLE
-        camFrame.setCameraIndex(-1)
-//        camFrame.setCvCameraViewListener(this)
-
         mLoaderCallback = object : BaseLoaderCallback(context) {
             override fun onManagerConnected(status: Int) {
                 when (status) {
                     LoaderCallbackInterface.SUCCESS -> {
-                        Log.i(TAG, "OpenCV loaded successfully, enabling camera view")
-                        camFrame.enableView()
-                        camFrame.visibility = SurfaceView.VISIBLE
+                        Log.d(TAG, "OpenCV loaded successfully")
                     }
                     else -> {
                         super.onManagerConnected(status)
@@ -80,6 +58,28 @@ class OpenCVMain: Service() {
             }
         }
     }
+//    fun onCreate(context: Context, camFrame: JavaCameraView) {
+//        //Initialize OpenCV camera view
+//        camFrame.setCameraPermissionGranted()
+//        camFrame.visibility = SurfaceView.INVISIBLE
+//        camFrame.setCameraIndex(-1)
+////        camFrame.setCvCameraViewListener(this)
+//
+//        mLoaderCallback = object : BaseLoaderCallback(context) {
+//            override fun onManagerConnected(status: Int) {
+//                when (status) {
+//                    LoaderCallbackInterface.SUCCESS -> {
+//                        Log.i(TAG, "OpenCV loaded successfully, enabling camera view")
+//                        camFrame.enableView()
+//                        camFrame.visibility = SurfaceView.VISIBLE
+//                    }
+//                    else -> {
+//                        super.onManagerConnected(status)
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     fun resume(){
         //Start OpenCV
