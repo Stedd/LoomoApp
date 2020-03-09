@@ -54,18 +54,4 @@ class RosMainPublisher(
         )
 
     }
-//    private fun getByteBufferAsByteArray(src: ByteBuffer): ByteArray {
-//        val bytesInBuffer = src.remaining()
-//        val tmpArr = ByteArray(bytesInBuffer) { src.get() }
-//        src.rewind()
-//        return tmpArr
-//    }
-//    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
-//        val copy = ByteBuffer.allocate(src.capacity())
-//        src.rewind()
-//        copy.put(src)
-//        src.rewind()
-//        copy.flip()
-//        return copy
-//    }
 }

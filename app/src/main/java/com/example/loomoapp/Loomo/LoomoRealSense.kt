@@ -21,6 +21,7 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
 
     companion object {
         const val TAG = "LoomoRealSense"
+
         const val COLOR_WIDTH = 640
         const val COLOR_HEIGHT = 480
 
@@ -40,6 +41,7 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
             64 to "Ext Depth R",
             256 to "Fish Eye"
         )
+
     }
 
     var mVision: Vision = Vision.getInstance()

@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.os.*
 import android.util.Log
 import android.util.Pair
+import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.lifecycle.*
@@ -128,6 +129,8 @@ class MainActivity :
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
+        // Hacky trick to make the app fullscreen
+        btnStartCamera.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
 
         mRosPublisherThread =
             LoopedThread("ROS_Pub_Thread", Process.THREAD_PRIORITY_AUDIO)
@@ -178,7 +181,7 @@ class MainActivity :
         mOpenCVMain = OpenCVMain()
         intentOpenCV = Intent(this, mOpenCVMain::class.java)
         startService(intentOpenCV)
-        mOpenCVMain.onCreate(this, findViewById(R.id.javaCam))
+        mOpenCVMain.onCreate(this)
 
 
         //Start Ros Activity
@@ -190,35 +193,18 @@ class MainActivity :
 //        colorByteBuffer.observeForever { camViewColor.setImageBitmap(byteArrToBitmap(getByteArrFromByteBuf(it), 3, COLOR_WIDTH, COLOR_HEIGHT)) }
 
         colorByteBuffer.observeForever {
-//            if (it != null) {
-//                mOpenCVMain.newFrame(it)
-//                camViewColor.setImageBitmap(mOpenCVMain.getFrame())
-//            }
-            val bmp = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
-            bmp.copyPixelsFromBuffer(copyBuffer(it))
-            camViewColor.setImageBitmap(bmp)
+            mOpenCVMain.newColorFrame(it.copy())
+//            camViewColor.setImageBitmap(mOpenCVMain.getColorFrame())
         }
         fishEyeByteBuffer.observeForever {
-            if (it != null) {
-                mOpenCVMain.newFrame(it.copy())
-                camViewFishEye.setImageBitmap(mOpenCVMain.getFrame())
-            }
-//            val bmp = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
-//            bmp.copyPixelsFromBuffer(it)
-//            camViewFishEye.setImageBitmap(bmp)
+            mOpenCVMain.newFishEyeFrame(it.copy())
+//            camViewFishEye.setImageBitmap(mOpenCVMain.getFishEyeFrame())
         }
         depthByteBuffer.observeForever {
-            val bmp = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
-            bmp.copyPixelsFromBuffer(copyBuffer(it))
-            camViewDepth.setImageBitmap(bmp)
+            mOpenCVMain.newDepthFrame(it.copy())
+//            camViewDepth.setImageBitmap(mOpenCVMain.getDepthFrame())
         }
       
-//        colorFrameInfo.observeForever {
-//        }
-//        fishEyeFrameInfo.observeForever {
-//        }
-//        depthFrameInfo.observeForever {
-//        }
 
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.GONE
@@ -305,14 +291,6 @@ class MainActivity :
 
     private fun stopThreads() {
         mLoomoControl.stopController(this, "App paused, Controller thread stopping")
-    }
-    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
-        val copy = ByteBuffer.allocate(src.capacity())
-        src.rewind()
-        copy.put(src)
-        src.rewind()
-        copy.flip()
-        return copy
     }
 }
 

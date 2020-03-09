@@ -12,4 +12,5 @@
     <string name="no_wifi">Turn on Wifi and restart</string>
     <string name="lost_client_msg">Client lost connection</string>
     <string name="tcp_reconnect_message">Disconnected from client, awaiting new connection</string>
+    <string name="view_finder_description">View finder</string>
 </resources>
