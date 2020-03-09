@@ -83,15 +83,27 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
     }
 
 
-    fun startColorCamera(threadHandler: Handler, receiverBuffer: MutableLiveData<ByteBuffer>, receiverInfo: MutableLiveData<FrameInfo>) {
+    fun startColorCamera(
+        threadHandler: Handler,
+        receiverBuffer: MutableLiveData<ByteBuffer>,
+        receiverInfo: MutableLiveData<FrameInfo>
+    ) {
         startCamera(StreamType.COLOR, threadHandler, receiverBuffer, receiverInfo)
     }
 
-    fun startFishEyeCamera(threadHandler: Handler, receiverBuffer: MutableLiveData<ByteBuffer>, receiverInfo: MutableLiveData<FrameInfo>) {
+    fun startFishEyeCamera(
+        threadHandler: Handler,
+        receiverBuffer: MutableLiveData<ByteBuffer>,
+        receiverInfo: MutableLiveData<FrameInfo>
+    ) {
         startCamera(StreamType.FISH_EYE, threadHandler, receiverBuffer, receiverInfo)
     }
 
-    fun startDepthCamera(threadHandler: Handler, receiverBuffer: MutableLiveData<ByteBuffer>, receiverInfo: MutableLiveData<FrameInfo>) {
+    fun startDepthCamera(
+        threadHandler: Handler,
+        receiverBuffer: MutableLiveData<ByteBuffer>,
+        receiverInfo: MutableLiveData<FrameInfo>
+    ) {
         startCamera(StreamType.DEPTH, threadHandler, receiverBuffer, receiverInfo)
     }
 
@@ -101,7 +113,6 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
     private fun startCamera(
         streamType: Int,
         threadHandler: Handler,
-
         receiverBuffer: MutableLiveData<ByteBuffer>,
         receiverInfo: MutableLiveData<FrameInfo>
 
@@ -125,11 +136,19 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
                     }
                 }
                 !mVision.isBind and waitingForServiceToBind -> {
-                    Log.d(TAG, "Waiting for service to bind before starting ${streamTypeMap[streamType]} camera")
+                    Log.d(
+                        TAG,
+                        "Waiting for service to bind before starting ${streamTypeMap[streamType]} camera"
+                    )
                     while (!mVision.isBind) {
                     }
                     mVision.stopListenFrame(streamType)
-                    startCamera(streamType, threadHandler, receiverBuffer, receiverInfo) // This recursion is safe.
+                    startCamera(
+                        streamType,
+                        threadHandler,
+                        receiverBuffer,
+                        receiverInfo
+                    ) // This recursion is safe.
                 }
                 else -> {
                     Log.d(

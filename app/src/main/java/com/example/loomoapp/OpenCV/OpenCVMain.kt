@@ -20,6 +20,7 @@ import org.opencv.core.*
 import org.opencv.features2d.ORB
 import org.opencv.imgproc.Imgproc
 import org.opencv.imgproc.Imgproc.*
+import java.lang.IllegalArgumentException
 import java.nio.ByteBuffer
 
 class OpenCVMain: Service() {
@@ -136,7 +137,10 @@ class OpenCVMain: Service() {
 //        }
 
         val bmp = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888)
-        matToBitmap(frame, bmp)
+        try {
+            matToBitmap(frame, bmp)
+        } catch (e: IllegalArgumentException) {
+        }
         return bmp
     }
 }

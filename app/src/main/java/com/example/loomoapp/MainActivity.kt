@@ -192,19 +192,23 @@ class MainActivity :
 
 //        colorByteBuffer.observeForever { camViewColor.setImageBitmap(byteArrToBitmap(getByteArrFromByteBuf(it), 3, COLOR_WIDTH, COLOR_HEIGHT)) }
 
-        colorByteBuffer.observeForever {
-            mOpenCVMain.newColorFrame(it.copy())
-//            camViewColor.setImageBitmap(mOpenCVMain.getColorFrame())
+        val camObsThread = LoopedThread("Camera observer", Process.THREAD_PRIORITY_DEFAULT)
+        camObsThread.start()
+        camObsThread.handler.post {
+            colorByteBuffer.observeForever {
+                mOpenCVMain.newColorFrame(it.copy())
+                camViewColor.setImageBitmap(mOpenCVMain.getColorFrame())
+            }
+            fishEyeByteBuffer.observeForever {
+                mOpenCVMain.newFishEyeFrame(it.copy())
+                camViewFishEye.setImageBitmap(mOpenCVMain.getFishEyeFrame())
+            }
+            depthByteBuffer.observeForever {
+                mOpenCVMain.newDepthFrame(it.copy())
+    //            camViewDepth.setImageBitmap(mOpenCVMain.getDepthFrame())
+            }
         }
-        fishEyeByteBuffer.observeForever {
-            mOpenCVMain.newFishEyeFrame(it.copy())
-//            camViewFishEye.setImageBitmap(mOpenCVMain.getFishEyeFrame())
-        }
-        depthByteBuffer.observeForever {
-            mOpenCVMain.newDepthFrame(it.copy())
-//            camViewDepth.setImageBitmap(mOpenCVMain.getDepthFrame())
-        }
-      
+
 
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.GONE
@@ -237,15 +241,14 @@ class MainActivity :
         }
         btnStopCamera.setOnClickListener {
             Log.d(TAG, "CamStopBtn clicked")
-            --camViewState
             camViewColor.visibility = ImageView.GONE
             camViewFishEye.visibility = ImageView.GONE
             camViewDepth.visibility = ImageView.GONE
+            camViewFishEye.setImageResource(R.drawable.ic_videocam)
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
             mRosMainPublisher.publishAllCameras()
-
         }
         btnStopService.setOnClickListener {
             Log.d(TAG, "ServStopBtn clicked")
