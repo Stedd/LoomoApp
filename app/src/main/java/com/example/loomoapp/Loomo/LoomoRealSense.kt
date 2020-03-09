@@ -4,7 +4,6 @@
 package com.example.loomoapp.Loomo
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.os.Handler
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
@@ -37,7 +36,7 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
             1 to "Color",
             2 to "Depth",
             4 to "IR",
-            4 to "Left",
+            8 to "Left",
             16 to "Right",
             32 to "Ext Depth L",
             64 to "Ext Depth R",
