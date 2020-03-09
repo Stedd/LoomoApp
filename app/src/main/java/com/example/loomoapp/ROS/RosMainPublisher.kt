@@ -1,6 +1,8 @@
 package com.example.loomoapp.ROS
 
 import androidx.lifecycle.MutableLiveData
+import com.example.loomoapp.copy
+import com.example.loomoapp.toByteArray
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import java.nio.ByteBuffer
 
@@ -34,36 +36,36 @@ class RosMainPublisher(
 
     fun publishFishEyeImage(){
         mRealSensePublisher.publishFishEyeImage(
-            getByteBufferAsByteArray(copyBuffer(fishEyeByteBuffer.value!!)),
+            fishEyeByteBuffer.value!!.copy().toByteArray(),
             fishEyeFrameInfo.value!!
         )
     }
     fun publishColorImage(){
         mRealSensePublisher.publishColorImage(
-            getByteBufferAsByteArray(copyBuffer(colorByteBuffer.value!!)),
+            colorByteBuffer.value!!.copy().toByteArray(),
             colorFrameInfo.value!!
         )
 
     }
     fun publishDepthImage(){
         mRealSensePublisher.publishDepthImage(
-            getByteBufferAsByteArray(copyBuffer(depthByteBuffer.value!!)),
+            depthByteBuffer.value!!.copy().toByteArray(),
             depthFrameInfo.value!!
         )
 
     }
-    private fun getByteBufferAsByteArray(src: ByteBuffer): ByteArray {
-        val bytesInBuffer = src.remaining()
-        val tmpArr = ByteArray(bytesInBuffer) { src.get() }
-        src.rewind()
-        return tmpArr
-    }
-    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
-        val copy = ByteBuffer.allocate(src.capacity())
-        src.rewind()
-        copy.put(src)
-        src.rewind()
-        copy.flip()
-        return copy
-    }
+//    private fun getByteBufferAsByteArray(src: ByteBuffer): ByteArray {
+//        val bytesInBuffer = src.remaining()
+//        val tmpArr = ByteArray(bytesInBuffer) { src.get() }
+//        src.rewind()
+//        return tmpArr
+//    }
+//    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
+//        val copy = ByteBuffer.allocate(src.capacity())
+//        src.rewind()
+//        copy.put(src)
+//        src.rewind()
+//        copy.flip()
+//        return copy
+//    }
 }
