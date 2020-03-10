@@ -31,9 +31,9 @@ class OpenCVMain: Service() {
     init {
         //Load OpenCV
         if (!OpenCVLoader.initDebug()) {
-            Log.d(TAG, "OpenCV not loaded")
+            Log.d(TAG + " init", "OpenCV not loaded")
         } else {
-            Log.d(TAG, "OpenCV loaded")
+            Log.d(TAG + " init", "OpenCV loaded")
         }
     }
 
