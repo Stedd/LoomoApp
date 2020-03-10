@@ -190,41 +190,60 @@ class MainActivity :
 
         mLoomoControl.mControllerThread.start()
 
-        val camObsThread = LoopedThread("Camera observer", Process.THREAD_PRIORITY_DEFAULT)
-        camObsThread.start()
+        val fishEyeThread = LoopedThread("FishEye observer", Process.THREAD_PRIORITY_DEFAULT)
+        val colorThread = LoopedThread("Color observer", Process.THREAD_PRIORITY_DEFAULT)
+        val depthThread = LoopedThread("Depth observer", Process.THREAD_PRIORITY_DEFAULT)
+        fishEyeThread.start()
+        colorThread.start()
+        depthThread.start()
 
         depthByteBuffer.observeForever {
-            camObsThread.handler.post {
+            depthThread.handler.post {
                 val tic = System.currentTimeMillis()
                 mOpenCVMain.newDepthFrame(it.copy())
-                UIThreadHandler.post {
+                runOnUiThread {
+                    val ticc = System.currentTimeMillis()
                     camViewDepth.setImageBitmap(mOpenCVMain.getDepthFrame())
+                    val tocc = System.currentTimeMillis()
+                    Log.d("Timing", "DepthUp: ${tocc-ticc}ms (${1000/(tocc-ticc)}FPS)")
                 }
                 val toc = System.currentTimeMillis()
                 Log.d("Timing", "Depth: ${toc-tic}ms (${1000/(toc-tic)}FPS)")
             }
         }
         colorByteBuffer.observeForever {
-            camObsThread.handler.post {
+            colorThread.handler.post {
                 val tic = System.currentTimeMillis()
                 mOpenCVMain.newColorFrame(it.copy())
-                UIThreadHandler.post {
+                runOnUiThread {
+                    val ticc = System.currentTimeMillis()
                     camViewColor.setImageBitmap(mOpenCVMain.getColorFrame())
+                    val tocc = System.currentTimeMillis()
+                    Log.d("Timing", "ColorUp: ${tocc-ticc}ms (${1000/(tocc-ticc)}FPS)")
                 }
                 val toc = System.currentTimeMillis()
                 Log.d("Timing", "Color: ${toc-tic}ms (${1000/(toc-tic)}FPS)")
             }
         }
+        var busy = false
         fishEyeByteBuffer.observeForever {
-            camObsThread.handler.post {
-                val tic = System.currentTimeMillis()
-                mOpenCVMain.newFishEyeFrame(it.copy())
-                UIThreadHandler.post {
-                    camViewFishEye.setImageBitmap(mOpenCVMain.getFishEyeFrame())
+            if (!busy) {
+                busy = true
+                fishEyeThread.handler.post {
+                    val tic = System.currentTimeMillis()
+                    mOpenCVMain.newFishEyeFrame(it.copy())
+                    runOnUiThread {
+                        val ticc = System.currentTimeMillis()
+                        camViewFishEye.setImageBitmap(mOpenCVMain.getFishEyeFrame())
+                        val tocc = System.currentTimeMillis()
+                        Log.d("Timing", "FishEyeUp: ${tocc-ticc}ms (${1000/(tocc-ticc)}FPS)")
+                        busy = false
+                    }
+                    val toc = System.currentTimeMillis()
+                    Log.d("Timing", "FishEye: ${toc-tic}ms (${1000/(toc-tic)}FPS)")
                 }
-                val toc = System.currentTimeMillis()
-                Log.d("Timing", "FishEye: ${toc-tic}ms (${1000/(toc-tic)}FPS)")
             }
+
         }
 
         camViewColor.visibility = ImageView.GONE

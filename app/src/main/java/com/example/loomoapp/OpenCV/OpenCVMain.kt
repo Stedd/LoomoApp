@@ -18,6 +18,7 @@ import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
 import org.opencv.android.Utils.matToBitmap
+import org.opencv.core.CvException
 import org.opencv.core.CvType.*
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc.COLOR_BGR5652RGB
@@ -115,7 +116,11 @@ class OpenCVMain: Service() {
             Log.d(TAG, "Frame is empty")
             return bmp
         }
-        matToBitmap(frame, bmp)
+        try {
+            matToBitmap(frame, bmp)
+        } catch (e: CvException) {
+            return bmp
+        }
         return bmp
     }
 }
