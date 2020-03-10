@@ -195,31 +195,40 @@ class MainActivity :
 
         depthByteBuffer.observeForever {
             camObsThread.handler.post {
+                val tic = System.currentTimeMillis()
                 mOpenCVMain.newDepthFrame(it.copy())
                 UIThreadHandler.post {
                     camViewDepth.setImageBitmap(mOpenCVMain.getDepthFrame())
                 }
+                val toc = System.currentTimeMillis()
+                Log.d("Timing", "Depth: ${toc-tic}ms (${1000/(toc-tic)}FPS)")
             }
         }
         colorByteBuffer.observeForever {
             camObsThread.handler.post {
+                val tic = System.currentTimeMillis()
                 mOpenCVMain.newColorFrame(it.copy())
                 UIThreadHandler.post {
                     camViewColor.setImageBitmap(mOpenCVMain.getColorFrame())
                 }
+                val toc = System.currentTimeMillis()
+                Log.d("Timing", "Color: ${toc-tic}ms (${1000/(toc-tic)}FPS)")
             }
         }
         fishEyeByteBuffer.observeForever {
             camObsThread.handler.post {
+                val tic = System.currentTimeMillis()
                 mOpenCVMain.newFishEyeFrame(it.copy())
                 UIThreadHandler.post {
                     camViewFishEye.setImageBitmap(mOpenCVMain.getFishEyeFrame())
                 }
+                val toc = System.currentTimeMillis()
+                Log.d("Timing", "FishEye: ${toc-tic}ms (${1000/(toc-tic)}FPS)")
             }
         }
 
         camViewColor.visibility = ImageView.GONE
-        camViewFishEye.visibility = ImageView.GONE
+        camViewFishEye.visibility = ImageView.VISIBLE
         camViewDepth.visibility = ImageView.GONE
 
 

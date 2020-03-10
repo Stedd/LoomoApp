@@ -25,7 +25,7 @@ import org.opencv.imgproc.Imgproc.cvtColor
 import java.nio.ByteBuffer
 
 class OpenCVMain: Service() {
-    private val TAG = "OpenCVClass"
+    private val TAG = "OpenCVMain"
 
     init {
         //Load OpenCV
@@ -41,6 +41,7 @@ class OpenCVMain: Service() {
     private var colorFrame = Mat()
     private var depthFrame = Mat()
 
+    private val fishEyeTracker = ORBTracker()
 
     override fun onBind(intent: Intent?): IBinder? {
         return Binder()
@@ -72,6 +73,7 @@ class OpenCVMain: Service() {
 
     fun newFishEyeFrame(byteBuf: ByteBuffer) {
         newFrame(byteBuf, fishEyeFrame, FISHEYE_WIDTH, FISHEYE_HEIGHT, CV_8UC1)
+        fishEyeFrame = fishEyeTracker.onNewFrame(fishEyeFrame)
     }
     fun newColorFrame(byteBuf: ByteBuffer) {
         newFrame(byteBuf, colorFrame, COLOR_WIDTH, COLOR_HEIGHT, CV_8UC4)
@@ -109,6 +111,10 @@ class OpenCVMain: Service() {
         }
 //        if (!(frame.type() == CV_8UC1 || frame.type() == CV_8UC3 || frame.type() == CV_8UC4)) {
 //        }
+        if (frame.empty()) {
+            Log.d(TAG, "Frame is empty")
+            return bmp
+        }
         matToBitmap(frame, bmp)
         return bmp
     }
