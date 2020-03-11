@@ -120,5 +120,4 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
             }
         }
     }
-
 }

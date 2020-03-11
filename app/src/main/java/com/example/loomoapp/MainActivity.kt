@@ -180,43 +180,17 @@ class MainActivity :
             mTFPublisher
         )
 
-
         // Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode()
-
 
         //Start Ros Activity
 //        mROSMain.initMain()
 
-
         mLoomoControl.mControllerThread.start()
-
 
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.VISIBLE
         camViewDepth.visibility = ImageView.GONE
-
-        CoroutineScope(IO).launch {
-            while (true) {
-                mOpenCVMain.checkFrame(StreamType.FISH_EYE) {
-                    CoroutineScope(Main).launch {
-                        camViewFishEye.setImageBitmap(it)
-                    }
-                }
-                mOpenCVMain.checkFrame(StreamType.COLOR) {
-                    CoroutineScope(Main).launch {
-                        camViewColor.setImageBitmap(it)
-                    }
-                }
-                mOpenCVMain.checkFrame(StreamType.DEPTH) {
-                    CoroutineScope(Main).launch {
-                        camViewDepth.setImageBitmap(it)
-                    }
-                }
-
-                delay(34)
-            }
-        }
 
         // Onclicklisteners
         var camViewState = 0
@@ -262,18 +236,19 @@ class MainActivity :
     }
 
 
+
     override fun onResume() {
         mOpenCVMain.resume()
 
         mLoomoRealSense.bind(this)
         mLoomoRealSense.startCameras { streamType, frame ->
             mOpenCVMain.onNewFrame(streamType, frame)
+            runOnUiThread { updateImgViews() }
         }
 
         mLoomoSensor.bind(this)
 
         mLoomoBase.bind(this)
-
 
         UIThreadHandler.postDelayed({
             mRealSensePublisher.node_started(mBridgeNode)
@@ -297,6 +272,18 @@ class MainActivity :
 
     private fun stopThreads() {
         mLoomoControl.stopController(this, "App paused, Controller thread stopping")
+    }
+
+    private fun updateImgViews() {
+        mOpenCVMain.checkFrame(StreamType.FISH_EYE) {
+            camViewFishEye.setImageBitmap(it)
+        }
+        mOpenCVMain.checkFrame(StreamType.COLOR) {
+            camViewColor.setImageBitmap(it)
+        }
+        mOpenCVMain.checkFrame(StreamType.DEPTH) {
+            camViewDepth.setImageBitmap(it)
+        }
     }
 }
 
