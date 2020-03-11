@@ -4,20 +4,14 @@
 package com.example.loomoapp.Loomo
 
 import android.content.Context
-import android.os.Handler
 import android.util.Log
-import androidx.lifecycle.MutableLiveData
-import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.RealsensePublisher
-import com.example.loomoapp.utils.RingBuffer
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.frame.Frame
-import com.segway.robot.sdk.vision.frame.FrameInfo
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import java.nio.ByteBuffer
 
 
 class LoomoRealSense(private val publisher_: RealsensePublisher) {
@@ -63,7 +57,7 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
 
                     override fun onUnbind(reason: String?) {
                         Log.d(TAG, "Vision onUnbind")
-                        stopActiveCameras()
+                        stopCameras()
                     }
                 })
         } else {
@@ -76,89 +70,11 @@ class LoomoRealSense(private val publisher_: RealsensePublisher) {
     }
 
 
-    fun stopActiveCameras() {
+    fun stopCameras() {
         if (mVision.isBind) {
             mVision.stopListenFrame(StreamType.COLOR)
             mVision.stopListenFrame(StreamType.FISH_EYE)
             mVision.stopListenFrame(StreamType.DEPTH)
-        }
-    }
-
-
-    fun startColorCamera(
-        threadHandler: Handler,
-        receiverBuffer: MutableLiveData<ByteBuffer>,
-        receiverInfo: MutableLiveData<FrameInfo>
-    ) {
-        startCamera(StreamType.COLOR, threadHandler, receiverBuffer, receiverInfo)
-    }
-
-    fun startFishEyeCamera(
-        threadHandler: Handler,
-        receiverBuffer: MutableLiveData<ByteBuffer>,
-        receiverInfo: MutableLiveData<FrameInfo>
-    ) {
-        startCamera(StreamType.FISH_EYE, threadHandler, receiverBuffer, receiverInfo)
-    }
-
-    fun startDepthCamera(
-        threadHandler: Handler,
-        receiverBuffer: MutableLiveData<ByteBuffer>,
-        receiverInfo: MutableLiveData<FrameInfo>
-    ) {
-        startCamera(StreamType.DEPTH, threadHandler, receiverBuffer, receiverInfo)
-    }
-
-    //TODO: check that 'receiver' is unique (two camera streams writing to the same var has caused crashes
-
-    @Suppress("ControlFlowWithEmptyBody")
-    private fun startCamera(
-        streamType: Int,
-        threadHandler: Handler,
-        receiverBuffer: MutableLiveData<ByteBuffer>,
-        receiverInfo: MutableLiveData<FrameInfo>
-
-    ) {
-        GlobalScope.launch {
-            when {
-                mVision.isBind -> {
-                    try {
-                        mVision.startListenFrame(streamType)
-                        { streamType, frame ->
-                            threadHandler.post {
-                                receiverBuffer.value = frame.byteBuffer
-                                receiverInfo.value = frame.info
-                            }
-                        }
-                    } catch (e: IllegalArgumentException) {
-                        Log.d(
-                            TAG,
-                            "Exception in Vision.startListenFrame ignored because probably already listening ($streamType = ${streamTypeMap[streamType]}): $e"
-                        )
-                    }
-                }
-                !mVision.isBind and waitingForServiceToBind -> {
-                    Log.d(
-                        TAG,
-                        "Waiting for service to bind before starting ${streamTypeMap[streamType]} camera"
-                    )
-                    while (!mVision.isBind) {
-                    }
-                    mVision.stopListenFrame(streamType)
-                    startCamera(
-                        streamType,
-                        threadHandler,
-                        receiverBuffer,
-                        receiverInfo
-                    ) // This recursion is safe.
-                }
-                else -> {
-                    Log.d(
-                        TAG,
-                        "${streamTypeMap[streamType]} not started. Bind Vision service first"
-                    )
-                }
-            }
         }
     }
 

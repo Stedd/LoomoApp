@@ -49,21 +49,20 @@ class MainActivity :
     lateinit var mLoomoSensor: LoomoSensor
     lateinit var mLoomoControl: LoomoControl
 
+    //TODO: Fix LoomoRealSense or OpenCVMain so that ROS publisher gets these vals.
+    // These vals are used by ROS publisher, but nothing is assigned to them.
     private val fishEyeByteBuffer = MutableLiveData<ByteBuffer>()
     private val colorByteBuffer = MutableLiveData<ByteBuffer>()
     private val depthByteBuffer = MutableLiveData<ByteBuffer>()
-    private val fishEyeBitmap = MutableLiveData<Bitmap>()
-    private val colorBitmap = MutableLiveData<Bitmap>()
-    private val depthBitmap = MutableLiveData<Bitmap>()
     private val fishEyeFrameInfo = MutableLiveData<FrameInfo>()
     private val colorFrameInfo = MutableLiveData<FrameInfo>()
     private val depthFrameInfo = MutableLiveData<FrameInfo>()
 
-    val newFrame = MutableLiveData<Boolean>()
 
     //OpenCV Variables
     private lateinit var mOpenCVMain: OpenCVMain
-//    private lateinit var mOpenCVMain: MainVisionService
+
+    //    private lateinit var mOpenCVMain: MainVisionService
     private lateinit var intentOpenCV: Intent
 
     //Import native functions
@@ -130,7 +129,7 @@ class MainActivity :
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
-        // Hacky trick to make the app fullscreen
+        // Hacky trick to make the app fullscreen:
         textView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
 
         mRosPublisherThread =
@@ -151,7 +150,6 @@ class MainActivity :
 
         //Start OpenCV Service
         mOpenCVMain = OpenCVMain()
-//        mOpenCVMain = MainVisionService()
         intentOpenCV = Intent(this, mOpenCVMain::class.java)
         startService(intentOpenCV)
         mOpenCVMain.onCreate(this)
@@ -187,78 +185,19 @@ class MainActivity :
         mBridgeNode = RosBridgeNode()
 
 
-
         //Start Ros Activity
 //        mROSMain.initMain()
 
 
         mLoomoControl.mControllerThread.start()
 
-//        val fishEyeThread = LoopedThread("FishEye observer", Process.THREAD_PRIORITY_DEFAULT)
-//        val colorThread = LoopedThread("Color observer", Process.THREAD_PRIORITY_DEFAULT)
-//        val depthThread = LoopedThread("Depth observer", Process.THREAD_PRIORITY_DEFAULT)
-//        fishEyeThread.start()
-//        colorThread.start()
-//        depthThread.start()
-//
-//        depthByteBuffer.observeForever {
-//            depthThread.handler.post {
-//                val tic = System.currentTimeMillis()
-//                mOpenCVMain.newDepthFrame(it.copy())
-//                runOnUiThread {
-//                    val ticc = System.currentTimeMillis()
-//                    camViewDepth.setImageBitmap(mOpenCVMain.getDepthFrame())
-//                    val tocc = System.currentTimeMillis()
-//                    Log.d("Timing", "DepthUp: ${tocc-ticc}ms (${1000/(tocc-ticc)}FPS)")
-//                }
-//                val toc = System.currentTimeMillis()
-//                Log.d("Timing", "Depth: ${toc-tic}ms (${1000/(toc-tic)}FPS)")
-//            }
-//        }
-//        colorByteBuffer.observeForever {
-//            colorThread.handler.post {
-//                val tic = System.currentTimeMillis()
-//                mOpenCVMain.newColorFrame(it.copy())
-//                runOnUiThread {
-//                    val ticc = System.currentTimeMillis()
-//                    camViewColor.setImageBitmap(mOpenCVMain.getColorFrame())
-//                    val tocc = System.currentTimeMillis()
-//                    Log.d("Timing", "ColorUp: ${tocc-ticc}ms (${1000/(tocc-ticc)}FPS)")
-//                }
-//                val toc = System.currentTimeMillis()
-//                Log.d("Timing", "Color: ${toc-tic}ms (${1000/(toc-tic)}FPS)")
-//            }
-//        }
-//        var busy = false
-//        fishEyeByteBuffer.observeForever {
-//            if (!busy) {
-//                busy = true
-//                fishEyeThread.handler.post {
-//                    val tic = System.currentTimeMillis()
-//                    mOpenCVMain.newFishEyeFrame(it.copy())
-//                    runOnUiThread {
-//                        val ticc = System.currentTimeMillis()
-//                        camViewFishEye.setImageBitmap(mOpenCVMain.getFishEyeFrame())
-//                        val tocc = System.currentTimeMillis()
-//                        Log.d("Timing", "FishEyeUp: ${tocc-ticc}ms (${1000/(tocc-ticc)}FPS)")
-//                        busy = false
-//                    }
-//                    val toc = System.currentTimeMillis()
-//                    Log.d("Timing", "FishEye: ${toc-tic}ms (${1000/(toc-tic)}FPS)")
-//                }
-//            }
-//        }
-
-//        fishEyeBitmap.observeForever { camViewFishEye.setImageBitmap(it) }
-//        colorBitmap.observeForever { camViewColor.setImageBitmap(it) }
-//        depthBitmap.observeForever { camViewDepth.setImageBitmap(it) }
 
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.VISIBLE
         camViewDepth.visibility = ImageView.GONE
 
         CoroutineScope(IO).launch {
-            while(true) {
+            while (true) {
                 mOpenCVMain.checkFrame(StreamType.FISH_EYE) {
                     CoroutineScope(Main).launch {
                         camViewFishEye.setImageBitmap(it)
@@ -327,10 +266,9 @@ class MainActivity :
         mOpenCVMain.resume()
 
         mLoomoRealSense.bind(this)
-        mLoomoRealSense.startCameras { streamType, frame -> mOpenCVMain.onNewFrame(streamType, frame) }
-//        mLoomoRealSense.startColorCamera(UIThreadHandler, colorByteBuffer, colorFrameInfo)
-//        mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeByteBuffer, fishEyeFrameInfo)
-//        mLoomoRealSense.startDepthCamera(UIThreadHandler, depthByteBuffer, depthFrameInfo)
+        mLoomoRealSense.startCameras { streamType, frame ->
+            mOpenCVMain.onNewFrame(streamType, frame)
+        }
 
         mLoomoSensor.bind(this)
 
