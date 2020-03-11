@@ -1,7 +1,7 @@
 package com.example.loomoapp.utils
 
 class RingBuffer<T>(val maxSize: Int = 10, val allowOverwrite: Boolean = false) {
-    val array = mutableListOf<T?>().apply {
+    private val array = mutableListOf<T?>().apply {
         for (index in 0 until maxSize) {
             add(null)
         }
@@ -9,33 +9,35 @@ class RingBuffer<T>(val maxSize: Int = 10, val allowOverwrite: Boolean = false) 
 
     var head = 0        // Head: 'oldest' entry (read index)
     var tail = 0        // Tail: 'newest' entry (write index)
-    var capacity = 0    // N.o. items in the queue
+    var itemsInQueue = 0    // N.o. items in the queue
 
     fun clear() {
         head = 0
         tail = 0
-        capacity = 0
+        itemsInQueue = 0
     }
 
     fun enqueue(item: T): RingBuffer<T> {
-        if (capacity == maxSize) {
+        if (itemsInQueue != 0) {
+            tail = (tail + 1) % maxSize
+        }
+        if (itemsInQueue == maxSize) {
             if (allowOverwrite) {
                 head = (head + 1) % maxSize
             } else {
                 throw OverflowException("Queue is full, can't add $item")
             }
         } else {
-            ++capacity
+            ++itemsInQueue
         }
 
         array[tail] = item
-        tail = (tail + 1) % maxSize
 
         return this
     }
 
     fun dequeue(): T? {
-        if (capacity == 0) {
+        if (itemsInQueue == 0) {
             throw UnderflowException("Queue is empty, can't dequeue()")
         }
 
@@ -47,18 +49,22 @@ class RingBuffer<T>(val maxSize: Int = 10, val allowOverwrite: Boolean = false) 
 
     fun peek(): T? = array[head]
     fun peek(tailOffset: Int): T? {
-        if (tailOffset > capacity) tailOffset == capacity
-        val index = if (tailOffset < tail) {
-            tail - tailOffset
+        var offset = tailOffset
+        if (offset > itemsInQueue) {
+            offset = itemsInQueue
+        }
+        val index = if (offset <= tail) {
+            tail - offset
         } else {
-            maxSize - (tailOffset - tail)
+            maxSize - (offset - tail)
         }
         return array[index]
     }
+    fun peekTail(): T? = array[tail]
 
-    fun contents(): MutableList<T?> {
+    fun getContents(): MutableList<T?> {
         return mutableListOf<T?>().apply {
-            var itemCount = capacity
+            var itemCount = itemsInQueue
             var readIndex = head
             while (itemCount > 0) {
                 add(array[readIndex])
@@ -67,6 +73,8 @@ class RingBuffer<T>(val maxSize: Int = 10, val allowOverwrite: Boolean = false) 
             }
         }
     }
+
+    fun freeSpace() = maxSize - itemsInQueue
 }
 
 class OverflowException(msg: String) : RuntimeException(msg)

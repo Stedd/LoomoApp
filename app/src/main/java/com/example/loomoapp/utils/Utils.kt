@@ -1,4 +1,4 @@
-package com.example.loomoapp
+package com.example.loomoapp.utils
 
 import java.nio.ByteBuffer
 

@@ -1,8 +1,8 @@
 package com.example.loomoapp.ROS
 
 import androidx.lifecycle.MutableLiveData
-import com.example.loomoapp.copy
-import com.example.loomoapp.toByteArray
+import com.example.loomoapp.utils.copy
+import com.example.loomoapp.utils.toByteArray
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import java.nio.ByteBuffer
 

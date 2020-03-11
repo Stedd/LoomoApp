@@ -10,7 +10,7 @@ import androidx.lifecycle.Observer
 import com.example.loomoapp.DistanceController
 import com.example.loomoapp.LoopedThread
 import com.example.loomoapp.Runnables.PController
-import com.example.loomoapp.viewModel.MainActivityViewModel
+//import com.example.loomoapp.viewModel.MainActivityViewModel
 
 class LoomoControl(base: LoomoBase, sensor: LoomoSensor) {
     private val TAG = "LoomoControl"
