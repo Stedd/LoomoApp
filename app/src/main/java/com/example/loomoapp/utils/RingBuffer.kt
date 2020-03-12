@@ -75,6 +75,9 @@ class RingBuffer<T>(val maxSize: Int = 10, val allowOverwrite: Boolean = false) 
     }
 
     fun freeSpace() = maxSize - itemsInQueue
+    operator fun get(index: Int): T? {
+        return array[index]
+    }
 }
 
 class OverflowException(msg: String) : RuntimeException(msg)

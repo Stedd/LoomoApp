@@ -17,3 +17,18 @@ fun ByteBuffer.toByteArray(): ByteArray {
     this.rewind()
     return tmpArr
 }
+
+fun ByteBuffer.toShortArray(bigEndian: Boolean = true): ShortArray {
+    val bytesInBuffer = this.remaining()
+    val tmpArr = if (bigEndian) {
+        ShortArray(bytesInBuffer/2) {
+            ((this.get().toInt() shl 8) or this.get().toInt()).toShort()
+        }
+    } else {
+        ShortArray(bytesInBuffer/2) {
+            (this.get().toInt() or (this.get().toInt() shl 8)).toShort()
+        }
+    }
+    this.rewind()
+    return tmpArr
+}

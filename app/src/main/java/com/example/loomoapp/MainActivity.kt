@@ -1,7 +1,6 @@
 package com.example.loomoapp
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.os.*
 import android.util.Log
 import android.util.Pair
@@ -12,16 +11,9 @@ import androidx.lifecycle.*
 import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
-import com.example.loomoapp.utils.copy
-import com.segway.robot.sdk.vision.frame.Frame
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.ros.address.InetAddressFactory
 import org.ros.android.AppCompatRosActivity
 import org.ros.message.Time
@@ -51,6 +43,8 @@ class MainActivity :
 
     //TODO: Fix LoomoRealSense or OpenCVMain so that ROS publisher gets these vals.
     // These vals are used by ROS publisher, but nothing is assigned to them.
+    // Can probably be fixed by adding a function in the lambda expression in:
+    // com/example/loomoapp/MainActivity.kt:247
     private val fishEyeByteBuffer = MutableLiveData<ByteBuffer>()
     private val colorByteBuffer = MutableLiveData<ByteBuffer>()
     private val depthByteBuffer = MutableLiveData<ByteBuffer>()
@@ -224,11 +218,12 @@ class MainActivity :
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
-            mRosMainPublisher.publishAllCameras()
+            mOpenCVMain.captureNewFrame = true
+//            mRosMainPublisher.publishAllCameras()
         }
         btnStopService.setOnClickListener {
             Log.d(TAG, "ServStopBtn clicked")
-            mRosMainPublisher.publishGraph()
+//            mRosMainPublisher.publishGraph()
         }
 
         //Helloworld from c++
@@ -275,13 +270,13 @@ class MainActivity :
     }
 
     private fun updateImgViews() {
-        mOpenCVMain.checkFrame(StreamType.FISH_EYE) {
+        mOpenCVMain.getNewestFrame(StreamType.FISH_EYE) {
             camViewFishEye.setImageBitmap(it)
         }
-        mOpenCVMain.checkFrame(StreamType.COLOR) {
+        mOpenCVMain.getNewestFrame(StreamType.COLOR) {
             camViewColor.setImageBitmap(it)
         }
-        mOpenCVMain.checkFrame(StreamType.DEPTH) {
+        mOpenCVMain.getNewestFrame(StreamType.DEPTH) {
             camViewDepth.setImageBitmap(it)
         }
     }

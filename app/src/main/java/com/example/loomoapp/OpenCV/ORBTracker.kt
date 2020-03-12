@@ -10,15 +10,15 @@ class ORBTracker {
     private val TAG = "OpenCV/ORBTracker"
 
     private val detector: ORB = ORB.create()
-    private val keyPoints = MatOfKeyPoint()
+    val keyPoints = MatOfKeyPoint()
     private val descriptors = Mat()
 
 
-    fun onNewFrame(img: Mat): Mat {
+    fun onNewFrame(img: Mat): MatOfKeyPoint {
         detector.detect(img, keyPoints)
         detector.compute(img,keyPoints, descriptors)
-        Features2d.drawKeypoints(img, keyPoints, img, Scalar(0.0, 255.0, 0.0))
-        return img
+//        Features2d.drawKeypoints(img, keyPoints, img, Scalar(0.0, 255.0, 0.0))
+        return keyPoints
     }
 
 }

@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
+import android.os.Process
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.example.loomoapp.Loomo.LoomoRealSense
@@ -16,6 +17,7 @@ import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
+import com.example.loomoapp.LoopedThread
 import com.example.loomoapp.ROS.RealsensePublisher
 import com.example.loomoapp.utils.RingBuffer
 import com.example.loomoapp.utils.toByteArray
@@ -26,10 +28,9 @@ import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
 import org.opencv.android.Utils.matToBitmap
-import org.opencv.core.CvException
-import org.opencv.core.CvType
+import org.opencv.core.*
 import org.opencv.core.CvType.*
-import org.opencv.core.Mat
+import org.opencv.features2d.Features2d
 import org.opencv.imgproc.Imgproc.COLOR_BGR5652RGB
 import org.opencv.imgproc.Imgproc.cvtColor
 import java.nio.ByteBuffer
@@ -48,16 +49,13 @@ class OpenCVMain : Service() {
 
     private lateinit var mLoaderCallback: BaseLoaderCallback
 
-    private var fishEyeFrame = Mat()
-    private var colorFrame = Mat()
-    private var depthFrame = Mat()
-
     private var fishEyeFrameBuffer = RingBuffer<Pair<Mat, FrameInfo>>(30, true)
     private var colorFrameBuffer = RingBuffer<Pair<Mat, FrameInfo>>(30, true)
     private var depthFrameBuffer = RingBuffer<Pair<Mat, FrameInfo>>(30, true)
 
 
     private val fishEyeTracker = ORBTracker()
+    var captureNewFrame = true
 
     override fun onBind(intent: Intent?): IBinder? {
         return Binder()
@@ -86,6 +84,9 @@ class OpenCVMain : Service() {
         }
     }
 
+    private val imgProcFishEye = LoopedThread("imgProc FishEye", Process.THREAD_PRIORITY_DEFAULT)
+    private var keyPoints = MatOfKeyPoint()
+
     fun onNewFrame(streamType: Int, frame: Frame) {
         when (streamType) {
             StreamType.FISH_EYE -> {
@@ -97,6 +98,13 @@ class OpenCVMain : Service() {
                         ), frame.info
                     )
                 )
+                if (captureNewFrame) {
+                    captureNewFrame = false
+                    imgProcFishEye.handler.post {
+                        keyPoints = fishEyeTracker.onNewFrame(fishEyeFrameBuffer.peekTail()!!.first)
+                    }
+                }
+                Features2d.drawKeypoints(fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first, keyPoints, fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first, Scalar(0.0, 255.0, 0.0))
             }
             StreamType.COLOR -> {
                 colorFrameBuffer.enqueue(
@@ -113,7 +121,7 @@ class OpenCVMain : Service() {
                     Pair(
                         frame.byteBuffer.toMat(
                             DEPTH_WIDTH, DEPTH_HEIGHT,
-                            CV_8UC2
+                            CV_16UC1
                         ), frame.info
                     )
                 )
@@ -126,11 +134,11 @@ class OpenCVMain : Service() {
 
 
 
-    fun checkFrame(streamType: Int, callback: (Bitmap) -> Unit){
+    fun getNewestFrame(streamType: Int, callback: (Bitmap) -> Unit){
         val frame: Mat? = when(streamType) {
-            StreamType.FISH_EYE -> fishEyeFrameBuffer.peekTail()?.first
+            StreamType.FISH_EYE -> fishEyeFrameBuffer.peek(1)?.first
             StreamType.COLOR -> colorFrameBuffer.peekTail()?.first
-            StreamType.DEPTH -> depthFrameBuffer.peekTail()?.first
+            StreamType.DEPTH -> depthFrameBuffer.peek(1)?.first
             else -> throw IllegalStreamTypeException("Non recognized stream type in observe()")
         }
         if (frame == null) {
