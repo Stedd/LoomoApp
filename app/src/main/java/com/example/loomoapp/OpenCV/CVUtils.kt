@@ -12,7 +12,10 @@ import org.opencv.core.CvException
 import org.opencv.core.CvType.*
 import org.opencv.core.Mat
 import org.opencv.core.Scalar
+import org.opencv.core.Size
+import org.opencv.imgproc.Imgproc
 import org.opencv.imgproc.Imgproc.*
+import java.lang.RuntimeException
 import java.nio.ByteBuffer
 
 private const val TAG = "CVUtils"
@@ -38,6 +41,7 @@ fun Mat.toBitmap(): Bitmap {
     //TODO: 'this' appears to be volatile because the next line will sometimes try to
     // create an empty Bitmap despite the check in the previous line
     val bmp = Bitmap.createBitmap(this.cols(), this.rows(), Bitmap.Config.ARGB_8888)
+
     // matToBitmap() only works for CV_8UC1, CV_8UC3 and CV_8UC4 formats,
     if (this.type() == CV_8UC2) {
         // The color space conversion for some reason does not change the frame.type(),
@@ -48,6 +52,12 @@ fun Mat.toBitmap(): Bitmap {
         return bmp
     } else if (this.type() == CV_16UC1) {
         val tmp = Mat(this.rows(), this.cols(), CV_8UC1)
+        //TODO: Fix the conversion of depth img to gray-scale. All attempts seem to
+        // 'cut off' the MSB instead of mapping 0-2^16 to 0-2^8
+        // Logging the pixel values suggests that the 'looping' effect is happening in
+        // the 16bit img, so the problem lies elsewhere
+//        Imgproc.blur(this, this, Size(9.0, 9.0))
+//        Log.d(TAG, "ch: ${this.channels()}, depth: ${this.depth()}, val: ${this[120, 155][0]}")
 //        val tmp = Mat(this.dataAddr())
         this.convertTo(tmp, CV_8UC1, 1/256.0)
 //        cvtColor(tmp, tmp, COLOR_GRAY2RGB)
@@ -73,3 +83,12 @@ fun Mat.toBitmap(): Bitmap {
     }
     return bmp
 }
+
+//fun Mat.toIntArray(): IntArray {
+//    if (this.channels() + this.depth() > 4) {
+//        throw MatConversionException("Too many bits per pixel in 'Mat.toIntArray'")
+//    }
+//
+//}
+//
+//class MatConversionException(msg: String) : RuntimeException(msg)
