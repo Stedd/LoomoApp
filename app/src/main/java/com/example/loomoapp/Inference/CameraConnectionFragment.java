@@ -59,7 +59,7 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import com.example.loomoapp.Inference.env.Logger;
-import com.example.loomoapp.Inference.R; // Explicit import needed for internal Google builds.
+//import com.example.loomoapp.Inference.R; // Explicit import needed for internal Google builds.
 
 public class CameraConnectionFragment extends Fragment {
   private static final Logger LOGGER = new Logger();

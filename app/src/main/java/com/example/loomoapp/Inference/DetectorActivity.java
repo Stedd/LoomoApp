@@ -47,24 +47,25 @@ import com.example.loomoapp.Inference.tracking.MultiBoxTracker;
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
  * objects.
  */
-public class DetectorActivity extends CameraActivity implements OnImageAvailableListener {
+//public class DetectorActivity extends CameraActivity implements OnImageAvailableListener {
+public class DetectorActivity  {
   private static final Logger LOGGER = new Logger();
 
-  // Configuration values for the prepackaged multibox model.
-  private static final int MB_INPUT_SIZE = 224;
-  private static final int MB_IMAGE_MEAN = 128;
-  private static final float MB_IMAGE_STD = 128;
-  private static final String MB_INPUT_NAME = "ResizeBilinear";
-  private static final String MB_OUTPUT_LOCATIONS_NAME = "output_locations/Reshape";
-  private static final String MB_OUTPUT_SCORES_NAME = "output_scores/Reshape";
-  private static final String MB_MODEL_FILE = "file:///android_asset/multibox_model.pb";
-  private static final String MB_LOCATION_FILE =
-      "file:///android_asset/multibox_location_priors.txt";
-
-  private static final int TF_OD_API_INPUT_SIZE = 300;
-  private static final String TF_OD_API_MODEL_FILE =
-      "file:///android_asset/ssd_mobilenet_v1_android_export.pb";
-  private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/coco_labels_list.txt";
+//  // Configuration values for the prepackaged multibox model.
+//  private static final int MB_INPUT_SIZE = 224;
+//  private static final int MB_IMAGE_MEAN = 128;
+//  private static final float MB_IMAGE_STD = 128;
+//  private static final String MB_INPUT_NAME = "ResizeBilinear";
+//  private static final String MB_OUTPUT_LOCATIONS_NAME = "output_locations/Reshape";
+//  private static final String MB_OUTPUT_SCORES_NAME = "output_scores/Reshape";
+//  private static final String MB_MODEL_FILE = "file:///android_asset/multibox_model.pb";
+//  private static final String MB_LOCATION_FILE =
+//      "file:///android_asset/multibox_location_priors.txt";
+//
+//  private static final int TF_OD_API_INPUT_SIZE = 300;
+//  private static final String TF_OD_API_MODEL_FILE =
+//      "file:///android_asset/ssd_mobilenet_v1_android_export.pb";
+//  private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/coco_labels_list.txt";
 
   // Configuration values for tiny-yolo-voc. Note that the graph is not included with TensorFlow and
   // must be manually placed in the assets/ directory by the user.
@@ -74,26 +75,27 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 //  private static final String YOLO_MODEL_FILE = "file:///android_asset/graph-tiny-yolo-voc.pb";
 //  private static final String YOLO_MODEL_FILE = "file:///android_asset/yolo.pb";
   private static final String YOLO_MODEL_FILE = "file:///android_asset/yolov2-tiny.pb";
-  private static final int YOLO_INPUT_SIZE = 416;
+  private static final int YOLO_INPUT_SIZE = 480;
   private static final String YOLO_INPUT_NAME = "input";
   private static final String YOLO_OUTPUT_NAMES = "output";
-  private static final int YOLO_BLOCK_SIZE = 32;
+  private static final int YOLO_BLOCK_SIZE = 32; // TODO: 23.03.2020 Not 100% sure what this does
 //  private static final int YOLO_BLOCK_SIZE =13;
 
   // Which detection model to use: by default uses Tensorflow Object Detection API frozen
   // checkpoints.  Optionally use legacy Multibox (trained using an older version of the API)
   // or YOLO.
-  private enum DetectorMode {
-    TF_OD_API, MULTIBOX, YOLO;
-  }
-  private static final DetectorMode MODE = DetectorMode.YOLO;
+//  private enum DetectorMode {
+//    TF_OD_API, MULTIBOX, YOLO;
+//  }
+//  private static final DetectorMode MODE = DetectorMode.YOLO;
 
   // Minimum detection confidence to track a detection.
-  private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.6f;
-  private static final float MINIMUM_CONFIDENCE_MULTIBOX = 0.1f;
+//  private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.6f;
+//  private static final float MINIMUM_CONFIDENCE_MULTIBOX = 0.1f;
   private static final float MINIMUM_CONFIDENCE_YOLO = 0.25f;
 
-  private static final boolean MAINTAIN_ASPECT = MODE == DetectorMode.YOLO;
+//  private static final boolean MAINTAIN_ASPECT = MODE == DetectorMode.YOLO;
+  private static final boolean MAINTAIN_ASPECT = true;
 
   private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
 
@@ -131,8 +133,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
     tracker = new MultiBoxTracker(this);
 
-    int cropSize = TF_OD_API_INPUT_SIZE;
-    if (MODE == DetectorMode.YOLO) {
+    int cropSize = YOLO_INPUT_SIZE;
+//    if (MODE == DetectorMode.YOLO) {
       detector =
           TensorFlowYoloDetector.create(
               getAssets(),
@@ -141,33 +143,33 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
               YOLO_INPUT_NAME,
               YOLO_OUTPUT_NAMES,
               YOLO_BLOCK_SIZE);
-      cropSize = YOLO_INPUT_SIZE;
-    } else if (MODE == DetectorMode.MULTIBOX) {
-      detector =
-          TensorFlowMultiBoxDetector.create(
-              getAssets(),
-              MB_MODEL_FILE,
-              MB_LOCATION_FILE,
-              MB_IMAGE_MEAN,
-              MB_IMAGE_STD,
-              MB_INPUT_NAME,
-              MB_OUTPUT_LOCATIONS_NAME,
-              MB_OUTPUT_SCORES_NAME);
-      cropSize = MB_INPUT_SIZE;
-    } else {
-      try {
-        detector = TensorFlowObjectDetectionAPIModel.create(
-            getAssets(), TF_OD_API_MODEL_FILE, TF_OD_API_LABELS_FILE, TF_OD_API_INPUT_SIZE);
-        cropSize = TF_OD_API_INPUT_SIZE;
-      } catch (final IOException e) {
-        LOGGER.e(e, "Exception initializing classifier!");
-        Toast toast =
-            Toast.makeText(
-                getApplicationContext(), "Classifier could not be initialized", Toast.LENGTH_SHORT);
-        toast.show();
-        finish();
-      }
-    }
+//      cropSize = YOLO_INPUT_SIZE;
+//    } else if (MODE == DetectorMode.MULTIBOX) {
+//      detector =
+//          TensorFlowMultiBoxDetector.create(
+//              getAssets(),
+//              MB_MODEL_FILE,
+//              MB_LOCATION_FILE,
+//              MB_IMAGE_MEAN,
+//              MB_IMAGE_STD,
+//              MB_INPUT_NAME,
+//              MB_OUTPUT_LOCATIONS_NAME,
+//              MB_OUTPUT_SCORES_NAME);
+//      cropSize = MB_INPUT_SIZE;
+//    } else {
+//      try {
+//        detector = TensorFlowObjectDetectionAPIModel.create(
+//            getAssets(), TF_OD_API_MODEL_FILE, TF_OD_API_LABELS_FILE, TF_OD_API_INPUT_SIZE);
+//        cropSize = TF_OD_API_INPUT_SIZE;
+//      } catch (final IOException e) {
+//        LOGGER.e(e, "Exception initializing classifier!");
+//        Toast toast =
+//            Toast.makeText(
+//                getApplicationContext(), "Classifier could not be initialized", Toast.LENGTH_SHORT);
+//        toast.show();
+//        finish();
+//      }
+//    }
 
     previewWidth = size.getWidth();
     previewHeight = size.getHeight();

@@ -60,6 +60,7 @@ class MainActivity :
     private val depthFrameInfo = MutableLiveData<FrameInfo>()
 
     //Inference Variables
+    private lateinit var mInferenceThread: LoopedThread
     private lateinit var mInferenceMain : InferenceMain
     private lateinit var intentInference: Intent
 
@@ -128,7 +129,7 @@ class MainActivity :
         Log.i(TAG, "Activity created")
 
         mRosPublisherThread =
-            LoopedThread("ROS_Pub_Thread", Process.THREAD_PRIORITY_AUDIO)
+            LoopedThread("ROS_Pub_Thread", Process.THREAD_PRIORITY_DEFAULT)
         mRosPublisherThread.start()
         mRealSensePublisher =
             RealsensePublisher(
@@ -174,14 +175,17 @@ class MainActivity :
 
 
         //Start Inference Service
-        mInferenceMain = InferenceMain()
-        intentInference = Intent(this, mInferenceMain::class.java)
+        mInferenceThread    = LoopedThread("Inference_Thread", Process.THREAD_PRIORITY_DEFAULT)
+        mInferenceThread    .start()
+
+        mInferenceMain      = InferenceMain(mInferenceThread)
+        intentInference     = Intent(this, mInferenceMain::class.java)
         startService(intentInference)
 
 
         //Start OpenCV Service
-        mOpenCVMain = OpenCVMain()
-        intentOpenCV = Intent(this, mOpenCVMain::class.java)
+        mOpenCVMain         = OpenCVMain()
+        intentOpenCV        = Intent(this, mOpenCVMain::class.java)
         startService(intentOpenCV)
         mOpenCVMain.onCreate(this, findViewById(R.id.javaCam))
 
@@ -202,7 +206,8 @@ class MainActivity :
         fishEyeByteBuffer.observeForever {
             if (it != null) {
                 mOpenCVMain.newFrame(it.copy())
-                camViewFishEye.setImageBitmap(mOpenCVMain.getFrame())
+                mInferenceMain.newFrame(mOpenCVMain.getFrame())
+                camViewFishEye.setImageBitmap(mOpenCVMain.getFrame())// TODO: 23.03.2020 Add overlay from inference, toggleable?
             }
 //            val bmp = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
 //            bmp.copyPixelsFromBuffer(it)
