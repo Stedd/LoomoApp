@@ -8,6 +8,7 @@ import android.util.Pair
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.lifecycle.*
+import com.example.loomoapp.Inference.InferenceMain
 import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_WIDTH
@@ -58,7 +59,9 @@ class MainActivity :
     private val colorFrameInfo = MutableLiveData<FrameInfo>()
     private val depthFrameInfo = MutableLiveData<FrameInfo>()
 
-
+    //Inference Variables
+    private lateinit var mInferenceMain : InferenceMain
+    private lateinit var intentInference: Intent
 
     //OpenCV Variables
     private lateinit var mOpenCVMain: OpenCVMain
@@ -75,7 +78,7 @@ class MainActivity :
     //Rosbridge
     private lateinit var mBridgeNode: RosBridgeNode
 
-    //Publishers
+    //ROS Publishers
     private lateinit var mRosPublisherThread: LoopedThread
     private lateinit var mRealSensePublisher: RealsensePublisher
     private lateinit var mTFPublisher: TFPublisher
@@ -100,12 +103,7 @@ class MainActivity :
             InetAddressFactory.newNonLoopback().hostAddress,
             masterUri
         )
-        // Note: NTPd on Linux will, by default, not allow NTP queries from the local networks.
-        // Add a rule like this to /etc/ntp.conf:
-        //
-        // restrict 192.168.86.0 mask 255.255.255.0 nomodify notrap nopeer
-        //
-        // Where the IP address is based on your subnet
+
         val ntpTimeProvider = NtpTimeProvider(
             InetAddressFactory.newFromHostString(masterUri.host),
             nodeMainExecutor.scheduledExecutorService
@@ -174,15 +172,18 @@ class MainActivity :
         // Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode()
 
+
+        //Start Inference Service
+        mInferenceMain = InferenceMain()
+        intentInference = Intent(this, mInferenceMain::class.java)
+        startService(intentInference)
+
+
         //Start OpenCV Service
         mOpenCVMain = OpenCVMain()
         intentOpenCV = Intent(this, mOpenCVMain::class.java)
         startService(intentOpenCV)
         mOpenCVMain.onCreate(this, findViewById(R.id.javaCam))
-
-
-        //Start Ros Activity
-//        mROSMain.initMain()
 
 
         mLoomoControl.mControllerThread.start()
