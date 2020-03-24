@@ -19,6 +19,8 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
 import android.os.Trace;
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -97,6 +99,9 @@ public class TensorFlowYoloDetector implements Classifier {
       final String inputName,
       final String outputName,
       final int blockSize) {
+
+
+
     TensorFlowYoloDetector d = new TensorFlowYoloDetector();
     d.inputName = inputName;
     d.inputSize = inputSize;
@@ -113,7 +118,7 @@ public class TensorFlowYoloDetector implements Classifier {
   }
 
   private TensorFlowYoloDetector() {}
-
+  java.lang.String TAG = "InferenceClass";
   private float expit(final float x) {
     return (float) (1. / (1. + Math.exp(-x)));
   }
@@ -143,8 +148,9 @@ public class TensorFlowYoloDetector implements Classifier {
     Trace.beginSection("preprocessBitmap");
     // Preprocess the image data from 0-255 int to normalized float based
     // on the provided parameters.
-    bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
-
+    Log.d(TAG, String.valueOf(bitmap.getWidth()));
+    Log.d(TAG, String.valueOf(bitmap.getHeight()));
+    bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight()); // TODO: 24.03.2020 ArrayIndexOutOfBoundsException
     for (int i = 0; i < intValues.length; ++i) {
       floatValues[i * 3 + 0] = ((intValues[i] >> 16) & 0xFF) / 255.0f;
       floatValues[i * 3 + 1] = ((intValues[i] >> 8) & 0xFF) / 255.0f;

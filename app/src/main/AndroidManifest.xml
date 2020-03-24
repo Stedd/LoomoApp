@@ -26,9 +26,7 @@
         <service android:name=".OpenCV.OpenCVMain"
             tools:ignore="InnerclassSeparator">
         </service>
-        <service android:name=".Inference.InferenceMain"
-            tools:ignore="InnerclassSeparator">
-        </service>
+        <service android:name=".Inference.InferenceMain"/>
     </application>
 
 

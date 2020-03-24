@@ -8,7 +8,9 @@ import android.util.Pair
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.lifecycle.*
+import com.example.loomoapp.Inference.Classifier
 import com.example.loomoapp.Inference.InferenceMain
+import com.example.loomoapp.Inference.TensorFlowYoloDetector
 import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_WIDTH
@@ -29,6 +31,7 @@ import org.ros.message.Time
 import org.ros.node.NodeConfiguration
 import org.ros.node.NodeMainExecutor
 import org.ros.time.NtpTimeProvider
+import org.tensorflow.Tensor
 import java.net.URI
 import java.nio.ByteBuffer
 import java.util.*
@@ -177,10 +180,23 @@ class MainActivity :
         //Start Inference Service
         mInferenceThread    = LoopedThread("Inference_Thread", Process.THREAD_PRIORITY_DEFAULT)
         mInferenceThread    .start()
-
-        mInferenceMain      = InferenceMain(mInferenceThread)
+//        mInferenceMain      = InferenceMain(mInferenceThread)
+        mInferenceMain      = InferenceMain()
         intentInference     = Intent(this, mInferenceMain::class.java)
         startService(intentInference)
+        mInferenceMain.getHandlerThread(mInferenceThread)
+
+//        val detector:Classifier = TensorFlowYoloDetector.create(
+//            assets,
+//            InferenceMain.YOLO_MODEL_FILE,
+//            InferenceMain.YOLO_INPUT_SIZE,
+//            InferenceMain.YOLO_INPUT_NAME,
+//            InferenceMain.YOLO_OUTPUT_NAMES,
+//            InferenceMain.YOLO_BLOCK_SIZE
+//        )
+
+//        mInferenceMain.init(detector, this)
+        mInferenceMain.init(this)
 
 
         //Start OpenCV Service
@@ -192,7 +208,6 @@ class MainActivity :
 
         mLoomoControl.mControllerThread.start()
 
-//        colorByteBuffer.observeForever { camViewColor.setImageBitmap(byteArrToBitmap(getByteArrFromByteBuf(it), 3, COLOR_WIDTH, COLOR_HEIGHT)) }
 
         colorByteBuffer.observeForever {
 //            if (it != null) {
@@ -200,31 +215,30 @@ class MainActivity :
 //                camViewColor.setImageBitmap(mOpenCVMain.getFrame())
 //            }
             val bmp = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
-            bmp.copyPixelsFromBuffer(copyBuffer(it))
+            bmp.copyPixelsFromBuffer(it.copy())
+            mInferenceMain.newFrame(bmp)
+//            mInferenceMain.newFrame(it.toByteArray(),bmp)
             camViewColor.setImageBitmap(bmp)
         }
+
         fishEyeByteBuffer.observeForever {
             if (it != null) {
                 mOpenCVMain.newFrame(it.copy())
-                mInferenceMain.newFrame(mOpenCVMain.getFrame())
+//                mInferenceMain.newFrame(it.toByteArray(), mOpenCVMain.getFrame()) //// TODO: 24.03.2020 neural net expects colors currently
                 camViewFishEye.setImageBitmap(mOpenCVMain.getFrame())// TODO: 23.03.2020 Add overlay from inference, toggleable?
+//                camViewFishEye.setImageBitmap(mInferenceMain.getFrame())// TODO: 24.03.2020 neural net expects colors currently
             }
 //            val bmp = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
 //            bmp.copyPixelsFromBuffer(it)
 //            camViewFishEye.setImageBitmap(bmp)
         }
+
         depthByteBuffer.observeForever {
             val bmp = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
-            bmp.copyPixelsFromBuffer(copyBuffer(it))
+            bmp.copyPixelsFromBuffer(it.copy())
             camViewDepth.setImageBitmap(bmp)
         }
-      
-//        colorFrameInfo.observeForever {
-//        }
-//        fishEyeFrameInfo.observeForever {
-//        }
-//        depthFrameInfo.observeForever {
-//        }
+
 
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.GONE
@@ -311,14 +325,6 @@ class MainActivity :
 
     private fun stopThreads() {
         mLoomoControl.stopController(this, "App paused, Controller thread stopping")
-    }
-    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
-        val copy = ByteBuffer.allocate(src.capacity())
-        src.rewind()
-        copy.put(src)
-        src.rewind()
-        copy.flip()
-        return copy
     }
 }
 
