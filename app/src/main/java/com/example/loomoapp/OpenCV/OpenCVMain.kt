@@ -39,6 +39,9 @@ class OpenCVMain : Service() {
     private val TAG = "OpenCVMain"
 
     init {
+        //Load native
+//        System.loadLibrary("native-opencv")
+//        System.loadLibrary("native-lib")
         //Load OpenCV
         if (!OpenCVLoader.initDebug()) {
             Log.d("$TAG init", "OpenCV not loaded")
@@ -86,6 +89,8 @@ class OpenCVMain : Service() {
 
     private val imgProcFishEye = LoopedThread("imgProc FishEye", Process.THREAD_PRIORITY_DEFAULT)
     private var keyPoints = MatOfKeyPoint()
+//    private external fun nativeOrb(matAddr: Long, dstAddr: Long)
+
 
     fun onNewFrame(streamType: Int, frame: Frame) {
         when (streamType) {
@@ -102,6 +107,7 @@ class OpenCVMain : Service() {
                     captureNewFrame = false
                     imgProcFishEye.handler.post {
                         keyPoints = fishEyeTracker.onNewFrame(fishEyeFrameBuffer.peekTail()!!.first)
+//                        nativeOrb(fishEyeFrameBuffer.peekTail()!!.first.nativeObjAddr, keyPoints.nativeObjAddr)
                     }
                 }
                 Features2d.drawKeypoints(fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first, keyPoints, fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first, Scalar(0.0, 255.0, 0.0))

@@ -56,7 +56,6 @@ class MainActivity :
     //OpenCV Variables
     private lateinit var mOpenCVMain: OpenCVMain
 
-    //    private lateinit var mOpenCVMain: MainVisionService
     private lateinit var intentOpenCV: Intent
 
     //Import native functions

@@ -84,6 +84,10 @@ fun Mat.toBitmap(): Bitmap {
     return bmp
 }
 
+//TODO: It would be practical if Mat() had an iterator method (https://kotlinlang.org/docs/reference/iterators.html)
+// Maybe this tutorial can help: https://www.baeldung.com/kotlin-custom-range-iterator
+
+
 //fun Mat.toIntArray(): IntArray {
 //    if (this.channels() + this.depth() > 4) {
 //        throw MatConversionException("Too many bits per pixel in 'Mat.toIntArray'")
