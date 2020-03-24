@@ -2,33 +2,54 @@ package com.example.loomoapp.OpenCV
 
 import android.graphics.Bitmap
 import android.util.Log
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
-import com.example.loomoapp.utils.toByteArray
-import com.example.loomoapp.utils.toShortArray
+import org.opencv.android.Utils.bitmapToMat
 import org.opencv.android.Utils.matToBitmap
 import org.opencv.core.Core.*
 import org.opencv.core.CvException
 import org.opencv.core.CvType.*
 import org.opencv.core.Mat
-import org.opencv.core.Scalar
-import org.opencv.core.Size
-import org.opencv.imgproc.Imgproc
 import org.opencv.imgproc.Imgproc.*
-import java.lang.RuntimeException
 import java.nio.ByteBuffer
 
 private const val TAG = "CVUtils"
 
+//fun ByteBuffer.toMat(width: Int, height: Int, cvType: Int): Mat {
+//    val mat = Mat()
+//    mat.create(height, width, cvType)
+//    when (cvType) {
+//        CV_8UC4, CV_8UC3, CV_8UC2, CV_8UC1 -> {
+//            mat.put(0, 0, this.toByteArray())
+//        }
+//        CV_16UC1 -> {
+//            mat.put(0, 0, this.toShortArray(true))
+//        }
+//    }
+//    return mat
+//}
 fun ByteBuffer.toMat(width: Int, height: Int, cvType: Int): Mat {
     val mat = Mat()
-    mat.create(height, width, cvType)
     when (cvType) {
-        CV_8UC4, CV_8UC3, CV_8UC1 -> {
-            mat.put(0, 0, this.toByteArray())
+        CV_8UC4 -> {
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            bitmap.copyPixelsFromBuffer(this)
+            bitmapToMat(bitmap, mat)
         }
-        CV_16UC1 -> {
-            mat.put(0, 0, this.toShortArray(true))
+        CV_8UC1 -> {
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ALPHA_8)
+            bitmap.copyPixelsFromBuffer(this)
+            val bitmap2 = bitmap.copy(Bitmap.Config.ARGB_8888, false)
+            val tmp = Mat()
+            bitmapToMat(bitmap2, tmp)
+            val rgba = MutableList<Mat>(4) {mat}
+            split(tmp, rgba)
+            return rgba[3].clone()
+        }
+//        CV_16UC1 -> {
+//        }
+        CV_8UC2, CV_16UC1 -> {
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+            bitmap.copyPixelsFromBuffer(this)
+            bitmapToMat(bitmap, mat)
         }
     }
     return mat

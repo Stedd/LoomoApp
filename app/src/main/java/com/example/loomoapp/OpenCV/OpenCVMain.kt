@@ -17,6 +17,7 @@ import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.streamTypeMap
 import com.example.loomoapp.LoopedThread
 import com.example.loomoapp.ROS.RealsensePublisher
 import com.example.loomoapp.utils.RingBuffer
@@ -27,6 +28,7 @@ import com.segway.robot.sdk.vision.stream.StreamType
 import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
+import org.opencv.android.Utils.bitmapToMat
 import org.opencv.android.Utils.matToBitmap
 import org.opencv.core.*
 import org.opencv.core.CvType.*
@@ -93,6 +95,7 @@ class OpenCVMain : Service() {
 
 
     fun onNewFrame(streamType: Int, frame: Frame) {
+        val tic = System.currentTimeMillis()
         when (streamType) {
             StreamType.FISH_EYE -> {
                 fishEyeFrameBuffer.enqueue(
@@ -103,23 +106,30 @@ class OpenCVMain : Service() {
                         ), frame.info
                     )
                 )
-                if (captureNewFrame) {
-                    captureNewFrame = false
-                    imgProcFishEye.handler.post {
-                        keyPoints = fishEyeTracker.onNewFrame(fishEyeFrameBuffer.peekTail()!!.first)
-//                        nativeOrb(fishEyeFrameBuffer.peekTail()!!.first.nativeObjAddr, keyPoints.nativeObjAddr)
-                    }
-                }
-                Features2d.drawKeypoints(fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first, keyPoints, fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first, Scalar(0.0, 255.0, 0.0))
+//                if (captureNewFrame) {
+//                    captureNewFrame = false
+//                    imgProcFishEye.handler.post {
+//                        keyPoints = fishEyeTracker.onNewFrame(fishEyeFrameBuffer.peekTail()!!.first)
+////                        nativeOrb(fishEyeFrameBuffer.peekTail()!!.first.nativeObjAddr, keyPoints.nativeObjAddr)
+//                    }
+//                }
+//                Features2d.drawKeypoints(fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first, keyPoints, fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first, Scalar(0.0, 255.0, 0.0))
             }
             StreamType.COLOR -> {
+//                colorFrameBuffer.enqueue(
+//                    Pair(
+//                        frame.byteBuffer.toMat(
+//                            COLOR_WIDTH, COLOR_HEIGHT,
+//                            CV_8UC4
+//                        ), frame.info
+//                    )
+//                )
+                val a: Bitmap = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
+                a.copyPixelsFromBuffer(frame.byteBuffer)
+                val b = Mat()
+                bitmapToMat(a, b)
                 colorFrameBuffer.enqueue(
-                    Pair(
-                        frame.byteBuffer.toMat(
-                            COLOR_WIDTH, COLOR_HEIGHT,
-                            CV_8UC4
-                        ), frame.info
-                    )
+                    Pair(b , frame.info)
                 )
             }
             StreamType.DEPTH -> {
@@ -127,7 +137,8 @@ class OpenCVMain : Service() {
                     Pair(
                         frame.byteBuffer.toMat(
                             DEPTH_WIDTH, DEPTH_HEIGHT,
-                            CV_16UC1
+//                            CV_16UC1
+                            CV_8UC2
                         ), frame.info
                     )
                 )
@@ -136,6 +147,8 @@ class OpenCVMain : Service() {
                 throw IllegalStreamTypeException("Stream type not recognized in onNewFrame")
             }
         }
+        val toc = System.currentTimeMillis()
+        Log.d(TAG, "${streamTypeMap[streamType]} frame receive time: ${toc - tic}ms")
     }
 
 
