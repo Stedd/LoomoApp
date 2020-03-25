@@ -47,10 +47,8 @@ class InferenceMain : Service() {
     private var inferenceImage : Bitmap = Bitmap.createBitmap(YOLO_INPUT_SIZE,YOLO_INPUT_SIZE,Bitmap.Config.ARGB_8888)
     private var detectionImage : Bitmap = Bitmap.createBitmap(FISHEYE_WIDTH,FISHEYE_HEIGHT,Bitmap.Config.ARGB_8888)
 
-
-
-    private lateinit var frameToCropTransform: Matrix
-    private lateinit var cropToFrameTransform: Matrix
+    private var frameToCropTransform: Matrix = Matrix()
+    private var cropToFrameTransform: Matrix = Matrix()
 
     private var runningDetection: Boolean = false
     private var runningInference: Boolean = false
@@ -66,9 +64,7 @@ class InferenceMain : Service() {
 //    fun init(detector_: Classifier, context:Context) {
     fun init(context:Context) {
         Log.d(TAG, "creating the yolo detector");
-        // TODO: 24.03.2020 How to load the .pb properly??
 
-//        detector = detector_
         detector= TensorFlowYoloDetector.create(
             context.assets,
             YOLO_MODEL_FILE,
@@ -85,6 +81,7 @@ class InferenceMain : Service() {
             YOLO_INPUT_SIZE, YOLO_INPUT_SIZE,
             SENSOR_ORIENTATION,true
         )
+        frameToCropTransform.invert(cropToFrameTransform)
 
     }
 
@@ -150,7 +147,7 @@ class InferenceMain : Service() {
             //TODO: 24.03.2020 render new detection instead of object tracking
 
         }else{
-            Log.d(TAG, "inference running, skipping frame");
+//            Log.d(TAG, "inference running, skipping frame");
             // TODO: 24.03.2020 run object tracking while inference is running in background
         }
     }
