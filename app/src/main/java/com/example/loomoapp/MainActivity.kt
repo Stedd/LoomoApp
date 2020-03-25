@@ -61,6 +61,7 @@ class MainActivity :
     private val fishEyeFrameInfo = MutableLiveData<FrameInfo>()
     private val colorFrameInfo = MutableLiveData<FrameInfo>()
     private val depthFrameInfo = MutableLiveData<FrameInfo>()
+    private val inferenceImage = MutableLiveData<Bitmap>()
 
     //Inference Variables
     private lateinit var mInferenceThread: LoopedThread
@@ -184,6 +185,8 @@ class MainActivity :
         intentInference     = Intent(this, mInferenceMain::class.java)
         startService(intentInference)
         mInferenceMain.setHandlerThread(mInferenceThread)
+        mInferenceMain.setMainUIHandler(UIThreadHandler)
+        mInferenceMain.setInferenceBitmap(inferenceImage)
         mInferenceMain.init(this)
 
 
@@ -205,7 +208,6 @@ class MainActivity :
             val bmp = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
             bmp.copyPixelsFromBuffer(it.copy())
             mInferenceMain.newFrame(bmp)
-//            mInferenceMain.newFrame(it.toByteArray(),bmp)
             camViewColor.setImageBitmap(bmp)
         }
 
@@ -227,10 +229,15 @@ class MainActivity :
             camViewDepth.setImageBitmap(bmp)
         }
 
+        inferenceImage.observeForever {
+            inferenceView.setImageBitmap(it)
+        }
+
 
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.GONE
         camViewDepth.visibility = ImageView.GONE
+        inferenceView.visibility = ImageView.GONE
 
 
         // Onclicklisteners
@@ -243,17 +250,26 @@ class MainActivity :
                     camViewColor.visibility = ImageView.GONE
                     camViewFishEye.visibility = ImageView.GONE
                     camViewDepth.visibility = ImageView.VISIBLE
+                    inferenceView.visibility = ImageView.GONE
                 }
                 2 -> {
                     camViewColor.visibility = ImageView.VISIBLE
                     camViewFishEye.visibility = ImageView.GONE
                     camViewDepth.visibility = ImageView.GONE
+                    inferenceView.visibility = ImageView.GONE
+                }
+                3 -> {
+                    camViewColor.visibility = ImageView.GONE
+                    camViewFishEye.visibility = ImageView.VISIBLE
+                    camViewDepth.visibility = ImageView.GONE
+                    inferenceView.visibility = ImageView.GONE
                 }
                 else -> {
                     camViewState = 0
                     camViewColor.visibility = ImageView.GONE
-                    camViewFishEye.visibility = ImageView.VISIBLE
+                    camViewFishEye.visibility = ImageView.GONE
                     camViewDepth.visibility = ImageView.GONE
+                    inferenceView.visibility = ImageView.VISIBLE
                 }
             }
         }
