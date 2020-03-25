@@ -1,8 +1,8 @@
 package com.example.loomoapp.ROS
 
 import androidx.lifecycle.MutableLiveData
-import com.example.loomoapp.copy
-import com.example.loomoapp.toByteArray
+import com.example.loomoapp.utils.copy
+import com.example.loomoapp.utils.toByteArray
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import java.nio.ByteBuffer
 
@@ -54,18 +54,4 @@ class RosMainPublisher(
         )
 
     }
-//    private fun getByteBufferAsByteArray(src: ByteBuffer): ByteArray {
-//        val bytesInBuffer = src.remaining()
-//        val tmpArr = ByteArray(bytesInBuffer) { src.get() }
-//        src.rewind()
-//        return tmpArr
-//    }
-//    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
-//        val copy = ByteBuffer.allocate(src.capacity())
-//        src.rewind()
-//        copy.put(src)
-//        src.rewind()
-//        copy.flip()
-//        return copy
-//    }
 }

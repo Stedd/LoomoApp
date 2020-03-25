@@ -1,27 +1,19 @@
 package com.example.loomoapp
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.os.*
 import android.util.Log
 import android.util.Pair
+import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.lifecycle.*
 import com.example.loomoapp.Loomo.*
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_HEIGHT
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_WIDTH
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
-import com.segway.robot.sdk.vision.frame.Frame
 import com.segway.robot.sdk.vision.frame.FrameInfo
+import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import org.ros.address.InetAddressFactory
 import org.ros.android.AppCompatRosActivity
 import org.ros.message.Time
@@ -33,8 +25,6 @@ import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTime
 
 
 class MainActivity :
@@ -51,6 +41,10 @@ class MainActivity :
     lateinit var mLoomoSensor: LoomoSensor
     lateinit var mLoomoControl: LoomoControl
 
+    //TODO: Fix LoomoRealSense or OpenCVMain so that ROS publisher gets these vals.
+    // These vals are used by ROS publisher, but nothing is assigned to them.
+    // Can probably be fixed by adding a function in the lambda expression in:
+    // com/example/loomoapp/MainActivity.kt:247
     private val fishEyeByteBuffer = MutableLiveData<ByteBuffer>()
     private val colorByteBuffer = MutableLiveData<ByteBuffer>()
     private val depthByteBuffer = MutableLiveData<ByteBuffer>()
@@ -59,9 +53,9 @@ class MainActivity :
     private val depthFrameInfo = MutableLiveData<FrameInfo>()
 
 
-
     //OpenCV Variables
     private lateinit var mOpenCVMain: OpenCVMain
+
     private lateinit var intentOpenCV: Intent
 
     //Import native functions
@@ -128,6 +122,8 @@ class MainActivity :
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
+        // Hacky trick to make the app fullscreen:
+        textView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
 
         mRosPublisherThread =
             LoopedThread("ROS_Pub_Thread", Process.THREAD_PRIORITY_AUDIO)
@@ -145,6 +141,13 @@ class MainActivity :
         mLoomoSensor = LoomoSensor()
         mLoomoControl = LoomoControl(mLoomoBase, mLoomoSensor)
 
+        //Start OpenCV Service
+        mOpenCVMain = OpenCVMain()
+        intentOpenCV = Intent(this, mOpenCVMain::class.java)
+        startService(intentOpenCV)
+        mOpenCVMain.onCreate(this)
+
+
         //Publishers
         mTFPublisher =
             TFPublisher(
@@ -152,7 +155,7 @@ class MainActivity :
                 mDepthRosStamps,
                 mLoomoBase,
                 mLoomoSensor,
-                mLoomoRealSense,
+                mLoomoRealSense.mVision,
                 mRosPublisherThread
             )
         mSensorPublisher = SensorPublisher(mLoomoSensor, mRosPublisherThread)
@@ -170,60 +173,17 @@ class MainActivity :
             mTFPublisher
         )
 
-
         // Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode()
-
-        //Start OpenCV Service
-        mOpenCVMain = OpenCVMain()
-        intentOpenCV = Intent(this, mOpenCVMain::class.java)
-        startService(intentOpenCV)
-        mOpenCVMain.onCreate(this, findViewById(R.id.javaCam))
-
 
         //Start Ros Activity
 //        mROSMain.initMain()
 
-
         mLoomoControl.mControllerThread.start()
 
-//        colorByteBuffer.observeForever { camViewColor.setImageBitmap(byteArrToBitmap(getByteArrFromByteBuf(it), 3, COLOR_WIDTH, COLOR_HEIGHT)) }
-
-        colorByteBuffer.observeForever {
-//            if (it != null) {
-//                mOpenCVMain.newFrame(it)
-//                camViewColor.setImageBitmap(mOpenCVMain.getFrame())
-//            }
-            val bmp = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
-            bmp.copyPixelsFromBuffer(copyBuffer(it))
-            camViewColor.setImageBitmap(bmp)
-        }
-        fishEyeByteBuffer.observeForever {
-            if (it != null) {
-                mOpenCVMain.newFrame(it.copy())
-                camViewFishEye.setImageBitmap(mOpenCVMain.getFrame())
-            }
-//            val bmp = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
-//            bmp.copyPixelsFromBuffer(it)
-//            camViewFishEye.setImageBitmap(bmp)
-        }
-        depthByteBuffer.observeForever {
-            val bmp = Bitmap.createBitmap(DEPTH_WIDTH, DEPTH_HEIGHT, Bitmap.Config.RGB_565)
-            bmp.copyPixelsFromBuffer(copyBuffer(it))
-            camViewDepth.setImageBitmap(bmp)
-        }
-      
-//        colorFrameInfo.observeForever {
-//        }
-//        fishEyeFrameInfo.observeForever {
-//        }
-//        depthFrameInfo.observeForever {
-//        }
-
         camViewColor.visibility = ImageView.GONE
-        camViewFishEye.visibility = ImageView.GONE
+        camViewFishEye.visibility = ImageView.VISIBLE
         camViewDepth.visibility = ImageView.GONE
-
 
         // Onclicklisteners
         var camViewState = 0
@@ -251,19 +211,18 @@ class MainActivity :
         }
         btnStopCamera.setOnClickListener {
             Log.d(TAG, "CamStopBtn clicked")
-            --camViewState
             camViewColor.visibility = ImageView.GONE
             camViewFishEye.visibility = ImageView.GONE
             camViewDepth.visibility = ImageView.GONE
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
-            mRosMainPublisher.publishAllCameras()
-
+            mOpenCVMain.captureNewFrame = true
+//            mRosMainPublisher.publishAllCameras()
         }
         btnStopService.setOnClickListener {
             Log.d(TAG, "ServStopBtn clicked")
-            mRosMainPublisher.publishGraph()
+//            mRosMainPublisher.publishGraph()
         }
 
         //Helloworld from c++
@@ -271,17 +230,19 @@ class MainActivity :
     }
 
 
+
     override fun onResume() {
+        mOpenCVMain.resume()
+
         mLoomoRealSense.bind(this)
-        mLoomoRealSense.startColorCamera(UIThreadHandler, colorByteBuffer, colorFrameInfo)
-        mLoomoRealSense.startFishEyeCamera(UIThreadHandler, fishEyeByteBuffer, fishEyeFrameInfo)
-        mLoomoRealSense.startDepthCamera(UIThreadHandler, depthByteBuffer, depthFrameInfo)
+        mLoomoRealSense.startCameras { streamType, frame ->
+            mOpenCVMain.onNewFrame(streamType, frame)
+            runOnUiThread { updateImgViews() }
+        }
 
         mLoomoSensor.bind(this)
 
         mLoomoBase.bind(this)
-
-        mOpenCVMain.resume()
 
         UIThreadHandler.postDelayed({
             mRealSensePublisher.node_started(mBridgeNode)
@@ -306,13 +267,17 @@ class MainActivity :
     private fun stopThreads() {
         mLoomoControl.stopController(this, "App paused, Controller thread stopping")
     }
-    private fun copyBuffer(src: ByteBuffer): ByteBuffer {
-        val copy = ByteBuffer.allocate(src.capacity())
-        src.rewind()
-        copy.put(src)
-        src.rewind()
-        copy.flip()
-        return copy
+
+    private fun updateImgViews() {
+        mOpenCVMain.getNewestFrame(StreamType.FISH_EYE) {
+            camViewFishEye.setImageBitmap(it)
+        }
+        mOpenCVMain.getNewestFrame(StreamType.COLOR) {
+            camViewColor.setImageBitmap(it)
+        }
+        mOpenCVMain.getNewestFrame(StreamType.DEPTH) {
+            camViewDepth.setImageBitmap(it)
+        }
     }
 }
 
