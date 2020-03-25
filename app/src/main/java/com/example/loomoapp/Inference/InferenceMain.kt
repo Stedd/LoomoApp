@@ -58,15 +58,15 @@ class InferenceMain : Service() {
         return Binder()
     }
 
-    fun getHandlerThread(handlerThread_: LoopedThread){
+    fun setHandlerThread(handlerThread_: LoopedThread){
         handlerThread = handlerThread_
     }
-//    fun init(detector_: Classifier, context:Context) {
+
     fun init(context:Context) {
         Log.d(TAG, "creating the yolo detector");
 
         detector= TensorFlowYoloDetector.create(
-            context.assets,
+            context.assets, //loads the protobuf file
             YOLO_MODEL_FILE,
             YOLO_INPUT_SIZE,
             YOLO_INPUT_NAME,
@@ -158,7 +158,7 @@ class InferenceMain : Service() {
     }
 
     fun getFrame():Bitmap{
-        return fishEyeImage
+        return detectionImage
     }
 
 

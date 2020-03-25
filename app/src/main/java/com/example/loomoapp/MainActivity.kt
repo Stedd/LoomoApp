@@ -180,22 +180,10 @@ class MainActivity :
         //Start Inference Service
         mInferenceThread    = LoopedThread("Inference_Thread", Process.THREAD_PRIORITY_DEFAULT)
         mInferenceThread    .start()
-//        mInferenceMain      = InferenceMain(mInferenceThread)
         mInferenceMain      = InferenceMain()
         intentInference     = Intent(this, mInferenceMain::class.java)
         startService(intentInference)
-        mInferenceMain.getHandlerThread(mInferenceThread)
-
-//        val detector:Classifier = TensorFlowYoloDetector.create(
-//            assets,
-//            InferenceMain.YOLO_MODEL_FILE,
-//            InferenceMain.YOLO_INPUT_SIZE,
-//            InferenceMain.YOLO_INPUT_NAME,
-//            InferenceMain.YOLO_OUTPUT_NAMES,
-//            InferenceMain.YOLO_BLOCK_SIZE
-//        )
-
-//        mInferenceMain.init(detector, this)
+        mInferenceMain.setHandlerThread(mInferenceThread)
         mInferenceMain.init(this)
 
 
