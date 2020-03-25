@@ -5,37 +5,28 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Binder
-import android.os.Handler
 import android.os.IBinder
 import android.os.Process
 import android.util.Log
-import androidx.lifecycle.MutableLiveData
-import com.example.loomoapp.Loomo.LoomoRealSense
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.streamTypeMap
 import com.example.loomoapp.LoopedThread
-import com.example.loomoapp.ROS.RealsensePublisher
 import com.example.loomoapp.utils.RingBuffer
-import com.example.loomoapp.utils.toByteArray
 import com.segway.robot.sdk.vision.frame.Frame
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import com.segway.robot.sdk.vision.stream.StreamType
 import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
-import org.opencv.android.Utils.bitmapToMat
-import org.opencv.android.Utils.matToBitmap
-import org.opencv.core.*
 import org.opencv.core.CvType.*
+import org.opencv.core.Mat
+import org.opencv.core.MatOfKeyPoint
+import org.opencv.core.Scalar
 import org.opencv.features2d.Features2d
-import org.opencv.imgproc.Imgproc.COLOR_BGR5652RGB
-import org.opencv.imgproc.Imgproc.cvtColor
-import java.nio.ByteBuffer
 
 class OpenCVMain : Service() {
     private val TAG = "OpenCVMain"
@@ -95,7 +86,7 @@ class OpenCVMain : Service() {
 
 
     fun onNewFrame(streamType: Int, frame: Frame) {
-        val tic = System.currentTimeMillis()
+//        val tic = System.currentTimeMillis()
         when (streamType) {
             StreamType.FISH_EYE -> {
                 fishEyeFrameBuffer.enqueue(
@@ -106,30 +97,28 @@ class OpenCVMain : Service() {
                         ), frame.info
                     )
                 )
-//                if (captureNewFrame) {
-//                    captureNewFrame = false
-//                    imgProcFishEye.handler.post {
-//                        keyPoints = fishEyeTracker.onNewFrame(fishEyeFrameBuffer.peekTail()!!.first)
-////                        nativeOrb(fishEyeFrameBuffer.peekTail()!!.first.nativeObjAddr, keyPoints.nativeObjAddr)
-//                    }
-//                }
-//                Features2d.drawKeypoints(fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first, keyPoints, fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first, Scalar(0.0, 255.0, 0.0))
+                if (captureNewFrame) {
+                    captureNewFrame = false
+                    imgProcFishEye.handler.post {
+                        keyPoints = fishEyeTracker.onNewFrame(fishEyeFrameBuffer.peekTail()!!.first)
+//                        nativeOrb(fishEyeFrameBuffer.peekTail()!!.first.nativeObjAddr, keyPoints.nativeObjAddr)
+                    }
+                }
+                Features2d.drawKeypoints(
+                    fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first,
+                    keyPoints,
+                    fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first,
+                    Scalar(0.0, 255.0, 0.0)
+                )
             }
             StreamType.COLOR -> {
-//                colorFrameBuffer.enqueue(
-//                    Pair(
-//                        frame.byteBuffer.toMat(
-//                            COLOR_WIDTH, COLOR_HEIGHT,
-//                            CV_8UC4
-//                        ), frame.info
-//                    )
-//                )
-                val a: Bitmap = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
-                a.copyPixelsFromBuffer(frame.byteBuffer)
-                val b = Mat()
-                bitmapToMat(a, b)
                 colorFrameBuffer.enqueue(
-                    Pair(b , frame.info)
+                    Pair(
+                        frame.byteBuffer.toMat(
+                            COLOR_WIDTH, COLOR_HEIGHT,
+                            CV_8UC4
+                        ), frame.info
+                    )
                 )
             }
             StreamType.DEPTH -> {
@@ -147,18 +136,17 @@ class OpenCVMain : Service() {
                 throw IllegalStreamTypeException("Stream type not recognized in onNewFrame")
             }
         }
-        val toc = System.currentTimeMillis()
-        Log.d(TAG, "${streamTypeMap[streamType]} frame receive time: ${toc - tic}ms")
+//        val toc = System.currentTimeMillis()
+//        Log.d(TAG, "${streamTypeMap[streamType]} frame receive time: ${toc - tic}ms")
     }
 
 
-
-    fun getNewestFrame(streamType: Int, callback: (Bitmap) -> Unit){
-        val frame: Mat? = when(streamType) {
+    fun getNewestFrame(streamType: Int, callback: (Bitmap) -> Unit) {
+        val frame: Mat? = when (streamType) {
             StreamType.FISH_EYE -> fishEyeFrameBuffer.peek(1)?.first
-            StreamType.COLOR -> colorFrameBuffer.peekTail()?.first
+            StreamType.COLOR -> colorFrameBuffer.peek(1)?.first
             StreamType.DEPTH -> depthFrameBuffer.peek(1)?.first
-            else -> throw IllegalStreamTypeException("Non recognized stream type in observe()")
+            else -> throw IllegalStreamTypeException("Non recognized stream type in getNewestFrame()")
         }
         if (frame == null) {
             callback(Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888))
