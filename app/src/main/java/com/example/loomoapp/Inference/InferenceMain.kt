@@ -9,19 +9,16 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
-import android.widget.ImageView
 import androidx.lifecycle.MutableLiveData
 import com.example.loomoapp.Inference.Classifier.Recognition
 import com.example.loomoapp.Inference.env.ImageUtils
-import com.example.loomoapp.Inference.tracking.MultiBoxTracker
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
 import com.example.loomoapp.LoopedThread
-import kotlinx.android.synthetic.main.activity_main.inferenceView
+import java.lang.Math.random
 import java.util.*
-import kotlin.math.log
 
-//internal class InferenceMain(private val handlerThread: LoopedThread) : Service() {
+
 class InferenceMain : Service() {
     private val TAG = "InferenceClass"
 
@@ -30,8 +27,8 @@ class InferenceMain : Service() {
         const val YOLO_INPUT_SIZE = 416
         const val YOLO_INPUT_NAME = "input"
         const val YOLO_OUTPUT_NAMES = "output"
-        const val YOLO_BLOCK_SIZE = 32 // TODO: 23.03.2020 Not 100% sure what this does
-        private const val MINIMUM_CONFIDENCE = 0.25f
+        const val YOLO_BLOCK_SIZE = 32 //
+        private const val MINIMUM_CONFIDENCE = 0.6f
         private const val SENSOR_ORIENTATION = 0
     }
 
@@ -39,13 +36,11 @@ class InferenceMain : Service() {
     private lateinit var handlerThread: LoopedThread
     private lateinit var uiHandler: Handler
     private lateinit var inferenceImageViewBitmap: MutableLiveData<Bitmap>
+    private lateinit var inferenceImage: Bitmap
 
     private lateinit var detector: Classifier
-    private lateinit var tracker: MultiBoxTracker
 
     private var lastProcessingTimeMs: Long = 0
-
-    private var inferenceImage: Bitmap = Bitmap.createBitmap(YOLO_INPUT_SIZE, YOLO_INPUT_SIZE, Bitmap.Config.ARGB_8888)
 
     private var frameToCropTransform: Matrix = Matrix()
     private var cropToFrameTransform: Matrix = Matrix()
@@ -81,8 +76,6 @@ class InferenceMain : Service() {
             YOLO_BLOCK_SIZE
         )
 
-//        tracker = MultiBoxTracker(context)
-
         frameToCropTransform = ImageUtils.getTransformationMatrix(
             FISHEYE_WIDTH, FISHEYE_HEIGHT,
             YOLO_INPUT_SIZE, YOLO_INPUT_SIZE,
@@ -92,38 +85,41 @@ class InferenceMain : Service() {
 
     }
 
-    //Runnables
+    //Runnable
     inner class RunInference(private val img: Bitmap, private val yoloInputSize: Int) : Runnable {
-
         override fun run() {
             inferenceImage = Bitmap.createScaledBitmap(img, yoloInputSize, yoloInputSize, false)
-//            Log.d("Running detection on image $currTimestamp")
             val startTime = SystemClock.uptimeMillis()
             val results = detector.recognizeImage(inferenceImage)
             lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime
 
-//            detectionImage = scaledImg
             val canvas = Canvas(inferenceImage)
-            val paint = Paint()
-            paint.color = Color.RED
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 1.0f
-
-            val mappedRecognitions: MutableList<Recognition> =
-                LinkedList()
-
+            val mappedRecognitions: MutableList<Recognition> = LinkedList()
+            val boxPaint = Paint()
+            boxPaint.color = Color.RED
+            boxPaint.style = Paint.Style.STROKE
+            boxPaint.strokeWidth = 1.0f
+            val textPaint = Paint()
+            textPaint.color = Color.WHITE
+            textPaint.textAlign = Paint.Align.CENTER
+            textPaint.textSize = 10F
             for (result in results) {
                 val location = result.location
+                val id = result.title
+                val confidence = result.confidence
                 if (location != null && result.confidence >= MINIMUM_CONFIDENCE) {
-                    canvas.drawRect(location, paint)
+                    canvas.drawRect(location, boxPaint)
+                    canvas.drawText(
+                        "$id: $confidence",
+                        location.centerX(),
+                        location.centerY() + (location.height() / 2) - random().toFloat() * 30f,
+                        textPaint
+                    )
                     cropToFrameTransform.mapRect(location)
                     result.location = location
                     mappedRecognitions.add(result)
                 }
             }
-
-//            tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp)
-//            trackingOverlay.postInvalidate()
 
             //Show results of inference
             uiHandler.post {
@@ -132,18 +128,15 @@ class InferenceMain : Service() {
 
             runningInference = false
             Log.d(TAG, "inference complete");
-            }
-
         }
-
+    }
 
     //Functions
-    fun newFrame(img:Bitmap){
-        if (!runningInference){
+    fun newFrame(img: Bitmap) {
+        if (!runningInference) {
             Log.d(TAG, "sending image to inference runnable");
             runningInference = true
             handlerThread.handler.post(RunInference(img, YOLO_INPUT_SIZE))
         }
     }
-
 }
