@@ -28,15 +28,19 @@ class InferenceMain : Service() {
         const val YOLO_INPUT_NAME = "input"
         const val YOLO_OUTPUT_NAMES = "output"
         const val YOLO_BLOCK_SIZE = 32 //
-        private const val MINIMUM_CONFIDENCE = 0.6f
+        const val MINIMUM_CONFIDENCE = 0.4f
+        const val ENABLE_DEBUG = true
         private const val SENSOR_ORIENTATION = 0
     }
 
     //Variables
     private lateinit var handlerThread: LoopedThread
     private lateinit var uiHandler: Handler
+
     private lateinit var inferenceImageViewBitmap: MutableLiveData<Bitmap>
-    private lateinit var inferenceImage: Bitmap
+    private var inferenceImage: Bitmap = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT,Bitmap.Config.ARGB_8888)
+    private var croppedImage: Bitmap = Bitmap.createBitmap(YOLO_INPUT_SIZE, YOLO_INPUT_SIZE,Bitmap.Config.ARGB_8888)
+    private var scaledImage: Bitmap = Bitmap.createBitmap(YOLO_INPUT_SIZE, YOLO_INPUT_SIZE,Bitmap.Config.ARGB_8888)
 
     private lateinit var detector: Classifier
 
@@ -47,7 +51,6 @@ class InferenceMain : Service() {
 
     private var runningInference: Boolean = false
 
-    //Service management
     override fun onBind(intent: Intent?): IBinder? {
         return Binder()
     }
@@ -82,15 +85,28 @@ class InferenceMain : Service() {
             SENSOR_ORIENTATION, true
         )
         frameToCropTransform.invert(cropToFrameTransform)
-
     }
 
-    //Runnable
+    fun newFrame(img: Bitmap) {
+        if (!runningInference) {
+            if (ENABLE_DEBUG) {
+            Log.d(TAG, "sending image to inference runnable");
+            }
+            runningInference = true
+            handlerThread.handler.post(RunInference(img, YOLO_INPUT_SIZE))
+        }
+    }
+
     inner class RunInference(private val img: Bitmap, private val yoloInputSize: Int) : Runnable {
         override fun run() {
-            inferenceImage = Bitmap.createScaledBitmap(img, yoloInputSize, yoloInputSize, false)
+            //crop input image
+            inferenceImage = img
+            val inputCanvas = Canvas(croppedImage);
+            inputCanvas.drawBitmap(img, frameToCropTransform, null);
+            //scale input image
+//            scaledImage = Bitmap.createScaledBitmap(img, yoloInputSize, yoloInputSize, false)
             val startTime = SystemClock.uptimeMillis()
-            val results = detector.recognizeImage(inferenceImage)
+            val results = detector.recognizeImage(croppedImage)
             lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime
 
             val canvas = Canvas(inferenceImage)
@@ -105,6 +121,7 @@ class InferenceMain : Service() {
             textPaint.textSize = 10F
             for (result in results) {
                 val location = result.location
+                cropToFrameTransform.mapRect(location)
                 val id = result.title
                 val confidence = result.confidence
                 if (location != null && result.confidence >= MINIMUM_CONFIDENCE) {
@@ -115,28 +132,19 @@ class InferenceMain : Service() {
                         location.centerY() + (location.height() / 2) - random().toFloat() * 30f,
                         textPaint
                     )
-                    cropToFrameTransform.mapRect(location)
-                    result.location = location
+//                    result.location = location
                     mappedRecognitions.add(result)
                 }
             }
 
-            //Show results of inference
             uiHandler.post {
                 inferenceImageViewBitmap.value = inferenceImage
             }
 
             runningInference = false
+            if (ENABLE_DEBUG) {
             Log.d(TAG, "inference complete");
-        }
-    }
-
-    //Functions
-    fun newFrame(img: Bitmap) {
-        if (!runningInference) {
-            Log.d(TAG, "sending image to inference runnable");
-            runningInference = true
-            handlerThread.handler.post(RunInference(img, YOLO_INPUT_SIZE))
+            }
         }
     }
 }

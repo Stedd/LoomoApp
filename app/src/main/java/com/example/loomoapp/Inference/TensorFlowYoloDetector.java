@@ -29,6 +29,9 @@ import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
 import com.example.loomoapp.Inference.env.Logger;
 import com.example.loomoapp.Inference.env.SplitTimer;
 
+import static com.example.loomoapp.Inference.InferenceMain.ENABLE_DEBUG;
+import static com.example.loomoapp.Inference.InferenceMain.MINIMUM_CONFIDENCE;
+
 /** An object detector that uses TF and a YOLO model to detect objects. */
 public class TensorFlowYoloDetector implements Classifier {
   private static final Logger LOGGER = new Logger();
@@ -39,6 +42,9 @@ public class TensorFlowYoloDetector implements Classifier {
   private static final int NUM_CLASSES = 80;
 
   private static final int NUM_BOXES_PER_BLOCK = 5;
+
+//  private static final boolean ENABLE_DEBUG = true;
+
 
   // TODO(andrewharp): allow loading anchors and classes
   // from files.
@@ -53,7 +59,8 @@ public class TensorFlowYoloDetector implements Classifier {
   };
 
   private static final String[] LABELS = {
-      "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire", "hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball", "bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear"
+//      "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire", "hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball", "bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear"
+        "person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire", "hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball", "bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear"
 //    "aeroplane",
 //    "bicycle",
 //    "bird",
@@ -118,7 +125,7 @@ public class TensorFlowYoloDetector implements Classifier {
   }
 
   private TensorFlowYoloDetector() {}
-  java.lang.String TAG = "InferenceClass";
+  private java.lang.String TAG = "InferenceClass";
   private float expit(final float x) {
     return (float) (1. / (1. + Math.exp(-x)));
   }
@@ -140,46 +147,57 @@ public class TensorFlowYoloDetector implements Classifier {
 
   @Override
   public List<Recognition> recognizeImage(final Bitmap bitmap) {
-    final SplitTimer timer = new SplitTimer("recognizeImage");
 
-    // Log this method so that it can be analyzed with systrace.
-    Trace.beginSection("recognizeImage");
+      final SplitTimer timer = new SplitTimer("recognizeImage");
+    if (ENABLE_DEBUG) {
+      // Log this method so that it can be analyzed with systrace.
+      Trace.beginSection("recognizeImage");
 
-    Trace.beginSection("preprocessBitmap");
-    // Preprocess the image data from 0-255 int to normalized float based
-    // on the provided parameters.
-    Log.d(TAG, String.valueOf(bitmap.getWidth()));
-    Log.d(TAG, String.valueOf(bitmap.getHeight()));
-    bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight()); // TODO: 24.03.2020 ArrayIndexOutOfBoundsException
-    for (int i = 0; i < intValues.length; ++i) {
+      Trace.beginSection("preprocessBitmap");
+      // Preprocess the image data from 0-255 int to normalized float based
+      // on the provided parameters.
+      Log.d(TAG, String.valueOf(bitmap.getWidth()));
+      Log.d(TAG, String.valueOf(bitmap.getHeight()));
+    }
+    bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight()); //
+    for (int i = 0; i < intValues.length; ++i) { // TODO: 26.03.2020 Need to change this when we start using greyscale images
       floatValues[i * 3 + 0] = ((intValues[i] >> 16) & 0xFF) / 255.0f;
       floatValues[i * 3 + 1] = ((intValues[i] >> 8) & 0xFF) / 255.0f;
       floatValues[i * 3 + 2] = (intValues[i] & 0xFF) / 255.0f;
     }
-    Trace.endSection(); // preprocessBitmap
+    if (ENABLE_DEBUG) {
+      Trace.endSection(); // preprocessBitmap
 
-    // Copy the input data into TensorFlow.
-    Trace.beginSection("feed");
+      // Copy the input data into TensorFlow.
+      Trace.beginSection("feed");
+    }
     inferenceInterface.feed(inputName, floatValues, 1, inputSize, inputSize, 3);
-    Trace.endSection();
+    if (ENABLE_DEBUG) {
+      Trace.endSection();
 
-    timer.endSplit("ready for inference");
+      timer.endSplit("ready for inference");
 
-    // Run the inference call.
-    Trace.beginSection("run");
+      // Run the inference call.
+      Trace.beginSection("run");
+    }
     inferenceInterface.run(outputNames, logStats);
-    Trace.endSection();
+    if (ENABLE_DEBUG) {
+      Trace.endSection();
 
-    timer.endSplit("ran inference");
+      timer.endSplit("ran inference");
 
-    // Copy the output Tensor back into the output array.
-    Trace.beginSection("fetch");
+      // Copy the output Tensor back into the output array.
+      Trace.beginSection("fetch");
+    }
     final int gridWidth = bitmap.getWidth() / blockSize;
     final int gridHeight = bitmap.getHeight() / blockSize;
     final float[] output =
         new float[gridWidth * gridHeight * (NUM_CLASSES + 5) * NUM_BOXES_PER_BLOCK];
     inferenceInterface.fetch(outputNames[0], output);
-    Trace.endSection();
+
+    if (ENABLE_DEBUG) {
+      Trace.endSection();
+    }
 
     // Find the best detections.
     final PriorityQueue<Recognition> pq =
@@ -232,24 +250,28 @@ public class TensorFlowYoloDetector implements Classifier {
           }
 
           final float confidenceInClass = maxClass * confidence;
-          if (confidenceInClass > 0.01) {
-            LOGGER.i(
-                "%s (%d) %f %s", LABELS[detectedClass], detectedClass, confidenceInClass, rect);
-            pq.add(new Recognition("" + offset, LABELS[detectedClass], confidenceInClass, rect));
+          if (ENABLE_DEBUG) {
+            if (confidenceInClass > MINIMUM_CONFIDENCE) {
+              LOGGER.i(
+                      "%s (%d) %f %s", LABELS[detectedClass], detectedClass, confidenceInClass, rect);
+              pq.add(new Recognition("" + offset, LABELS[detectedClass], confidenceInClass, rect));
+            }
           }
         }
       }
     }
-    timer.endSplit("decoded results");
-
+    if (ENABLE_DEBUG) {
+      timer.endSplit("decoded results");
+    }
     final ArrayList<Recognition> recognitions = new ArrayList<Recognition>();
     for (int i = 0; i < Math.min(pq.size(), MAX_RESULTS); ++i) {
       recognitions.add(pq.poll());
     }
-    Trace.endSection(); // "recognizeImage"
+    if (ENABLE_DEBUG) {
+      Trace.endSection(); // "recognizeImage"
 
-    timer.endSplit("processed results");
-
+      timer.endSplit("processed results");
+    }
     return recognitions;
   }
 

@@ -207,15 +207,14 @@ class MainActivity :
 //            }
             val bmp = Bitmap.createBitmap(COLOR_WIDTH, COLOR_HEIGHT, Bitmap.Config.ARGB_8888)
             bmp.copyPixelsFromBuffer(it.copy())
-            mInferenceMain.newFrame(bmp)
+            mInferenceMain.newFrame(bmp) //TODO: 24.03.2020 neural net expects colors currently
             camViewColor.setImageBitmap(bmp)
         }
 
         fishEyeByteBuffer.observeForever {
             if (it != null) {
                 mOpenCVMain.newFrame(it.copy())
-//                mInferenceMain.newFrame(it.toByteArray(), mOpenCVMain.getFrame()) //// TODO: 24.03.2020 neural net expects colors currently
-                camViewFishEye.setImageBitmap(mOpenCVMain.getFrame())// TODO: 23.03.2020 Add overlay from inference, toggleable?
+                camViewFishEye.setImageBitmap(mOpenCVMain.getFrame())//
 //                camViewFishEye.setImageBitmap(mInferenceMain.getFrame())// TODO: 24.03.2020 neural net expects colors currently
             }
 //            val bmp = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT, Bitmap.Config.ALPHA_8)
