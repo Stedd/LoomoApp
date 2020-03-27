@@ -12,7 +12,6 @@ import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
 import com.example.loomoapp.utils.LoopedThread
-import com.example.loomoapp.utils.NonBlockingInfLoop
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
@@ -222,7 +221,7 @@ class MainActivity :
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
-            mOpenCVMain.captureNewFrame = true
+            mOpenCVMain.toggle = !mOpenCVMain.toggle
 //            mRosMainPublisher.publishAllCameras()
         }
         btnStopService.setOnClickListener {

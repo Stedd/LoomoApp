@@ -54,7 +54,7 @@ class OpenCVMain : Service() {
     private var newDepthFrames = 0
 
     private val fishEyeTracker = ORBTracker()
-    var captureNewFrame = true
+    var toggle = true
 
     override fun onBind(intent: Intent?): IBinder? {
         return Binder()
@@ -90,7 +90,6 @@ class OpenCVMain : Service() {
     private var keyPoints = MatOfKeyPoint()
 //    private external fun nativeOrb(matAddr: Long, dstAddr: Long)
 
-//    private var i = 0
     fun onNewFrame(streamType: Int, frame: Frame) {
 //        val tic = System.currentTimeMillis()
         when (streamType) {
@@ -103,22 +102,6 @@ class OpenCVMain : Service() {
                         ), frame.info
                     )
                 )
-                if (captureNewFrame) {
-                    captureNewFrame = false
-//                    i++
-                    foo.togglePause()
-//                    if(i>5) foo.kill()
-//                    imgProcFishEye.handler.post {
-//                        keyPoints = fishEyeTracker.onNewFrame(fishEyeFrameBuffer.peekTail()!!.first)
-////                        nativeOrb(fishEyeFrameBuffer.peekTail()!!.first.nativeObjAddr, keyPoints.nativeObjAddr)
-//                    }
-                }
-//                Features2d.drawKeypoints(
-//                    fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first,
-//                    keyPoints,
-//                    fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first,
-//                    Scalar(0.0, 255.0, 0.0)
-//                )
                 ++newFishEyeFrames
             }
             StreamType.COLOR -> {
@@ -156,7 +139,10 @@ class OpenCVMain : Service() {
     fun getNewestFrame(streamType: Int, callback: (Bitmap) -> Unit) {
         val frame: Mat? = when (streamType) {
 //            StreamType.FISH_EYE -> fishEyeFrameBuffer.peek(1)?.first
-            StreamType.FISH_EYE -> processedFishEyeFrame
+            StreamType.FISH_EYE -> {
+                if(toggle) processedFishEyeFrame
+                else fishEyeFrameBuffer.peek(1)?.first
+            }
             StreamType.COLOR -> colorFrameBuffer.peek(1)?.first
             StreamType.DEPTH -> depthFrameBuffer.peek(1)?.first
             else -> throw IllegalStreamTypeException("Non recognized stream type in getNewestFrame()")

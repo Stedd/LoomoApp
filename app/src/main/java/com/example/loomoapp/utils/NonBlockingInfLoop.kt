@@ -19,6 +19,15 @@ import kotlin.concurrent.thread
  *      Log.d(TAG, "Loop iterations: $i")
  * }
  */
+
+/**
+ * Creates a thread that runs an infinite loop.
+ * The code to be executed repeatedly is passed in the constructor.
+ *
+ * If none of the member functions are used (e.g. pause()), the IDE will
+ * tell you that the instance of NonBlockingInfLoop
+ * is never used. This can be ignored
+ */
 class NonBlockingInfLoop(val loop: () -> Unit) {
 
     private val TAG = "NonBlockingInfLoop"
@@ -33,10 +42,12 @@ class NonBlockingInfLoop(val loop: () -> Unit) {
             name = "Inf Loop",
             priority = Process.THREAD_PRIORITY_DEFAULT
         ) {
+            Log.d(TAG, "Starting thread ${Thread.currentThread()}")
             while (running) {
                 if (paused) continue
                 loop()
             }
+            Log.d(TAG, "Stopping thread ${Thread.currentThread()}")
         }
 
     /**
