@@ -14,7 +14,8 @@ import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
-import com.example.loomoapp.LoopedThread
+import com.example.loomoapp.utils.LoopedThread
+import com.example.loomoapp.utils.NonBlockingInfLoop
 import com.example.loomoapp.utils.RingBuffer
 import com.segway.robot.sdk.vision.frame.Frame
 import com.segway.robot.sdk.vision.frame.FrameInfo
@@ -48,10 +49,12 @@ class OpenCVMain : Service() {
     private var fishEyeFrameBuffer = RingBuffer<Pair<Mat, FrameInfo>>(30, true)
     private var colorFrameBuffer = RingBuffer<Pair<Mat, FrameInfo>>(30, true)
     private var depthFrameBuffer = RingBuffer<Pair<Mat, FrameInfo>>(30, true)
-
+    private var newFishEyeFrames = 0
+    private var newColorFrames = 0
+    private var newDepthFrames = 0
 
     private val fishEyeTracker = ORBTracker()
-    var captureNewFrame = true
+    var toggle = true
 
     override fun onBind(intent: Intent?): IBinder? {
         return Binder()
@@ -80,10 +83,12 @@ class OpenCVMain : Service() {
         }
     }
 
-    private val imgProcFishEye = LoopedThread("imgProc FishEye", Process.THREAD_PRIORITY_DEFAULT)
+    private val imgProcFishEye = LoopedThread(
+        "imgProc FishEye",
+        Process.THREAD_PRIORITY_DEFAULT
+    )
     private var keyPoints = MatOfKeyPoint()
 //    private external fun nativeOrb(matAddr: Long, dstAddr: Long)
-
 
     fun onNewFrame(streamType: Int, frame: Frame) {
 //        val tic = System.currentTimeMillis()
@@ -97,19 +102,7 @@ class OpenCVMain : Service() {
                         ), frame.info
                     )
                 )
-                if (captureNewFrame) {
-                    captureNewFrame = false
-                    imgProcFishEye.handler.post {
-                        keyPoints = fishEyeTracker.onNewFrame(fishEyeFrameBuffer.peekTail()!!.first)
-//                        nativeOrb(fishEyeFrameBuffer.peekTail()!!.first.nativeObjAddr, keyPoints.nativeObjAddr)
-                    }
-                }
-                Features2d.drawKeypoints(
-                    fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first,
-                    keyPoints,
-                    fishEyeFrameBuffer[fishEyeFrameBuffer.tail]!!.first,
-                    Scalar(0.0, 255.0, 0.0)
-                )
+                ++newFishEyeFrames
             }
             StreamType.COLOR -> {
                 colorFrameBuffer.enqueue(
@@ -120,6 +113,7 @@ class OpenCVMain : Service() {
                         ), frame.info
                     )
                 )
+                ++newColorFrames
             }
             StreamType.DEPTH -> {
                 depthFrameBuffer.enqueue(
@@ -131,6 +125,7 @@ class OpenCVMain : Service() {
                         ), frame.info
                     )
                 )
+                ++newDepthFrames
             }
             else -> {
                 throw IllegalStreamTypeException("Stream type not recognized in onNewFrame")
@@ -143,7 +138,11 @@ class OpenCVMain : Service() {
 
     fun getNewestFrame(streamType: Int, callback: (Bitmap) -> Unit) {
         val frame: Mat? = when (streamType) {
-            StreamType.FISH_EYE -> fishEyeFrameBuffer.peek(1)?.first
+//            StreamType.FISH_EYE -> fishEyeFrameBuffer.peek(1)?.first
+            StreamType.FISH_EYE -> {
+                if(toggle) processedFishEyeFrame
+                else fishEyeFrameBuffer.peek(1)?.first
+            }
             StreamType.COLOR -> colorFrameBuffer.peek(1)?.first
             StreamType.DEPTH -> depthFrameBuffer.peek(1)?.first
             else -> throw IllegalStreamTypeException("Non recognized stream type in getNewestFrame()")
@@ -154,6 +153,20 @@ class OpenCVMain : Service() {
             callback(frame.toBitmap())
         }
     }
+
+    private var fishEyeFrame = Mat()
+    private var processedFishEyeFrame = Mat()
+    private val foo = NonBlockingInfLoop {
+        if (newFishEyeFrames > 0) {
+//            Log.d(TAG, "Skipped frames: ${newFishEyeFrames-1}")
+            newFishEyeFrames = 0
+            fishEyeFrame = fishEyeFrameBuffer.peekTail()!!.first
+            keyPoints = fishEyeTracker.onNewFrame(fishEyeFrame)
+            Features2d.drawKeypoints(fishEyeFrame, keyPoints, processedFishEyeFrame, Scalar(0.0, 255.0, 0.0))
+//            Thread.sleep(2000)
+        }
+    }
+
 }
 
 class IllegalStreamTypeException(msg: String) : RuntimeException(msg)

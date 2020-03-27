@@ -4,9 +4,7 @@
 package com.example.loomoapp.Loomo
 
 import android.content.Context
-import android.os.Process
 import android.util.Log
-import com.example.loomoapp.LoopedThread
 import com.example.loomoapp.ROS.RealsensePublisher
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision

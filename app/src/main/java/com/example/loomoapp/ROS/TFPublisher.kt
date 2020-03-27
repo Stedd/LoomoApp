@@ -3,9 +3,8 @@ package com.example.loomoapp.ROS
 import android.util.Log
 import android.util.Pair
 import com.example.loomoapp.Loomo.LoomoBase
-import com.example.loomoapp.Loomo.LoomoRealSense
 import com.example.loomoapp.Loomo.LoomoSensor
-import com.example.loomoapp.LoopedThread
+import com.example.loomoapp.utils.LoopedThread
 import com.segway.robot.algo.tf.AlgoTfData
 import com.segway.robot.sdk.locomotion.sbv.AngularVelocity
 import com.segway.robot.sdk.locomotion.sbv.LinearVelocity

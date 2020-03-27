@@ -11,6 +11,7 @@ import androidx.lifecycle.*
 import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
+import com.example.loomoapp.utils.LoopedThread
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
@@ -126,7 +127,10 @@ class MainActivity :
         textView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
 
         mRosPublisherThread =
-            LoopedThread("ROS_Pub_Thread", Process.THREAD_PRIORITY_AUDIO)
+            LoopedThread(
+                "ROS_Pub_Thread",
+                Process.THREAD_PRIORITY_AUDIO
+            )
         mRosPublisherThread.start()
         mRealSensePublisher =
             RealsensePublisher(
@@ -217,7 +221,7 @@ class MainActivity :
         }
         btnStartService.setOnClickListener {
             Log.d(TAG, "ServStartBtn clicked")
-            mOpenCVMain.captureNewFrame = true
+            mOpenCVMain.toggle = !mOpenCVMain.toggle
 //            mRosMainPublisher.publishAllCameras()
         }
         btnStopService.setOnClickListener {
@@ -239,6 +243,7 @@ class MainActivity :
             mOpenCVMain.onNewFrame(streamType, frame)
             runOnUiThread { updateImgViews() }
         }
+
 
         mLoomoSensor.bind(this)
 
