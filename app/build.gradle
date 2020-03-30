@@ -45,6 +45,12 @@ android {
 //    }
 }
 
+allprojects {
+    repositories {
+        jcenter()
+    }
+}
+
 repositories {
     maven {
         url "https://github.com/rosjava/rosjava_mvn_repo/raw/master"
@@ -90,4 +96,8 @@ dependencies {
     implementation 'org.ros.rosjava_messages:tf2_msgs'
     implementation 'org.ros.rosjava_messages:std_msgs'
 
+    implementation 'org.tensorflow:tensorflow-android:1.13.1'
+
 }
+
+
