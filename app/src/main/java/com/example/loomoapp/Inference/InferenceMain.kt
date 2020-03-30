@@ -14,7 +14,7 @@ import com.example.loomoapp.Inference.Classifier.Recognition
 import com.example.loomoapp.Inference.env.ImageUtils
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
-import com.example.loomoapp.LoopedThread
+import com.example.loomoapp.utils.LoopedThread
 import java.lang.Math.random
 import java.util.*
 
