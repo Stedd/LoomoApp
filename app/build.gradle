@@ -6,7 +6,7 @@ apply plugin: 'kotlin-android-extensions'
 
 android {
     compileSdkVersion 28
-    buildToolsVersion "28.0.3"
+    buildToolsVersion "29.0.2"
     defaultConfig {
         applicationId "com.example.loomoapp"
         minSdkVersion 22
@@ -14,6 +14,13 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                cppFlags "-frtti -fexceptions -v"
+                abiFilters 'armeabi-v7a' , 'x86', 'arm64-v8a' , 'x86_64'
+                arguments "-DOpenCV_DIR=" + opencvsdk + "/sdk/native"
+            }
+        }
     }
     buildTypes {
         release {
@@ -27,14 +34,20 @@ android {
             version "3.10.2"
         }
     }
+//
+//    splits {
+//        abi {
+//            enable true
+//            universalApk false
+//            reset()
+//            include 'armeabi-v7a' //, 'x86', 'arm64-v8a' , 'x86_64'
+//        }
+//    }
+}
 
-    splits {
-        abi {
-            enable true
-            universalApk false
-            reset()
-            include 'armeabi-v7a' // , 'x86', 'x86_64', 'arm64-v8a'
-        }
+allprojects {
+    repositories {
+        jcenter()
     }
 }
 
@@ -59,7 +72,7 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0"
 
-    implementation project(':opencv')
+    implementation project(path: ':opencv')
 
     //loomo dependencies
     implementation 'com.segway.robot:visionsdk:0.6.874'
@@ -83,4 +96,8 @@ dependencies {
     implementation 'org.ros.rosjava_messages:tf2_msgs'
     implementation 'org.ros.rosjava_messages:std_msgs'
 
+    implementation 'org.tensorflow:tensorflow-android:1.13.1'
+
 }
+
+

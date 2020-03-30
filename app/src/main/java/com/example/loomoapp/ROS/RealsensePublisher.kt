@@ -1,14 +1,8 @@
 package com.example.loomoapp.ROS
 
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_HEIGHT
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_WIDTH
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
 import android.util.Log
 import android.util.Pair
-import com.example.loomoapp.LoopedThread
+import com.example.loomoapp.utils.LoopedThread
 import com.example.loomoapp.Runnables.PublishNewFrame
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.calibration.Intrinsic
@@ -17,9 +11,6 @@ import com.segway.robot.sdk.vision.imu.IMUDataCallback
 import org.jboss.netty.buffer.ChannelBufferOutputStream
 import org.ros.internal.message.MessageBuffers
 import org.ros.message.Time
-import org.ros.node.topic.Publisher
-import sensor_msgs.CameraInfo
-import std_msgs.Header
 import java.nio.ByteBuffer
 import java.util.*
 
