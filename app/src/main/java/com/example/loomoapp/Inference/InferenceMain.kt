@@ -88,6 +88,7 @@ class InferenceMain : Service() {
     }
 
     fun newFrame(img: Bitmap) {
+        //convert to bitmap
         if (!runningInference) {
             if (ENABLE_DEBUG) {
             Log.d(TAG, "sending image to inference runnable");

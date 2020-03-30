@@ -1,6 +1,7 @@
 package com.example.loomoapp
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.*
 import android.util.Log
 import android.util.Pair
@@ -199,6 +200,11 @@ class MainActivity :
         mInferenceMain.setInferenceBitmap(inferenceImage)
         mInferenceMain.init(this)
 
+        inferenceImage.observeForever {
+            inferenceView.setImageBitmap(it)
+        }
+
+
         mLoomoControl.mControllerThread.start()
 
 
@@ -268,7 +274,9 @@ class MainActivity :
         mLoomoRealSense.bind(this)
         mLoomoRealSense.startCameras { streamType, frame ->
             mOpenCVMain.onNewFrame(streamType, frame)
-            runOnUiThread { updateImgViews() }
+//            runOnUiThread { updateImgViews() }
+            updateImgViews()
+
         }
 
 
@@ -303,13 +311,14 @@ class MainActivity :
 
     private fun updateImgViews() {
         mOpenCVMain.getNewestFrame(StreamType.FISH_EYE) {
-            camViewFishEye.setImageBitmap(it)
+            runOnUiThread { camViewFishEye.setImageBitmap(it)}
         }
         mOpenCVMain.getNewestFrame(StreamType.COLOR) {
-            camViewColor.setImageBitmap(it)
+            runOnUiThread { camViewColor.setImageBitmap(it)}
+            mInferenceMain.newFrame(it)
         }
         mOpenCVMain.getNewestFrame(StreamType.DEPTH) {
-            camViewDepth.setImageBitmap(it)
+            runOnUiThread { camViewDepth.setImageBitmap(it)}
         }
     }
 }
