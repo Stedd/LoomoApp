@@ -29,7 +29,7 @@ class InferenceMain : Service() {
         const val YOLO_OUTPUT_NAMES = "output"
         const val YOLO_BLOCK_SIZE = 32 //
         const val MINIMUM_CONFIDENCE = 0.4f
-        const val ENABLE_DEBUG = true
+        const val ENABLE_DEBUG = false
         private const val SENSOR_ORIENTATION = 0
     }
 
@@ -88,18 +88,22 @@ class InferenceMain : Service() {
     }
 
     fun newFrame(img: Bitmap) {
-        //convert to bitmap
+//        Log.d(TAG, "before if:$runningInference");
         if (!runningInference) {
             if (ENABLE_DEBUG) {
             Log.d(TAG, "sending image to inference runnable");
             }
+            handlerThread.handler.removeCallbacks(RunInference(img, YOLO_INPUT_SIZE))
             runningInference = true
+//            Log.d(TAG, "posting image");
             handlerThread.handler.post(RunInference(img, YOLO_INPUT_SIZE))
+
         }
     }
 
     inner class RunInference(private val img: Bitmap, private val yoloInputSize: Int) : Runnable {
         override fun run() {
+//            Log.d(TAG, "start of runnable:$runningInference");
             //crop input image
             inferenceImage = img
 //            val inputCanvas = Canvas(croppedImage);
@@ -110,8 +114,8 @@ class InferenceMain : Service() {
             val results = detector.recognizeImage(scaledImage)
             lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime
 
-            val canvas = Canvas(inferenceImage)
-            val mappedRecognitions: MutableList<Recognition> = LinkedList()
+            val canvas = Canvas(scaledImage)
+//            val mappedRecognitions: MutableList<Recognition> = LinkedList()
             val boxPaint = Paint()
             boxPaint.color = Color.RED
             boxPaint.style = Paint.Style.STROKE
@@ -122,7 +126,7 @@ class InferenceMain : Service() {
             textPaint.textSize = 10F
             for (result in results) {
                 val location = result.location
-                cropToFrameTransform.mapRect(location)
+//                cropToFrameTransform.mapRect(location)
                 val id = result.title
                 val confidence = result.confidence
                 if (location != null && result.confidence >= MINIMUM_CONFIDENCE) {
@@ -134,15 +138,17 @@ class InferenceMain : Service() {
                         textPaint
                     )
 //                    result.location = location
-                    mappedRecognitions.add(result)
+//                    mappedRecognitions.add(result)
                 }
             }
 
             uiHandler.post {
-                inferenceImageViewBitmap.value = inferenceImage
+                inferenceImageViewBitmap.value = scaledImage
             }
 
             runningInference = false
+//            Log.d(TAG, "end of runnable:$runningInference");
+
             if (ENABLE_DEBUG) {
             Log.d(TAG, "inference complete");
             }
