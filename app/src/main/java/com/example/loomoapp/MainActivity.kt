@@ -47,6 +47,7 @@ class MainActivity :
     lateinit var mLoomoSensor: LoomoSensor
     lateinit var mLoomoControl: LoomoControl
 
+
     //TODO: Fix LoomoRealSense or OpenCVMain so that ROS publisher gets these vals.
     // These vals are used by ROS publisher, but nothing is assigned to them.
     // Can probably be fixed by adding a function in the lambda expression in:
@@ -65,11 +66,9 @@ class MainActivity :
     private lateinit var mInferenceMain : InferenceMain
     private lateinit var intentInference: Intent
 
-      
 
     //OpenCV Variables
     private lateinit var mOpenCVMain: OpenCVMain
-
     private lateinit var intentOpenCV: Intent
 
     //Import native functions
@@ -188,7 +187,6 @@ class MainActivity :
         mBridgeNode = RosBridgeNode()
 
 
-
         //Start Inference Service
         mInferenceThread    = LoopedThread("Inference_Thread", Process.THREAD_PRIORITY_DEFAULT)
         mInferenceThread    .start()
@@ -199,13 +197,9 @@ class MainActivity :
         mInferenceMain.setMainUIHandler(UIThreadHandler)
         mInferenceMain.setInferenceBitmap(inferenceImage)
         mInferenceMain.init(this)
-
         inferenceImage.observeForever {
             inferenceView.setImageBitmap(it)
         }
-
-
-        mLoomoControl.mControllerThread.start()
 
 
         camViewColor.visibility = ImageView.GONE
@@ -213,7 +207,7 @@ class MainActivity :
         camViewDepth.visibility = ImageView.GONE
         inferenceView.visibility = ImageView.GONE
 
-        // Onclicklisteners
+
         var camViewState = 0
         btnStartCamera.setOnClickListener {
             Log.d(TAG, "CamStartBtn clicked")
@@ -259,7 +253,8 @@ class MainActivity :
         }
         btnStopService.setOnClickListener {
             Log.d(TAG, "ServStopBtn clicked")
-//            mRosMainPublisher.publishGraph()
+            mLoomoControl.loomoPilotActive = !mLoomoControl.loomoPilotActive
+//            mLoomoControl.loop.togglePause()
         }
 
         //Helloworld from c++
@@ -274,17 +269,15 @@ class MainActivity :
         mLoomoRealSense.bind(this)
         mLoomoRealSense.startCameras { streamType, frame ->
             mOpenCVMain.onNewFrame(streamType, frame)
-//            runOnUiThread { updateImgViews() }
             updateImgViews()
-
         }
-
 
         mLoomoSensor.bind(this)
 
         mLoomoBase.bind(this)
 
         UIThreadHandler.postDelayed({
+            mLoomoControl.onResume()
             mRealSensePublisher.node_started(mBridgeNode)
             mTFPublisher.node_started(mBridgeNode)
             mSensorPublisher.node_started(mBridgeNode)
@@ -295,30 +288,24 @@ class MainActivity :
 
 
     override fun onDestroy() {
-        stopThreads()
         super.onDestroy()
     }
 
     override fun onPause() {
-        stopThreads()
         super.onPause()
-    }
-
-    private fun stopThreads() {
-        mLoomoControl.stopController(this, "App paused, Controller thread stopping")
     }
 
 
     private fun updateImgViews() {
         mOpenCVMain.getNewestFrame(StreamType.FISH_EYE) {
-            runOnUiThread { camViewFishEye.setImageBitmap(it)}
+            runOnUiThread {camViewFishEye.setImageBitmap(it)}
         }
         mOpenCVMain.getNewestFrame(StreamType.COLOR) {
-            runOnUiThread { camViewColor.setImageBitmap(it)}
+            runOnUiThread {camViewColor.setImageBitmap(it)}
             mInferenceMain.newFrame(it)
         }
         mOpenCVMain.getNewestFrame(StreamType.DEPTH) {
-            runOnUiThread { camViewDepth.setImageBitmap(it)}
+            runOnUiThread {camViewDepth.setImageBitmap(it)}
         }
     }
 }

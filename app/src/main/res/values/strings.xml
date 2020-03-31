@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">LoomoApp</string>
     <string name="btnStringStartService">Toggle</string>
-    <string name="btnStringStopService">StopServ</string>
+    <string name="btnStringStopService">LoomoPilot</string>
     <string name="btnStringStartCamera">Cycle Cam</string>
     <string name="btnStringStopCamera">Hide Cam</string>
 
