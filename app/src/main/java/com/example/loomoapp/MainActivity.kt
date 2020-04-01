@@ -9,9 +9,7 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.lifecycle.*
-import com.example.loomoapp.Inference.Classifier
 import com.example.loomoapp.Inference.InferenceMain
-import com.example.loomoapp.Inference.TensorFlowYoloDetector
 import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
@@ -25,7 +23,6 @@ import org.ros.message.Time
 import org.ros.node.NodeConfiguration
 import org.ros.node.NodeMainExecutor
 import org.ros.time.NtpTimeProvider
-import org.tensorflow.Tensor
 import java.net.URI
 import java.nio.ByteBuffer
 import java.util.*
@@ -302,7 +299,7 @@ class MainActivity :
         }
         mOpenCVMain.getNewestFrame(StreamType.COLOR) {
             runOnUiThread {camViewColor.setImageBitmap(it)}
-            mInferenceMain.newFrame(it)
+//            mInferenceMain.newFrame(it)
         }
         mOpenCVMain.getNewestFrame(StreamType.DEPTH) {
             runOnUiThread {camViewDepth.setImageBitmap(it)}

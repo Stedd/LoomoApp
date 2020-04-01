@@ -26,7 +26,7 @@ class LoomoControl(private val base: LoomoBase, private val sensor: LoomoSensor)
     private var turnError = 0.0F
 
     private var dist = 0.0F
-    private var setpoint = 750.0F
+    private var setpoint = 650.0F
 
     private var a = Vector()
     private var b = Vector(2f, 2f)
@@ -36,13 +36,13 @@ class LoomoControl(private val base: LoomoBase, private val sensor: LoomoSensor)
 
     fun onResume() {
         a.set(1f, 2f)
-        Log.d(TAG, "Vector set: x:${a.x_}, y:${a.y_}");
+        Log.d(TAG, "Vector set: x:${a.x}, y:${a.y}");
         c.add(a)
-        Log.d(TAG, "Vector set: x:${c.x_}, y:${c.y_}");
+        Log.d(TAG, "Vector set: x:${c.x}, y:${c.y}");
         c.add(b)
-        Log.d(TAG, "Vector addition: x:${c.x_}, y:${c.y_}");
+        Log.d(TAG, "Vector addition: x:${c.x}, y:${c.y}");
         c.mult(-1f)
-        Log.d(TAG, "Vector addition: x:${c.x_}, y:${c.y_}");
+        Log.d(TAG, "Vector addition: x:${c.x}, y:${c.y}");
 
 
         NonBlockingInfLoop{
