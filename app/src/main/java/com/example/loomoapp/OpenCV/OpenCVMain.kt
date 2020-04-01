@@ -14,6 +14,7 @@ import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
+import com.example.loomoapp.Loomo.LoomoRealSense.Companion.streamTypeMap
 import com.example.loomoapp.utils.LoopedThread
 import com.example.loomoapp.utils.NonBlockingInfLoop
 import com.example.loomoapp.utils.RingBuffer
@@ -88,7 +89,7 @@ class OpenCVMain : Service() {
 //        Process.THREAD_PRIORITY_DEFAULT
 //    )
 //    private external fun nativeOrb(matAddr: Long, dstAddr: Long)
-
+    var toggleOldState = false
     fun onNewFrame(streamType: Int, frame: Frame) {
 //        val tic = System.currentTimeMillis()
         when (streamType) {
@@ -130,6 +131,12 @@ class OpenCVMain : Service() {
                 throw IllegalStreamTypeException("Stream type not recognized in onNewFrame")
             }
         }
+        if (toggleOldState != toggle) {
+            toggleOldState = toggle
+            Log.d(TAG, "Fisheye Mat() type: ${typeToString(fishEyeFrameBuffer.peek()!!.first.type())}")
+            Log.d(TAG, "Color Mat() type: ${typeToString(colorFrameBuffer.peek()!!.first.type())}")
+            Log.d(TAG, "Depth Mat() type: ${typeToString(depthFrameBuffer.peek()!!.first.type())}")
+        }
 //        val toc = System.currentTimeMillis()
 //        Log.d(TAG, "${streamTypeMap[streamType]} frame receive time: ${toc - tic}ms")
     }
@@ -160,7 +167,7 @@ class OpenCVMain : Service() {
         if (newFishEyeFrames > 0) {
 //            Log.d(TAG, "Skipped frames: ${newFishEyeFrames-1}")
             newFishEyeFrames = 0
-            fishEyeFrame = fishEyeFrameBuffer.peekTail()!!.first
+            fishEyeFrame = fishEyeFrameBuffer.peek()!!.first
             keyPoints = fishEyeTracker.onNewFrame(fishEyeFrame)
             Features2d.drawKeypoints(fishEyeFrame, keyPoints, processedFishEyeFrame, Scalar(0.0, 255.0, 0.0))
 //            Thread.sleep(2000) // Just for debugging purposes

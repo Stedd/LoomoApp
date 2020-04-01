@@ -56,24 +56,24 @@ class ORBTracker {
 //        val lvls = Video.buildOpticalFlowPyramid(img, pyr, img.size(), 3)
 //        Video.buildOpticalFlowPyramid(prevImg, pyr, img.size(), 3)
 
-        try {
-            Video.calcOpticalFlowPyrLK(
-                prevImg,
-                img,
-                points,
-                points,
-                status,
-                err,
-                winSize,
-                3,
-                termCrit,
-                0,
-                0.001
-            )
-        } catch (e: Exception) {
-            Log.d(TAG, "Something wrong with PointsOld")
-            Thread.sleep(500)
-        }
+//        try {
+//            Video.calcOpticalFlowPyrLK(
+//                prevImg,
+//                img,
+//                points,
+//                points,
+//                status,
+//                err,
+//                winSize,
+//                3,
+//                termCrit,
+//                0,
+//                0.001
+//            )
+//        } catch (e: Exception) {
+//            Log.d(TAG, "Something wrong with PointsOld")
+//            Thread.sleep(500)
+//        }
 
         // Remove points where tracking failed, or where they have gone outside the frame
 //        var indexCorrection = 0

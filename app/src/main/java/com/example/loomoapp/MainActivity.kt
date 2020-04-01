@@ -192,7 +192,7 @@ class MainActivity :
         // Onclicklisteners
         var camViewState = 0
         btnStartCamera.setOnClickListener {
-            Log.d(TAG, "CamStartBtn clicked")
+//            Log.d(TAG, "CamStartBtn clicked")
             ++camViewState
             when (camViewState) {
                 1 -> {
@@ -214,13 +214,13 @@ class MainActivity :
             }
         }
         btnStopCamera.setOnClickListener {
-            Log.d(TAG, "CamStopBtn clicked")
+//            Log.d(TAG, "CamStopBtn clicked")
             camViewColor.visibility = ImageView.GONE
             camViewFishEye.visibility = ImageView.GONE
             camViewDepth.visibility = ImageView.GONE
         }
         btnStartService.setOnClickListener {
-            Log.d(TAG, "ServStartBtn clicked")
+//            Log.d(TAG, "ServStartBtn clicked")
             mOpenCVMain.toggle = !mOpenCVMain.toggle
 //            mRosMainPublisher.publishAllCameras()
         }
