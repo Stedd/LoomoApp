@@ -27,31 +27,36 @@ private const val TAG = "CVUtils"
 //    return mat
 //}
 fun ByteBuffer.toMat(width: Int, height: Int, cvType: Int): Mat {
-    val mat = Mat()
-    when (cvType) {
-        CV_8UC4 -> {
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            bitmap.copyPixelsFromBuffer(this)
-            bitmapToMat(bitmap, mat)
-        }
-        CV_8UC1 -> {
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ALPHA_8)
-            bitmap.copyPixelsFromBuffer(this)
-            val bitmap2 = bitmap.copy(Bitmap.Config.ARGB_8888, false)
-            val tmp = Mat()
-            bitmapToMat(bitmap2, tmp)
-            val rgba = MutableList<Mat>(4) {mat}
-            split(tmp, rgba)
-            return rgba[3].clone()
-        }
-//        CV_16UC1 -> {
+    //TODO: clean up
+    //TODO: sanity-check the Mat()-construction (e.g. with try/catch)
+//    val mat = Mat()
+    val mat = Mat(height, width, cvType, this)
+//    when (cvType) {
+//        CV_8UC4 -> {
+//            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+//            bitmap.copyPixelsFromBuffer(this)
+//            bitmapToMat(bitmap, mat)
 //        }
-        CV_8UC2, CV_16UC1 -> {
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
-            bitmap.copyPixelsFromBuffer(this)
-            bitmapToMat(bitmap, mat)
-        }
-    }
+//        CV_8UC1 -> {
+//            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ALPHA_8)
+//            bitmap.copyPixelsFromBuffer(this)
+//            val bitmap2 = bitmap.copy(Bitmap.Config.ARGB_8888, false)
+//            val tmp = Mat()
+//            bitmapToMat(bitmap2, tmp)
+//            val bgra = MutableList<Mat>(4) {mat}
+//            split(tmp, bgra)
+//            return bgra[3].clone()
+//        }
+////        CV_16UC1 -> {
+////        }
+//        CV_8UC2 -> {
+//            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+//            bitmap.copyPixelsFromBuffer(this)
+//            val tmp = Mat(height, width, CV_8UC2)
+//            bitmapToMat(bitmap, tmp)
+//            return tmp
+//        }
+//    }
     return mat
 }
 

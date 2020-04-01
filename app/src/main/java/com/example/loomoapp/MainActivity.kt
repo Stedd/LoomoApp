@@ -180,23 +180,23 @@ class MainActivity :
             mTFPublisher
         )
 
-        // Start an instance of the RosBridgeNode
+        //Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode()
 
 
         //Start Inference Service
-        mInferenceThread    = LoopedThread("Inference_Thread", Process.THREAD_PRIORITY_DEFAULT)
-        mInferenceThread    .start()
-        mInferenceMain      = InferenceMain()
-        intentInference     = Intent(this, mInferenceMain::class.java)
-        startService(intentInference)
-        mInferenceMain.setHandlerThread(mInferenceThread)
-        mInferenceMain.setMainUIHandler(UIThreadHandler)
-        mInferenceMain.setInferenceBitmap(inferenceImage)
-        mInferenceMain.init(this)
-        inferenceImage.observeForever {
-            inferenceView.setImageBitmap(it)
-        }
+//        mInferenceThread    = LoopedThread("Inference_Thread", Process.THREAD_PRIORITY_DEFAULT)
+//        mInferenceThread    .start()
+//        mInferenceMain      = InferenceMain()
+//        intentInference     = Intent(this, mInferenceMain::class.java)
+//        startService(intentInference)
+//        mInferenceMain.setHandlerThread(mInferenceThread)
+//        mInferenceMain.setMainUIHandler(UIThreadHandler)
+//        mInferenceMain.setInferenceBitmap(inferenceImage)
+//        mInferenceMain.init(this)
+//        inferenceImage.observeForever {
+//            inferenceView.setImageBitmap(it)
+//        }
 
 
         camViewColor.visibility = ImageView.GONE

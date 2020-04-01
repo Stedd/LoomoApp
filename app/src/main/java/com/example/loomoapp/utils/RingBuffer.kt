@@ -47,8 +47,8 @@ class RingBuffer<T>(val maxSize: Int = 10, val allowOverwrite: Boolean = false) 
         return item
     }
 
-    fun peek(): T? = array[head]
-    fun peek(tailOffset: Int): T? {
+//    fun peek(): T? = array[tail]
+    fun peek(tailOffset: Int = 0): T? {
         var offset = tailOffset
         if (offset > itemsInQueue) {
             offset = itemsInQueue
@@ -60,7 +60,7 @@ class RingBuffer<T>(val maxSize: Int = 10, val allowOverwrite: Boolean = false) 
         }
         return array[index]
     }
-    fun peekTail(): T? = array[tail]
+    fun peekHead(): T? = array[head]
 
     fun getContents(): MutableList<T?> {
         return mutableListOf<T?>().apply {
