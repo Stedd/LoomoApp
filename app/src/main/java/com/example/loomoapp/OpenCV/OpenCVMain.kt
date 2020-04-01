@@ -83,11 +83,10 @@ class OpenCVMain : Service() {
         }
     }
 
-    private val imgProcFishEye = LoopedThread(
-        "imgProc FishEye",
-        Process.THREAD_PRIORITY_DEFAULT
-    )
-    private var keyPoints = MatOfKeyPoint()
+//    private val imgProcFishEye = LoopedThread(
+//        "imgProc FishEye",
+//        Process.THREAD_PRIORITY_DEFAULT
+//    )
 //    private external fun nativeOrb(matAddr: Long, dstAddr: Long)
 
     fun onNewFrame(streamType: Int, frame: Frame) {
@@ -154,6 +153,7 @@ class OpenCVMain : Service() {
         }
     }
 
+    private var keyPoints = MatOfKeyPoint()
     private var fishEyeFrame = Mat()
     private var processedFishEyeFrame = Mat()
     private val foo = NonBlockingInfLoop {
@@ -163,7 +163,7 @@ class OpenCVMain : Service() {
             fishEyeFrame = fishEyeFrameBuffer.peekTail()!!.first
             keyPoints = fishEyeTracker.onNewFrame(fishEyeFrame)
             Features2d.drawKeypoints(fishEyeFrame, keyPoints, processedFishEyeFrame, Scalar(0.0, 255.0, 0.0))
-//            Thread.sleep(2000)
+//            Thread.sleep(2000) // Just for debugging purposes
         }
     }
 

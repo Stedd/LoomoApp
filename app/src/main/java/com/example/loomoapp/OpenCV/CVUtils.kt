@@ -117,3 +117,5 @@ fun Mat.toBitmap(): Bitmap {
 //}
 //
 //class MatConversionException(msg: String) : RuntimeException(msg)
+
+
