@@ -19,12 +19,9 @@ import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
 import org.opencv.android.*
 import org.opencv.core.*
-import org.opencv.core.Core.NORM_HAMMING
-import org.opencv.features2d.BFMatcher
-import org.opencv.features2d.DescriptorMatcher
-import org.opencv.features2d.Features2d
 import org.opencv.features2d.ORB
 import org.opencv.imgproc.Imgproc
+import org.opencv.video.Video
 
 
 //Variables
@@ -39,7 +36,6 @@ lateinit var mLoaderCallback: BaseLoaderCallback
 
 val threadHandler = Handler(Looper.getMainLooper()) //Used to post messages to UI Thread
 var cameraRunning: Boolean = false
-
 
 
 var img = Mat()
@@ -80,12 +76,13 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         Bitmap.Config.ARGB_8888
     ) // Depth info is in Z16 format. RGB_565 is also a 16 bit format and is compatible for storing the pixels
     private var mImgDepthCanny = Bitmap.createBitmap(
-        imgWidth/3,
-        imgHeight/3,
+        imgWidth / 3,
+        imgHeight / 3,
         Bitmap.Config.ARGB_8888
     ) // Depth info is in Z16 format. RGB_565 is also a 16 bit format and is compatible for storing the pixels
 
-    private var mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidth/3, imgHeight/3,false)
+    private var mImgDepthScaled =
+        Bitmap.createScaledBitmap(mImgDepth, imgWidth / 3, imgHeight / 3, false)
 
 
     private val mDistanceController = DistanceController()
@@ -228,10 +225,11 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
                 Log.i(TAG, msg)
                 mVision.startListenFrame(StreamType.FISH_EYE) { streamType, frame ->
                     mImgDepth.copyPixelsFromBuffer(frame.byteBuffer)
-                    mImgDepthScaled = Bitmap.createScaledBitmap(mImgDepth, imgWidth/3, imgHeight/3,false)
+                    mImgDepthScaled =
+                        Bitmap.createScaledBitmap(mImgDepth, imgWidth / 3, imgHeight / 3, false)
                     Utils.bitmapToMat(mImgDepthScaled, imgFisheye)
                     Imgproc.Canny(imgFisheye, resultImgFisheye, 0.01, 190.0)
-                    Utils.matToBitmap(resultImgFisheye ,mImgDepthCanny)
+                    Utils.matToBitmap(resultImgFisheye, mImgDepthCanny)
 
                     threadHandler.post {
 //                        camView.setImageBitmap(mImgDepth.copy(Bitmap.Config.ARGB_8888, true))
@@ -256,71 +254,170 @@ class MainActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewListe
         }
     }
 
+    private val detector: ORB = ORB.create()
+    private var keyPoints = MatOfKeyPoint()
+    private val descriptors = Mat()
+    private var points = MatOfPoint2f()
+    private var prevPoints = MatOfPoint2f()
+    private var pointsOG = MatOfPoint2f()
+    private var status = MatOfByte()
+    private var totalReceivedFrames = 0
+
+    private var expectedNumOfFeatures = 0
+    private val MIN_NUM_OF_FEATURES = 20
+    private var minNumOfFeatures = 20
+    private var numOfFeatures = 0
+
+    private val prevImg = Mat()
+
+    private var pointPair = Pair<MatOfPoint2f, MatOfPoint2f>(prevPoints, points)
+
 
     override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
-        img = inputFrame.gray()
-//        resultImg = img
-//        Imgproc.blur(img, resultImg, Size(15.0, 15.0))
-//        Imgproc.GaussianBlur(img, resultImg, Size(15.0, 15.0), 1.0)
-//        Imgproc.Canny(img, resultImg, 0.01, 190.0)
+        img = inputFrame.rgba()
 
-//        val detector: ORB = ORB.create(50, 1.2F)
-//        val keypoints = MatOfKeyPoint()
-//        detector.detect(img, keypoints)
-//
-//
+        totalReceivedFrames++
 
-        val detector: ORB = ORB.create()
-        val keyPoints = MatOfKeyPoint()
-        val descriptors = Mat()
+        if ((numOfFeatures < minNumOfFeatures) or captureNewKeyFrame) {
+            captureNewKeyFrame = false
+            detect(img)
+            Log.d(
+                TAG,
+                "numOfFeatures: $numOfFeatures, minNumOfFeatures: $minNumOfFeatures, expectedNumOfFeatures: $expectedNumOfFeatures"
+            )
+        }
+
+        trackFeatures(img)
+        img.copyTo(prevImg)
+
+        val ptArr = points.toArray()
+//        val prevPtArr = pointsOld.toArray()
+        val prevPtArr = pointsOG.toArray()
+        if (ptArr.isNotEmpty() and (ptArr.size <= prevPtArr.size)) {
+            for (index in ptArr.indices) {
+                Imgproc.line(
+                    img,
+                    prevPtArr[index],
+                    ptArr[index],
+                    Scalar(0.0, 0.0, 255.0, 30.0)
+                )
+                Imgproc.circle(
+                    img,
+                    prevPtArr[index],
+                    3,
+                    Scalar(0.0, 255.0, 0.0, 127.0)
+                )
+                Imgproc.circle(
+                    img,
+                    ptArr[index],
+                    3,
+                    Scalar(255.0, 0.0, 255.0, 127.0)
+                )
+            }
+        }
+
+        runOnUiThread { viewModel.text.value = "Feats: $numOfFeatures, expected feats: $expectedNumOfFeatures" }
+        return img
+    }
+
+    private val alpha = 0.2
+    private fun detect(img: Mat) {
         detector.detect(img, keyPoints)
         detector.compute(img, keyPoints, descriptors)
+//        keyPoints.convertTo(points, CV_32F)
+        val kpTmp = keyPoints.toArray()
+        val p2fTmp = Array<Point>(kpTmp.size) { kpTmp[it].pt }
+        points = MatOfPoint2f(*p2fTmp)
+        points.copyTo(pointsOG)
+        points.copyTo(prevPoints)
+        numOfFeatures = kpTmp.size
+        expectedNumOfFeatures = ((1 - alpha) * expectedNumOfFeatures + alpha * numOfFeatures).toInt()
+        minNumOfFeatures = if ((0.5 * expectedNumOfFeatures).toInt() > MIN_NUM_OF_FEATURES) {
+            (0.5 * expectedNumOfFeatures).toInt()
+        } else {
+            MIN_NUM_OF_FEATURES
+        }
+    }
 
-//        Features2d.drawKeypoints(img, keyPoints, resultImg)
+    private fun trackFeatures(img: Mat) {
+        val err = MatOfFloat()
+        val winSize = Size(21.0, 21.0)
+        val termCrit = TermCriteria(TermCriteria.COUNT or TermCriteria.EPS, 30, 0.1)
 
-        if (captureNewKeyFrame) {
-            //Update the keypoints used for comparison
-            captureNewKeyFrame = false
-            detector.detect(img, orbKeyPointsOld)
-            detector.compute(img, orbKeyPointsOld, orbDescriptorsOld)
-            trainList = orbKeyPointsOld.toList()
-//            imgOld = img
+        if ((prevImg.empty()) or (prevPoints.size().area() <= 0)) {
+            Log.d(
+                TAG,
+                "prevImg empty: ${prevImg.empty()}, or pointsOld size: ${prevPoints.size().area()}"
+            )
+            img.copyTo(prevImg)
+            points.copyTo(prevPoints)
+            return
         }
 
-        val matches = MatOfDMatch()
-        DescriptorMatcher.create(NORM_HAMMING).match(descriptors, orbDescriptorsOld, matches)
-//        val matcher = BFMatcher(NORM_HAMMING, true)
-//        BFMatcher(NORM_HAMMING, true).match(orbDescriptorsOld, descriptors, matches)
-//        Features2d.drawMatches(img, keyPoints, img, orbKeyPointsOld, asdf, resultImg)
-        Features2d.drawKeypoints(img, keyPoints, resultImg, Scalar(0.0, 255.0, 0.0))
-        Features2d.drawKeypoints(resultImg, orbKeyPointsOld, resultImg, Scalar(255.0,0.0,0.0,127.0))
 
-//        Log.d("OnFrame", "Matches:")
-//        for(i in 0..matches.toArray().size) {
-//
-//        }
-//        val asdf = intArrayOf(2)
-//        val point1 = keyPoints[asdf]
-//        Imgproc.line(resultImg, Point(0.0,0.0), point1 ,Scalar(0.0,0.0,255.0))
-
-//        val list1 = mutableListOf<Point>()
-//        val list2 = mutableListOf<Point>()
-        val queryList = keyPoints.toList()
-        val matchList = matches.toList()
-
-        for(mat in matchList) {
-//            list1.add(queryList[mat.queryIdx].pt)
-//            list2.add(trainList[mat.trainIdx].pt)
-            Imgproc.line(resultImg, queryList[mat.queryIdx].pt, trainList[mat.trainIdx].pt, Scalar(0.0,0.0,255.0))
+        try {
+            Video.calcOpticalFlowPyrLK(
+                prevImg,
+                img,
+                prevPoints,
+                points,
+                status,
+                err,
+                winSize,
+                3,
+                termCrit,
+                0,
+                0.001
+            )
+        } catch (e: Exception) {
+            Log.d(TAG, "Something wrong with Video.calcOpticalFlowPyrLK")
+            Thread.sleep(500)
+            points.copyTo(prevPoints)
         }
 
-        return resultImg
+        // Remove points where tracking failed, or where they have gone outside the frame
+        val statusList = status.toList()
+        val pointsOldList = prevPoints.toList()
+        val pointsList = points.toList()
+//        val tmpStatus = mutableListOf<Byte>()
+        val tmpPointsOld = mutableListOf<Point>()
+        val tmpPoints = mutableListOf<Point>()
+        var indexCorrection = 0
+        val pointsOGList = pointsOG.toList()
+        val tmpOGlist = mutableListOf<Point>()
+        for ((index, stat) in statusList.withIndex()) {
+            val pt = pointsOldList[index - indexCorrection]
+            if ((stat.toInt() == 0) or (pt.x < 0) or (pt.y < 0)) {
+                if ((pt.x < 0) or (pt.y < 0)) {
+                    statusList[index] = 0.toByte()
+                }
+                indexCorrection++
+            } else {
+//                tmpStatus.add(stat)
+                tmpPointsOld.add(pointsOldList[index])
+                tmpPoints.add(pointsList[index])
+                tmpOGlist.add(pointsOGList[index])
+            }
+        }
+        if (pointsList.size != tmpPoints.size) {
+            numOfFeatures = tmpPoints.size
+            status = MatOfByte(*statusList.toByteArray())
+//            status = MatOfByte(*tmpStatus.toByteArray())
+            points = MatOfPoint2f(*tmpPoints.toTypedArray())
+            prevPoints = MatOfPoint2f(*tmpPointsOld.toTypedArray())
+            pointsOG = MatOfPoint2f(*tmpOGlist.toTypedArray())
+            pointPair = Pair(prevPoints, points)
+//            keyPoints = MatOfKeyPoint(*Array<KeyPoint>(numOfFeatures) {
+//                KeyPoint(tmpPoints[it].x.toFloat(), tmpPoints[it].y.toFloat(), 1F)
+//            })
+        }
+        points.copyTo(prevPoints)
     }
 
     override fun onCameraViewStarted(width: Int, height: Int) {
         Log.i("cam", "camera view started. width:$width, height: $height")
         img = Mat(width, height, CvType.CV_8UC4)
-}
+    }
 
     override fun onCameraViewStopped() {
         Log.i("cam", "camera view stopped")
