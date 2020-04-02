@@ -6,7 +6,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Binder
 import android.os.IBinder
-import android.os.Process
 import android.util.Log
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_WIDTH
@@ -14,8 +13,6 @@ import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
-import com.example.loomoapp.Loomo.LoomoRealSense.Companion.streamTypeMap
-import com.example.loomoapp.utils.LoopedThread
 import com.example.loomoapp.utils.NonBlockingInfLoop
 import com.example.loomoapp.utils.RingBuffer
 import com.segway.robot.sdk.vision.frame.Frame
@@ -24,11 +21,9 @@ import com.segway.robot.sdk.vision.stream.StreamType
 import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
+import org.opencv.core.*
 import org.opencv.core.CvType.*
-import org.opencv.core.Mat
-import org.opencv.core.MatOfKeyPoint
-import org.opencv.core.Scalar
-import org.opencv.features2d.Features2d
+import org.opencv.imgproc.Imgproc
 
 class OpenCVMain : Service() {
     private val TAG = "OpenCVMain"
@@ -84,7 +79,7 @@ class OpenCVMain : Service() {
         }
     }
 
-//    private val imgProcFishEye = LoopedThread(
+    //    private val imgProcFishEye = LoopedThread(
 //        "imgProc FishEye",
 //        Process.THREAD_PRIORITY_DEFAULT
 //    )
@@ -133,7 +128,10 @@ class OpenCVMain : Service() {
         }
         if (toggleOldState != toggle) {
             toggleOldState = toggle
-            Log.d(TAG, "Fisheye Mat() type: ${typeToString(fishEyeFrameBuffer.peek()!!.first.type())}")
+            Log.d(
+                TAG,
+                "Fisheye Mat() type: ${typeToString(fishEyeFrameBuffer.peek()!!.first.type())}"
+            )
             Log.d(TAG, "Color Mat() type: ${typeToString(colorFrameBuffer.peek()!!.first.type())}")
             Log.d(TAG, "Depth Mat() type: ${typeToString(depthFrameBuffer.peek()!!.first.type())}")
         }
@@ -146,7 +144,10 @@ class OpenCVMain : Service() {
         val frame: Mat? = when (streamType) {
 //            StreamType.FISH_EYE -> fishEyeFrameBuffer.peek(1)?.first
             StreamType.FISH_EYE -> {
-                if(toggle) processedFishEyeFrame
+                if (toggle) {
+//                    processedFishEyeFrame
+                    drawStuff(fishEyeFrame)
+                }
                 else fishEyeFrameBuffer.peek(1)?.first
             }
             StreamType.COLOR -> colorFrameBuffer.peek(1)?.first
@@ -161,19 +162,59 @@ class OpenCVMain : Service() {
     }
 
     private var keyPoints = MatOfKeyPoint()
+    private var pointPair = Pair<MatOfPoint2f, MatOfPoint2f>(MatOfPoint2f(), MatOfPoint2f())
     private var fishEyeFrame = Mat()
     private var processedFishEyeFrame = Mat()
     private val foo = NonBlockingInfLoop {
         if (newFishEyeFrames > 0) {
 //            Log.d(TAG, "Skipped frames: ${newFishEyeFrames-1}")
-            newFishEyeFrames = 0
-            fishEyeFrame = fishEyeFrameBuffer.peek()!!.first
-            keyPoints = fishEyeTracker.onNewFrame(fishEyeFrame)
-            Features2d.drawKeypoints(fishEyeFrame, keyPoints, processedFishEyeFrame, Scalar(0.0, 255.0, 0.0))
-//            Thread.sleep(2000) // Just for debugging purposes
+        newFishEyeFrames = 0
+        fishEyeFrame = fishEyeFrameBuffer.peek()!!.first
+//            keyPoints = fishEyeTracker.onNewFrame(fishEyeFrame)
+//            Features2d.drawKeypoints(fishEyeFrame, keyPoints, processedFishEyeFrame, Scalar(0.0, 255.0, 0.0))
+        pointPair = fishEyeTracker.onNewFrame(fishEyeFrame)
+//            val pointOld = pointPair.first.toArray()
+//            val point = pointPair.second.toArray()
+//            if ((point.isNotEmpty()) and (pointOld.size == point.size)) {
+//                Log.d(TAG, "Drawing lines")
+//                Imgproc.line(fishEyeFrame, pointOld[0], point[0], Scalar(0.0, 0.0, 255.0), 2)
+//                Imgproc.line(fishEyeFrame, Point(10.0, 10.0), Point(100.0, 100.0), Scalar(0.0, 0.0, 255.0), 2)
+//                for (index in point.indices) {
+//                    Imgproc.line(
+//                        fishEyeFrame,
+//                        pointOld[index]!!,
+//                        point[index]!!,
+//                        Scalar(0.0, 0.0, 255.0),
+//                        1
+//                    )
+//                }
         }
+//            processedFishEyeFrame = fishEyeFrame
+//            Thread.sleep(2000) // Just for debugging purposes
+    }
+
+    private fun drawStuff(frame: Mat): Mat {
+        val pointOld = pointPair.first.toArray()
+        val point = pointPair.second.toArray()
+        if ((point.isNotEmpty()) and (pointOld.size == point.size)) {
+            Log.d(TAG, "Drawing lines")
+//            Imgproc.line(fishEyeFrame, pointOld[0], point[0], Scalar(0.0, 0.0, 255.0), 2)
+            Imgproc.line(frame, Point(10.0, 10.0), Point(100.0, 100.0), Scalar(0.0, 0.0, 255.0))
+//            for (index in point.indices) {
+//                Imgproc.line(
+//                    img,
+//                    pointOld[index],
+//                    point[index],
+//                    Scalar(0.0, 0.0, 255.0),
+//                    1
+//                )
+//            }
+        }
+        return frame
     }
 
 }
 
 class IllegalStreamTypeException(msg: String) : RuntimeException(msg)
+
+//adb logcat | C:\Users\ja_ei\AppData\Local\Android\Sdk\ndk\21.0.6113669\ndk-stack -sym C:\OpenCVAndroidSDK\sdk\build\intermediates\cmake\debug\obj\x86_64

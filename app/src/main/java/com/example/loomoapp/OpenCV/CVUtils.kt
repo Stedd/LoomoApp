@@ -76,26 +76,27 @@ fun Mat.toBitmap(): Bitmap {
         cvtColor(this, tmp, COLOR_BGR5652RGB)
         matToBitmap(tmp, bmp)
         return bmp
-    } else if (this.type() == CV_16UC1) {
-        val tmp = Mat(this.rows(), this.cols(), CV_8UC1)
-        //TODO: Fix the conversion of depth img to gray-scale. All attempts seem to
-        // 'cut off' the MSB instead of mapping 0-2^16 to 0-2^8
-        // Logging the pixel values suggests that the 'looping' effect is happening in
-        // the 16bit img, so the problem lies elsewhere
-//        Imgproc.blur(this, this, Size(9.0, 9.0))
-//        Log.d(TAG, "ch: ${this.channels()}, depth: ${this.depth()}, val: ${this[120, 155][0]}")
-//        val tmp = Mat(this.dataAddr())
-        this.convertTo(tmp, CV_8UC1, 1/256.0)
-//        cvtColor(tmp, tmp, COLOR_GRAY2RGB)
-//        this.convertTo(this, CV_16UC1, 1/256.0)
-//        this.convertTo(tmp, CV_8UC1)
-//        normalize(this, tmp, 0.0, 255.0, NORM_MINMAX, CV_8UC1)
-//        this.reshape(CV_8UC2)
-//        cvtColor(this, tmp, COLOR_BGR5652RGB)
-//        tmp.convertTo(tmp, CV_8UC1)
-        matToBitmap(tmp, bmp)
-        return bmp
     }
+//    else if (this.type() == CV_16UC1) {
+//        val tmp = Mat(this.rows(), this.cols(), CV_8UC1)
+//        //Fix the conversion of depth img to gray-scale. All attempts seem to
+//        // 'cut off' the MSB instead of mapping 0-2^16 to 0-2^8
+//        // Logging the pixel values suggests that the 'looping' effect is happening in
+//        // the 16bit img, so the problem lies elsewhere
+////        Imgproc.blur(this, this, Size(9.0, 9.0))
+////        Log.d(TAG, "ch: ${this.channels()}, depth: ${this.depth()}, val: ${this[120, 155][0]}")
+////        val tmp = Mat(this.dataAddr())
+//        this.convertTo(tmp, CV_8UC1, 1/256.0)
+////        cvtColor(tmp, tmp, COLOR_GRAY2RGB)
+////        this.convertTo(this, CV_16UC1, 1/256.0)
+////        this.convertTo(tmp, CV_8UC1)
+////        normalize(this, tmp, 0.0, 255.0, NORM_MINMAX, CV_8UC1)
+////        this.reshape(CV_8UC2)
+////        cvtColor(this, tmp, COLOR_BGR5652RGB)
+////        tmp.convertTo(tmp, CV_8UC1)
+//        matToBitmap(tmp, bmp)
+//        return bmp
+//    }
 //        if (!(frame.type() == CV_8UC1 || frame.type() == CV_8UC3 || frame.type() == CV_8UC4)) {
 //        }
     if (this.empty()) {
@@ -110,7 +111,7 @@ fun Mat.toBitmap(): Bitmap {
     return bmp
 }
 
-//TODO: It would be practical if Mat() had an iterator method (https://kotlinlang.org/docs/reference/iterators.html)
+//TODO: It could be practical if Mat() had an iterator method (https://kotlinlang.org/docs/reference/iterators.html)
 // Maybe this tutorial can help: https://www.baeldung.com/kotlin-custom-range-iterator
 
 
