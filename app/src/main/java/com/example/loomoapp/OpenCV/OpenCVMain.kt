@@ -56,6 +56,8 @@ class OpenCVMain : Service() {
     private val fishEyeTracker = ORBTracker()
     var toggle = true
 
+    private lateinit var depthInterpreter:DepthInterpreter
+
     override fun onBind(intent: Intent?): IBinder? {
         return Binder()
     }
@@ -172,6 +174,16 @@ class OpenCVMain : Service() {
 //            Thread.sleep(2000) // Just for debugging purposes
         }
     }
+
+    private val depthInterpreterLoop = NonBlockingInfLoop {
+        if (newDepthFrames > 0) {
+//            Log.d(TAG, "Skipped frames: ${newFishEyeFrames-1}")
+            newDepthFrames = 0
+            depthInterpreter = DepthInterpreter(depthFrameBuffer.peek()!!.first, DEPTH_WIDTH, DEPTH_HEIGHT, 5)
+//            Thread.sleep(2000) // Just for debugging purposes
+        }
+    }
+
 
 }
 
