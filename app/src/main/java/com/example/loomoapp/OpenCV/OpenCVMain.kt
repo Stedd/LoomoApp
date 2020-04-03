@@ -6,7 +6,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Binder
 import android.os.IBinder
-import android.os.Process
 import android.util.Log
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.COLOR_WIDTH
@@ -14,7 +13,6 @@ import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.DEPTH_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.Companion.FISHEYE_WIDTH
-import com.example.loomoapp.utils.LoopedThread
 import com.example.loomoapp.utils.NonBlockingInfLoop
 import com.example.loomoapp.utils.RingBuffer
 import com.segway.robot.sdk.vision.frame.Frame
@@ -23,11 +21,12 @@ import com.segway.robot.sdk.vision.stream.StreamType
 import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
+import org.opencv.core.*
 import org.opencv.core.CvType.*
-import org.opencv.core.Mat
-import org.opencv.core.MatOfKeyPoint
-import org.opencv.core.Scalar
 import org.opencv.features2d.Features2d
+import org.opencv.imgproc.Imgproc.FONT_HERSHEY_SIMPLEX
+import org.opencv.imgproc.Imgproc.putText
+
 
 class OpenCVMain : Service() {
     private val TAG = "OpenCVMain"
@@ -83,6 +82,10 @@ class OpenCVMain : Service() {
             Log.d(TAG, "OpenCV library found inside package. Using it!")
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
+
+        //Initialize depth interpreter
+        depthInterpreter = DepthInterpreter(DEPTH_WIDTH, DEPTH_HEIGHT, 5)
+
     }
 
 //    private val imgProcFishEye = LoopedThread(
@@ -151,6 +154,11 @@ class OpenCVMain : Service() {
                 else fishEyeFrameBuffer.peek(1)?.first
             }
             StreamType.COLOR -> colorFrameBuffer.peek(1)?.first
+
+//            StreamType.DEPTH ->{
+//                if(toggle) depthFrame
+//                else depthFrameBuffer.peek(1)?.first
+//            }
             StreamType.DEPTH -> depthFrameBuffer.peek(1)?.first
             else -> throw IllegalStreamTypeException("Non recognized stream type in getNewestFrame()")
         }
@@ -175,12 +183,15 @@ class OpenCVMain : Service() {
         }
     }
 
+
+//    private var depthFrame = Mat(DEPTH_WIDTH, DEPTH_HEIGHT, CV_8UC2)
+    private var processedDepthFrame = Mat()
     private val depthInterpreterLoop = NonBlockingInfLoop {
         if (newDepthFrames > 0) {
-//            Log.d(TAG, "Skipped frames: ${newFishEyeFrames-1}")
             newDepthFrames = 0
-            depthInterpreter = DepthInterpreter(depthFrameBuffer.peek()!!.first, DEPTH_WIDTH, DEPTH_HEIGHT, 5)
-//            Thread.sleep(2000) // Just for debugging purposes
+//            depthFrame = depthFrameBuffer.peek()!!.first
+//            depthInterpreter.processFrame(depthFrame)
+            depthInterpreter.processFrame(depthFrameBuffer.peek()!!.first)
         }
     }
 

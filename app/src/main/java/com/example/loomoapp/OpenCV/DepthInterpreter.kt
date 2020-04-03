@@ -2,17 +2,14 @@ package com.example.loomoapp.OpenCV
 
 import android.util.Log
 import org.opencv.core.Mat
-import kotlin.math.floor
-import kotlin.math.log
 
 class DepthInterpreter(
-    val img: Mat,
-    val width:Int,
-    val height:Int,
-    val numberOfRegions:Int
+    val width: Int,
+    val height: Int,
+    val numberOfRegions: Int
 ) {
 
-    companion object{
+    companion object {
         private const val TAG = "DepthInterpreter"
     }
 
@@ -34,44 +31,49 @@ class DepthInterpreter(
     // TODO: 02.04.2020 opencv ROI
 
     init {
-        val widthOfRegion:Int = width/numberOfRegions
-        val rest = width%numberOfRegions
+        val widthOfRegion: Int = width / numberOfRegions
+        val rest = width % numberOfRegions
+    }
+
+
+    fun processFrame(img: Mat) {
+        // TODO: 01.04.2020 Nested for loop which separates the Mat into Regions
         var sum = 0
-        for (region in 0 until numberOfRegions){
-            region*numberOfRegions
-            for (row in 0 until height){
-                for (col in 0 until width){
-                    val value = img.get(row,col)[0].toInt()
-//                Log.d(TAG, "row: $row, col:$col. val:$value");
-                    sum += value
-                }
+        var sum0 = 0
+        var sum1 = 0
+        for (row in 0 until height) {
+            for (col in 0 until width) {
+//                for (ch in 0..1 ){
+//                    sum += (img.get(row, col)[0].toInt())
+                Log.d(TAG, "${img.get(row, col)}");
+//                    sum += (img.get(row, col))
+//                    sum += ch
+//                }
+//
+//                sum0 += (img.get(row, col)[0].toInt())
+//                sum1 += (img.get(row, col)[0].toInt())
+//                sum+=img.get(row, col)[1].toInt()
+//                Log.d(TAG, "sum: ${img.get(row, col)[0].toInt()}")
             }
         }
-
-        Log.d(TAG, "sum: $sum");
+//        Log.d(TAG, "sum0: $sum0 sum1: $sum1");
+//        Log.d(TAG, "sum0: $sum");
+        Log.d(TAG, "sum0: $sum");
     }
-
-
-    fun processFrame(){
-        Log.d(TAG, "image received");
-        depthImage = img
-
-        //Need a function for getting the value of each pixel
-
-        //Separate into regions
-        // TODO: 01.04.2020 Nested for loop which separates the Mat into Regions
-        //skip for now
-
-
-
-
-    }
-
-
-    //Fetch the depth frame
-    fun newFrame(img: Mat){
-        depthImage = img
-    }
-
-
+//
+//    fun processFrame(img: Mat) {
+//        var sum = 0
+//        for (region in 0 until numberOfRegions) {
+//            region * numberOfRegions
+//            for (row in 0 until height) {
+//                for (col in 0 until width) {
+//
+//                    Log.d(TAG, "row: $row, col:$col. val:$value");
+//                    sum += img.get(row, col)[0].toInt()
+//                }
+//            }
+//        }
+//
+//        Log.d(TAG, "sum: $sum");
+//    }
 }
