@@ -4,7 +4,6 @@ import android.util.Log
 import org.opencv.core.*
 import org.opencv.features2d.ORB
 import org.opencv.video.Video
-import kotlin.math.floor
 
 class ORBTracker {
     private val TAG = "OpenCV/ORBTracker"
@@ -13,17 +12,19 @@ class ORBTracker {
     private var keyPoints = MatOfKeyPoint()
     private val descriptors = Mat()
     private var points = MatOfPoint2f()
-    private var pointsOld = MatOfPoint2f()
+    private var prevPoints = MatOfPoint2f()
+    private var pointsOG = MatOfPoint2f()
     private var status = MatOfByte()
     private var totalReceivedFrames = 0
 
     private var expectedNumOfFeatures = 0
     private var minNumOfFeatures = 20
+    private val MIN_NUM_OF_FEATURES = 20
     private var numOfFeatures = 0
 
     private val prevImg = Mat()
 
-    private var pointPair = Pair<MatOfPoint2f, MatOfPoint2f>(pointsOld, points)
+    private var pointPair = Pair<MatOfPoint2f, MatOfPoint2f>(pointsOG, points)
 
 //    fun onNewFrame(img: Mat): MatOfKeyPoint {
     fun onNewFrame(img: Mat): Pair<MatOfPoint2f, MatOfPoint2f> {
@@ -41,17 +42,23 @@ class ORBTracker {
     }
 
 
-    private val alpha = 0.5
+    private val alpha = 0.2
     private fun detect(img: Mat) {
         detector.detect(img, keyPoints)
         detector.compute(img, keyPoints, descriptors)
 //        keyPoints.convertTo(points, CV_32F)
         val kpTmp = keyPoints.toArray()
-        val p2fTmp = Array<Point>(kpTmp.size) {kpTmp[it].pt}
+        val p2fTmp = Array<Point>(kpTmp.size) { kpTmp[it].pt }
         points = MatOfPoint2f(*p2fTmp)
+        points.copyTo(pointsOG)
+        points.copyTo(prevPoints)
         numOfFeatures = kpTmp.size
-//        expectedNumOfFeatures = ((1-alpha)*expectedNumOfFeatures + alpha*numOfFeatures).toInt()
-//        minNumOfFeatures = (0.5*expectedNumOfFeatures).toInt()
+        expectedNumOfFeatures = ((1 - alpha) * expectedNumOfFeatures + alpha * numOfFeatures).toInt()
+        minNumOfFeatures = if ((0.5 * expectedNumOfFeatures).toInt() > MIN_NUM_OF_FEATURES) {
+            (0.5 * expectedNumOfFeatures).toInt()
+        } else {
+            MIN_NUM_OF_FEATURES
+        }
     }
 
     private fun trackFeatures(img: Mat) {
@@ -59,30 +66,22 @@ class ORBTracker {
         val winSize = Size(21.0, 21.0)
         val termCrit = TermCriteria(TermCriteria.COUNT or TermCriteria.EPS, 30, 0.1)
 
-        if ((prevImg.empty()) or (pointsOld.size().area() <= 0)) {
-            Log.d(TAG, "prevImg empty: ${prevImg.empty()}, or pointsOld size: ${pointsOld.size().area()}")
+        if ((prevImg.empty()) or (prevPoints.size().area() <= 0)) {
+            Log.d(
+                TAG,
+                "prevImg empty: ${prevImg.empty()}, or pointsOld size: ${prevPoints.size().area()}"
+            )
             img.copyTo(prevImg)
-            points.copyTo(pointsOld)
+            points.copyTo(prevPoints)
             return
         }
 
-//        if (pointsOld.checkVector(2, CV_32F, true) < 0) {
-//            //what da heck!
-//            Log.d(TAG, "Something wrong with points")
-//            Thread.sleep(500) // Just so the Logcat is not utterly spammed
-//            return
-//        }
-
-
-//        val pyr = MutableList(3) {Mat()}
-//        val lvls = Video.buildOpticalFlowPyramid(img, pyr, img.size(), 3)
-//        Video.buildOpticalFlowPyramid(prevImg, pyr, img.size(), 3)
 
         try {
             Video.calcOpticalFlowPyrLK(
                 prevImg,
                 img,
-                pointsOld,
+                prevPoints,
                 points,
                 status,
                 err,
@@ -95,21 +94,23 @@ class ORBTracker {
         } catch (e: Exception) {
             Log.d(TAG, "Something wrong with Video.calcOpticalFlowPyrLK")
             Thread.sleep(500)
-            points.copyTo(pointsOld)
+            points.copyTo(prevPoints)
         }
 
         // Remove points where tracking failed, or where they have gone outside the frame
         val statusList = status.toList()
-        val pointsOldList = pointsOld.toList()
+        val pointsOldList = prevPoints.toList()
         val pointsList = points.toList()
 //        val tmpStatus = mutableListOf<Byte>()
         val tmpPointsOld = mutableListOf<Point>()
         val tmpPoints = mutableListOf<Point>()
         var indexCorrection = 0
+        val pointsOGList = pointsOG.toList()
+        val tmpOGlist = mutableListOf<Point>()
         for ((index, stat) in statusList.withIndex()) {
-            val pt = pointsOldList[index-indexCorrection]
-            if ((stat.toInt() == 0) or (pt.x<0) or (pt.y<0)) {
-                if ((pt.x<0) or (pt.y<0)) {
+            val pt = pointsOldList[index - indexCorrection]
+            if ((stat.toInt() == 0) or (pt.x < 0) or (pt.y < 0)) {
+                if ((pt.x < 0) or (pt.y < 0)) {
                     statusList[index] = 0.toByte()
                 }
                 indexCorrection++
@@ -117,6 +118,7 @@ class ORBTracker {
 //                tmpStatus.add(stat)
                 tmpPointsOld.add(pointsOldList[index])
                 tmpPoints.add(pointsList[index])
+                tmpOGlist.add(pointsOGList[index])
             }
         }
         if (pointsList.size != tmpPoints.size) {
@@ -124,13 +126,14 @@ class ORBTracker {
             status = MatOfByte(*statusList.toByteArray())
 //            status = MatOfByte(*tmpStatus.toByteArray())
             points = MatOfPoint2f(*tmpPoints.toTypedArray())
-            pointsOld = MatOfPoint2f(*tmpPointsOld.toTypedArray())
-            pointPair = Pair(pointsOld, points)
+            prevPoints = MatOfPoint2f(*tmpPointsOld.toTypedArray())
+            pointsOG = MatOfPoint2f(*tmpOGlist.toTypedArray())
+            pointPair = Pair(pointsOG, points)
 //            keyPoints = MatOfKeyPoint(*Array<KeyPoint>(numOfFeatures) {
 //                KeyPoint(tmpPoints[it].x.toFloat(), tmpPoints[it].y.toFloat(), 1F)
 //            })
         }
-        points.copyTo(pointsOld)
+        points.copyTo(prevPoints)
     }
 
 }

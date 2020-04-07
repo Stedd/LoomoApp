@@ -37,9 +37,6 @@ class MainActivity :
     private val TAG = "MainActivity"
 
     //Declare loomo classes
-    lateinit var mLoomoBase: LoomoBase
-    lateinit var mLoomoRealSense: LoomoRealSense
-    lateinit var mLoomoSensor: LoomoSensor
     lateinit var mLoomoControl: LoomoControl
 
     //TODO: Fix LoomoRealSense or OpenCVMain so that ROS publisher gets these vals.
@@ -140,10 +137,7 @@ class MainActivity :
             )
 
         //Initialize classes
-        mLoomoBase = LoomoBase()
-        mLoomoRealSense = LoomoRealSense(mRealSensePublisher)
-        mLoomoSensor = LoomoSensor()
-        mLoomoControl = LoomoControl(mLoomoBase, mLoomoSensor)
+        mLoomoControl = LoomoControl(LoomoBase, LoomoSensor)
 
         //Start OpenCV Service
         mOpenCVMain = OpenCVMain()
@@ -157,12 +151,13 @@ class MainActivity :
             TFPublisher(
                 mDepthStamps,
                 mDepthRosStamps,
-                mLoomoBase,
-                mLoomoSensor,
-                mLoomoRealSense.mVision,
+                LoomoBase,
+                LoomoSensor,
+//                mLoomoRealSense.mVision,
+                LoomoRealSense.mVision,
                 mRosPublisherThread
             )
-        mSensorPublisher = SensorPublisher(mLoomoSensor, mRosPublisherThread)
+        mSensorPublisher = SensorPublisher(LoomoSensor, mRosPublisherThread)
         mRosBridgeConsumers = listOf(mRealSensePublisher, mTFPublisher, mSensorPublisher)
 
         mRosMainPublisher = RosMainPublisher(
@@ -238,16 +233,18 @@ class MainActivity :
     override fun onResume() {
         mOpenCVMain.resume()
 
-        mLoomoRealSense.bind(this)
-        mLoomoRealSense.startCameras { streamType, frame ->
+//        mLoomoRealSense.bind(this)
+        LoomoRealSense.bind(this, mRealSensePublisher)
+//        mLoomoRealSense.startCameras { streamType, frame ->
+        LoomoRealSense.startCameras { streamType, frame ->
             mOpenCVMain.onNewFrame(streamType, frame)
-            runOnUiThread { updateImgViews() }
+            updateImgViews()
         }
 
 
-        mLoomoSensor.bind(this)
+        LoomoSensor.bind(this)
 
-        mLoomoBase.bind(this)
+        LoomoBase.bind(this)
 
         UIThreadHandler.postDelayed({
             mRealSensePublisher.node_started(mBridgeNode)
@@ -275,13 +272,14 @@ class MainActivity :
 
     private fun updateImgViews() {
         mOpenCVMain.getNewestFrame(StreamType.FISH_EYE) {
-            camViewFishEye.setImageBitmap(it)
+            runOnUiThread {camViewFishEye.setImageBitmap(it)}
         }
         mOpenCVMain.getNewestFrame(StreamType.COLOR) {
-            camViewColor.setImageBitmap(it)
+            runOnUiThread {camViewColor.setImageBitmap(it)}
+//            mInferenceMain.newFrame(it)
         }
         mOpenCVMain.getNewestFrame(StreamType.DEPTH) {
-            camViewDepth.setImageBitmap(it)
+            runOnUiThread {camViewDepth.setImageBitmap(it)}
         }
     }
 }

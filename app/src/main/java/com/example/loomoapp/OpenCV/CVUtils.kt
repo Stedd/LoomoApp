@@ -2,9 +2,7 @@ package com.example.loomoapp.OpenCV
 
 import android.graphics.Bitmap
 import android.util.Log
-import org.opencv.android.Utils.bitmapToMat
 import org.opencv.android.Utils.matToBitmap
-import org.opencv.core.Core.*
 import org.opencv.core.CvException
 import org.opencv.core.CvType.*
 import org.opencv.core.Mat
@@ -27,38 +25,37 @@ private const val TAG = "CVUtils"
 //    return mat
 //}
 fun ByteBuffer.toMat(width: Int, height: Int, cvType: Int): Mat {
-    //TODO: clean up
     //TODO: sanity-check the Mat()-construction (e.g. with try/catch)
-//    val mat = Mat()
-    val mat = Mat(height, width, cvType, this)
-//    when (cvType) {
-//        CV_8UC4 -> {
-//            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-//            bitmap.copyPixelsFromBuffer(this)
-//            bitmapToMat(bitmap, mat)
-//        }
-//        CV_8UC1 -> {
-//            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ALPHA_8)
-//            bitmap.copyPixelsFromBuffer(this)
-//            val bitmap2 = bitmap.copy(Bitmap.Config.ARGB_8888, false)
-//            val tmp = Mat()
-//            bitmapToMat(bitmap2, tmp)
-//            val bgra = MutableList<Mat>(4) {mat}
-//            split(tmp, bgra)
-//            return bgra[3].clone()
-//        }
-////        CV_16UC1 -> {
-////        }
-//        CV_8UC2 -> {
-//            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
-//            bitmap.copyPixelsFromBuffer(this)
-//            val tmp = Mat(height, width, CV_8UC2)
-//            bitmapToMat(bitmap, tmp)
-//            return tmp
-//        }
-//    }
+    return Mat(height, width, cvType, this)
+}
+
+fun Array<Double>.toMat(rows: Int = 1, cols: Int = this.size): Mat {
+    val mat = Mat(rows, cols, CV_64FC1)
+    if (this.size != rows*cols) {
+        return mat
+    }
+    for (row in 0 until rows) {
+        for (col in 0 until cols) {
+            val arrVal = when{
+                row*cols + col > this.size -> {
+                    0.0
+                }
+                else -> {
+                    this[row*cols + col]
+                }
+            }
+            mat.put(row, col, arrVal)
+        }
+    }
     return mat
 }
+
+//fun <T> Array<T>.toMat(rows: Int = 1, cols: Int = this.size): Mat {
+//    when(this[0]) {
+//        is Int -> {val cvType = CV_32SC1}
+//        else -> {val cvType = CV_8UC1}
+//    }
+//}
 
 fun Mat.toBitmap(): Bitmap {
     if ((this.cols() == 0) or (this.rows() == 0)) {

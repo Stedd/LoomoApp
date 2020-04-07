@@ -14,18 +14,18 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        externalNativeBuild {
-            cmake {
-                cppFlags "-frtti -fexceptions -v"
-                abiFilters 'armeabi-v7a' , 'x86', 'arm64-v8a' , 'x86_64'
-                arguments "-DOpenCV_DIR=" + opencvsdk + "/sdk/native"
-            }
-        }
+//        externalNativeBuild {
+//            cmake {
+//                cppFlags "-frtti -fexceptions -v"
+//                abiFilters 'armeabi-v7a' , 'x86', 'arm64-v8a' , 'x86_64'
+//                arguments "-DOpenCV_DIR=" + opencvsdk + "/sdk/native"
+//            }
+//        }
     }
     buildTypes {
-        debug {
-            jniDebuggable = true
-        }
+//        debug {
+//            jniDebuggable = true
+//        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -37,15 +37,15 @@ android {
             version "3.10.2"
         }
     }
-//
-//    splits {
-//        abi {
-//            enable true
-//            universalApk false
-//            reset()
-//            include 'armeabi-v7a' //, 'x86', 'arm64-v8a' , 'x86_64'
-//        }
-//    }
+
+    splits {
+        abi {
+            enable true
+            universalApk false
+            reset()
+            include 'armeabi-v7a' , 'x86', 'arm64-v8a' , 'x86_64'
+        }
+    }
 }
 
 repositories {
