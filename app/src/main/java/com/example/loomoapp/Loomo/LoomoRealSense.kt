@@ -14,36 +14,35 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 
-class LoomoRealSense(private val publisher_: RealsensePublisher) {
+object LoomoRealSense {
 
-    companion object {
-        const val TAG = "LoomoRealSense"
+    const val TAG = "LoomoRealSense"
 
-        const val COLOR_WIDTH = 640
-        const val COLOR_HEIGHT = 480
+    const val COLOR_WIDTH = 640
+    const val COLOR_HEIGHT = 480
 
-        const val FISHEYE_WIDTH = 640
-        const val FISHEYE_HEIGHT = 480
+    const val FISHEYE_WIDTH = 640
+    const val FISHEYE_HEIGHT = 480
 
-        const val DEPTH_WIDTH = 320
-        const val DEPTH_HEIGHT = 240
+    const val DEPTH_WIDTH = 320
+    const val DEPTH_HEIGHT = 240
 
-        val streamTypeMap = mapOf(
-            1 to "Color",
-            2 to "Depth",
-            4 to "IR",
-            8 to "Left",
-            16 to "Right",
-            32 to "Ext Depth L",
-            64 to "Ext Depth R",
-            256 to "Fish Eye"
-        )
-    }
+    val streamTypeMap = mapOf(
+        1 to "Color",
+        2 to "Depth",
+        4 to "IR",
+        8 to "Left",
+        16 to "Right",
+        32 to "Ext Depth L",
+        64 to "Ext Depth R",
+        256 to "Fish Eye"
+    )
 
     var mVision: Vision = Vision.getInstance()
     private var waitingForServiceToBind = false
 
-    fun bind(context: Context) {
+    //    fun bind(context: Context) {
+    fun bind(context: Context, publisher_: RealsensePublisher) {
         if (!mVision.isBind and !waitingForServiceToBind) {
             Log.d(TAG, "Started Vision.bindService")
             waitingForServiceToBind = true

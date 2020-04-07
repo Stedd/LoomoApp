@@ -20,29 +20,28 @@ import com.segway.robot.sdk.perception.sensor.RobotAllSensors
 import com.segway.robot.sdk.perception.sensor.Sensor
 
 
-open class LoomoSensor() {
+object LoomoSensor {
 
-    companion object {
-        private val TAG = "LoomoSensor"
+    private val TAG = "LoomoSensor"
 
-        const val ULTRASONIC_MIN_RANGE = 0.250f
-        const val ULTRASONIC_MAX_RANGE = 1.5f
-        const val ULTRASONIC_FOV = 40.0F
+    const val ULTRASONIC_MIN_RANGE = 0.250f
+    const val ULTRASONIC_MAX_RANGE = 1.5f
+    const val ULTRASONIC_FOV = 40.0F
 
-        const val INFRARED_MIN_RANGE = 40.0F
-        const val INFRARED_MAX_RANGE = 40.0F
-        const val INFRARED_FOV = 40.0F
+    const val INFRARED_MIN_RANGE = 40.0F
+    const val INFRARED_MAX_RANGE = 40.0F
+    const val INFRARED_FOV = 40.0F
 
-    }
 
 
     val mSensor: Sensor = Sensor.getInstance()
 
-    fun bind (context: Context){
+    fun bind(context: Context) {
         mSensor.bindService(context.applicationContext, object : BindStateListener {
             override fun onBind() {
                 Log.d(TAG, "Sensor onBind")
             }
+
             override fun onUnbind(reason: String) {
                 Log.d(TAG, "Sensor onUnbind")
             }
@@ -50,7 +49,7 @@ open class LoomoSensor() {
     }
 
 
-    open fun getSurroundings(): SensSurroundings {
+    fun getSurroundings(): SensSurroundings {
         val mInfraredData = mSensor.querySensorData(listOf(Sensor.INFRARED_BODY))[0]
         val mUltrasonicData = mSensor.querySensorData(listOf(Sensor.ULTRASONIC_BODY))[0]
         return SensSurroundings(

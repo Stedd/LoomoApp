@@ -7,7 +7,7 @@ import androidx.lifecycle.Observer
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.locomotion.sbv.Base
 
-class LoomoBase() {
+object LoomoBase {
     private val TAG = "LoomoBase"
 
     val mBase :Base = Base.getInstance()

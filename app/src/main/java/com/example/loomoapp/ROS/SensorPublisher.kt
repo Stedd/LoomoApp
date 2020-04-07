@@ -2,10 +2,10 @@ package com.example.loomoapp.ROS
 
 import android.util.Log
 import com.example.loomoapp.Loomo.LoomoSensor
-import com.example.loomoapp.Loomo.LoomoSensor.Companion.INFRARED_FOV
-import com.example.loomoapp.Loomo.LoomoSensor.Companion.ULTRASONIC_FOV
-import com.example.loomoapp.Loomo.LoomoSensor.Companion.ULTRASONIC_MAX_RANGE
-import com.example.loomoapp.Loomo.LoomoSensor.Companion.ULTRASONIC_MIN_RANGE
+import com.example.loomoapp.Loomo.LoomoSensor.INFRARED_FOV
+import com.example.loomoapp.Loomo.LoomoSensor.ULTRASONIC_FOV
+import com.example.loomoapp.Loomo.LoomoSensor.ULTRASONIC_MAX_RANGE
+import com.example.loomoapp.Loomo.LoomoSensor.ULTRASONIC_MIN_RANGE
 import com.example.loomoapp.utils.LoopedThread
 import com.segway.robot.sdk.perception.sensor.Sensor
 import org.ros.message.Duration
