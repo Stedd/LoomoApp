@@ -1,6 +1,7 @@
 package com.example.loomoapp
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.*
 import android.util.Log
 import android.util.Pair
@@ -8,6 +9,9 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.lifecycle.*
+import com.example.loomoapp.Inference.Classifier
+import com.example.loomoapp.Inference.InferenceMain
+import com.example.loomoapp.Inference.TensorFlowYoloDetector
 import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.OpenCV.OpenCVMain
 import com.example.loomoapp.ROS.*
@@ -21,6 +25,7 @@ import org.ros.message.Time
 import org.ros.node.NodeConfiguration
 import org.ros.node.NodeMainExecutor
 import org.ros.time.NtpTimeProvider
+import org.tensorflow.Tensor
 import java.net.URI
 import java.nio.ByteBuffer
 import java.util.*
@@ -49,7 +54,15 @@ class MainActivity :
     private val fishEyeFrameInfo = MutableLiveData<FrameInfo>()
     private val colorFrameInfo = MutableLiveData<FrameInfo>()
     private val depthFrameInfo = MutableLiveData<FrameInfo>()
+    private val inferenceImage = MutableLiveData<Bitmap>()
 
+
+    //Inference Variables
+    private lateinit var mInferenceThread: LoopedThread
+    private lateinit var mInferenceMain : InferenceMain
+    private lateinit var intentInference: Intent
+
+      
 
     //OpenCV Variables
     private lateinit var mOpenCVMain: OpenCVMain
@@ -67,7 +80,7 @@ class MainActivity :
     //Rosbridge
     private lateinit var mBridgeNode: RosBridgeNode
 
-    //Publishers
+    //ROS Publishers
     private lateinit var mRosPublisherThread: LoopedThread
     private lateinit var mRealSensePublisher: RealsensePublisher
     private lateinit var mTFPublisher: TFPublisher
@@ -92,12 +105,7 @@ class MainActivity :
             InetAddressFactory.newNonLoopback().hostAddress,
             masterUri
         )
-        // Note: NTPd on Linux will, by default, not allow NTP queries from the local networks.
-        // Add a rule like this to /etc/ntp.conf:
-        //
-        // restrict 192.168.86.0 mask 255.255.255.0 nomodify notrap nopeer
-        //
-        // Where the IP address is based on your subnet
+
         val ntpTimeProvider = NtpTimeProvider(
             InetAddressFactory.newFromHostString(masterUri.host),
             nodeMainExecutor.scheduledExecutorService
@@ -124,10 +132,9 @@ class MainActivity :
         textView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
 
         mRosPublisherThread =
-            LoopedThread(
-                "ROS_Pub_Thread",
-                Process.THREAD_PRIORITY_AUDIO
-            )
+
+        LoopedThread("ROS_Pub_Thread", Process.THREAD_PRIORITY_DEFAULT)
+
         mRosPublisherThread.start()
         mRealSensePublisher =
             RealsensePublisher(
@@ -175,14 +182,31 @@ class MainActivity :
         // Start an instance of the RosBridgeNode
         mBridgeNode = RosBridgeNode()
 
-        //Start Ros Activity
-//        mROSMain.initMain()
+
+
+        //Start Inference Service
+        mInferenceThread    = LoopedThread("Inference_Thread", Process.THREAD_PRIORITY_DEFAULT)
+        mInferenceThread    .start()
+        mInferenceMain      = InferenceMain()
+        intentInference     = Intent(this, mInferenceMain::class.java)
+        startService(intentInference)
+        mInferenceMain.setHandlerThread(mInferenceThread)
+        mInferenceMain.setMainUIHandler(UIThreadHandler)
+        mInferenceMain.setInferenceBitmap(inferenceImage)
+        mInferenceMain.init(this)
+
+        inferenceImage.observeForever {
+            inferenceView.setImageBitmap(it)
+        }
+
 
         mLoomoControl.mControllerThread.start()
+
 
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.VISIBLE
         camViewDepth.visibility = ImageView.GONE
+        inferenceView.visibility = ImageView.GONE
 
         // Onclicklisteners
         var camViewState = 0
@@ -194,17 +218,26 @@ class MainActivity :
                     camViewColor.visibility = ImageView.GONE
                     camViewFishEye.visibility = ImageView.GONE
                     camViewDepth.visibility = ImageView.VISIBLE
+                    inferenceView.visibility = ImageView.GONE
                 }
                 2 -> {
                     camViewColor.visibility = ImageView.VISIBLE
                     camViewFishEye.visibility = ImageView.GONE
                     camViewDepth.visibility = ImageView.GONE
+                    inferenceView.visibility = ImageView.GONE
+                }
+                3 -> {
+                    camViewColor.visibility = ImageView.GONE
+                    camViewFishEye.visibility = ImageView.VISIBLE
+                    camViewDepth.visibility = ImageView.GONE
+                    inferenceView.visibility = ImageView.GONE
                 }
                 else -> {
                     camViewState = 0
                     camViewColor.visibility = ImageView.GONE
-                    camViewFishEye.visibility = ImageView.VISIBLE
+                    camViewFishEye.visibility = ImageView.GONE
                     camViewDepth.visibility = ImageView.GONE
+                    inferenceView.visibility = ImageView.VISIBLE
                 }
             }
         }
@@ -238,6 +271,7 @@ class MainActivity :
 //        mLoomoRealSense.startCameras { streamType, frame ->
         LoomoRealSense.startCameras { streamType, frame ->
             mOpenCVMain.onNewFrame(streamType, frame)
+
             updateImgViews()
         }
 
@@ -270,16 +304,17 @@ class MainActivity :
         mLoomoControl.stopController(this, "App paused, Controller thread stopping")
     }
 
+
     private fun updateImgViews() {
         mOpenCVMain.getNewestFrame(StreamType.FISH_EYE) {
-            runOnUiThread {camViewFishEye.setImageBitmap(it)}
+            runOnUiThread { camViewFishEye.setImageBitmap(it)}
         }
         mOpenCVMain.getNewestFrame(StreamType.COLOR) {
-            runOnUiThread {camViewColor.setImageBitmap(it)}
-//            mInferenceMain.newFrame(it)
+            runOnUiThread { camViewColor.setImageBitmap(it)}
+            mInferenceMain.newFrame(it)
         }
         mOpenCVMain.getNewestFrame(StreamType.DEPTH) {
-            runOnUiThread {camViewDepth.setImageBitmap(it)}
+            runOnUiThread { camViewDepth.setImageBitmap(it)}
         }
     }
 }
