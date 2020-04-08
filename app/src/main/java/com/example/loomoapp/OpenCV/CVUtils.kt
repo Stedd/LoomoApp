@@ -31,9 +31,9 @@ fun ByteBuffer.toMat(width: Int, height: Int, cvType: Int): Mat {
 
 fun Array<Double>.toMat(rows: Int = 1, cols: Int = this.size): Mat {
     val mat = Mat(rows, cols, CV_64FC1)
-    if (this.size != rows*cols) {
-        return mat
-    }
+//    if (this.size != rows*cols) {
+//        return mat
+//    }
     for (row in 0 until rows) {
         for (col in 0 until cols) {
             val arrVal = when{
@@ -47,6 +47,14 @@ fun Array<Double>.toMat(rows: Int = 1, cols: Int = this.size): Mat {
             mat.put(row, col, arrVal)
         }
     }
+    return mat
+}
+fun FloatArray.toMat(rows: Int = 1, cols: Int = this.size): Mat {
+    val mat = Mat(rows, cols, CV_32FC1)
+//    if (this.size != rows*cols) {
+//        return mat
+//    }
+    mat.put(0,0,this)
     return mat
 }
 

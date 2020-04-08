@@ -1,6 +1,5 @@
 package com.example.loomoapp.OpenCV
 
-import android.app.Activity
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -22,6 +21,7 @@ import com.segway.robot.sdk.vision.stream.StreamType
 import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
+import org.opencv.core.Core.gemm
 import org.opencv.core.CvType.*
 import org.opencv.core.Mat
 import org.opencv.core.MatOfKeyPoint
@@ -30,6 +30,7 @@ import org.opencv.core.Scalar
 import org.opencv.imgproc.Imgproc
 import org.opencv.imgproc.Imgproc.COLOR_GRAY2RGBA
 import org.opencv.imgproc.Imgproc.cvtColor
+
 
 class OpenCVMain : Service() {
     private val TAG = "OpenCVMain"
@@ -55,7 +56,7 @@ class OpenCVMain : Service() {
     private var newColorFrames = 0
     private var newDepthFrames = 0
 
-    private val fishEyeTracker = ORBTracker()
+    val fishEyeTracker = ORBTracker()
     var toggle = true
 
 
@@ -84,9 +85,31 @@ class OpenCVMain : Service() {
             Log.d(TAG, "OpenCV library found inside package. Using it!")
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
+
+//        val m = Mat(5, 10, CV_8UC1, Scalar(0.0))
+//        Log.d(TAG, "OpenCV Mat: $m")
+//        val mr1: Mat = m.row(1)
+//        mr1.setTo(Scalar(1.0))
+//        val mc5: Mat = m.col(5)
+//        mc5.setTo(Scalar(5.0))
+//        Log.d(
+//            TAG,
+//            """OpenCV Mat data:
+//                ${m.dump()}
+//                """.trimIndent()
+//        )
+//        val src1 = Mat(3, 3, CV_64FC1, Scalar(2.5))
+//        val src2 = Mat(3, 1, CV_64FC1, Scalar(2.0))
+//        val src3 = Mat(3, 3, CV_64FC1, Scalar(1.0))
+//        val dst = Mat()
+//        gemm(src1, src2, 1.0, src3, 1.0, dst)
+//        Log.d(TAG, """gemm result:
+//            |${dst.dump()}
+//        """.trimMargin())
+
     }
 
-    var toggleOldState = false
+    var toggleOldState = toggle
     fun onNewFrame(streamType: Int, frame: Frame) {
 //        val tic = System.currentTimeMillis()
         when (streamType) {
@@ -128,15 +151,6 @@ class OpenCVMain : Service() {
                 throw IllegalStreamTypeException("Stream type not recognized in onNewFrame")
             }
         }
-        if (toggleOldState != toggle) {
-            toggleOldState = toggle
-            Log.d(
-                TAG,
-                "Fisheye Mat() type: ${typeToString(fishEyeFrameBuffer.peek()!!.frame.type())}"
-            )
-            Log.d(TAG, "Color Mat() type: ${typeToString(colorFrameBuffer.peek()!!.frame.type())}")
-            Log.d(TAG, "Depth Mat() type: ${typeToString(depthFrameBuffer.peek()!!.frame.type())}")
-        }
 //        val toc = System.currentTimeMillis()
 //        Log.d(TAG, "${streamTypeMap[streamType]} frame receive time: ${toc - tic}ms")
     }
@@ -146,10 +160,10 @@ class OpenCVMain : Service() {
         val frame: Mat? = when (streamType) {
             StreamType.FISH_EYE -> {
                 if (toggle) drawStuff(fishEyeFrame)
-                else fishEyeFrameBuffer.peek()?.frame
+                else fishEyeFrameBuffer.peek().frame
             }
-            StreamType.COLOR -> colorFrameBuffer.peek()?.frame
-            StreamType.DEPTH -> depthFrameBuffer.peek()?.frame
+            StreamType.COLOR -> colorFrameBuffer.peek().frame
+            StreamType.DEPTH -> depthFrameBuffer.peek().frame
             else -> throw IllegalStreamTypeException("Non recognized stream type in getNewestFrame()")
         }
         if (frame == null) {
@@ -168,11 +182,35 @@ class OpenCVMain : Service() {
         if (newFishEyeFrames > 0) {
 //            Log.d(TAG, "Skipped frames: ${newFishEyeFrames-1}")
             newFishEyeFrames = 0
-            fishEyeFrame = fishEyeFrameBuffer.peek()!!.frame
+            fishEyeFrame = fishEyeFrameBuffer.peek().frame
+            VisualOdometry.onNewFrame(fishEyeFrame)
+            if (toggleOldState != toggle) {
+                toggleOldState = toggle
+                Log.d(
+                    TAG,
+                    "Fisheye Mat() type: ${typeToString(fishEyeFrameBuffer.peek().frame.type())}"
+                )
+                Log.d(
+                    TAG,
+                    "Color Mat() type: ${typeToString(colorFrameBuffer.peek().frame.type())}"
+                )
+                Log.d(
+                    TAG,
+                    "Depth Mat() type: ${typeToString(depthFrameBuffer.peek().frame.type())}"
+                )
+            }
+            VisualOdometry.drawTrajectory().copyTo(map)
             pointPair = fishEyeTracker.onNewFrame(fishEyeFrame)
         }
 //            Thread.sleep(2000) // Just for debugging purposes
     }
+
+    val map = Mat.zeros(640, 480, CV_8UC3)
+//    private val bar = NonBlockingInfLoop {
+//        VisualOdometry.onNewFrame(fishEyeFrameBuffer.peek()!!.frame)
+//        VisualOdometry.drawTrajectory().copyTo(map)
+//    }
+
 
     private fun drawStuff(frame: Mat): Mat {
         val pointOld = pointPair.first.toArray()
@@ -202,7 +240,17 @@ class OpenCVMain : Service() {
                     Scalar(255.0, 0.0, 255.0, 127.0)
                 )
             }
+        } else {
+//            if (point.size != fishEyeTracker.numOfFeatures) {
+//                Log.d(TAG, "point/n.o. feats. mismatch: ${point.size}/${fishEyeTracker.numOfFeatures}")
+//            }
+//            if (pointOld.size != point.size) {
+//                Log.d(TAG, "Point-sets not equal size: pointOld(${pointOld.size}), point(${point.size})")
+//            }
         }
+//        val undistorted = Mat()
+//        undistort(img, undistorted, fisheyeCameraMatrix, fisheyeDistortionCoefficients)
+//        return undistorted
         return img
     }
 

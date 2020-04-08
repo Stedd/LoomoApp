@@ -10,8 +10,11 @@ import android.widget.TextView
 import androidx.lifecycle.*
 import com.example.loomoapp.Loomo.*
 import com.example.loomoapp.OpenCV.OpenCVMain
+import com.example.loomoapp.OpenCV.VisualOdometry
+import com.example.loomoapp.OpenCV.toBitmap
 import com.example.loomoapp.ROS.*
 import com.example.loomoapp.utils.LoopedThread
+import com.example.loomoapp.utils.NonBlockingInfLoop
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
@@ -21,6 +24,7 @@ import org.ros.message.Time
 import org.ros.node.NodeConfiguration
 import org.ros.node.NodeMainExecutor
 import org.ros.time.NtpTimeProvider
+import java.lang.NullPointerException
 import java.net.URI
 import java.nio.ByteBuffer
 import java.util.*
@@ -41,8 +45,7 @@ class MainActivity :
 
     //TODO: Fix LoomoRealSense or OpenCVMain so that ROS publisher gets these vals.
     // These vals are used by ROS publisher, but nothing is assigned to them.
-    // Can probably be fixed by adding a function in the lambda expression in:
-    // com/example/loomoapp/MainActivity.kt:247
+    // Can probably be fixed by adding a function in the lambda expression in
     private val fishEyeByteBuffer = MutableLiveData<ByteBuffer>()
     private val colorByteBuffer = MutableLiveData<ByteBuffer>()
     private val depthByteBuffer = MutableLiveData<ByteBuffer>()
@@ -53,11 +56,10 @@ class MainActivity :
 
     //OpenCV Variables
     private lateinit var mOpenCVMain: OpenCVMain
-
     private lateinit var intentOpenCV: Intent
 
     //Import native functions
-    private external fun stringFromJNI(): String
+//    private external fun stringFromJNI(): String
 
     // Keep track of timestamps when images published, so corresponding TFs can be published too
     // Stores a co-ordinated platform time and ROS time to help manage the offset
@@ -83,7 +85,7 @@ class MainActivity :
         Log.d(TAG, "Init Main activity")
 
         //Load native
-        System.loadLibrary("native-lib")
+//        System.loadLibrary("native-lib")
     }
 
     override fun init(nodeMainExecutor: NodeMainExecutor) {
@@ -121,7 +123,7 @@ class MainActivity :
         setContentView(R.layout.activity_main)
         Log.i(TAG, "Activity created")
         // Hacky trick to make the app fullscreen:
-        textView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
+        textView1.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
 
         mRosPublisherThread =
             LoopedThread(
@@ -183,6 +185,7 @@ class MainActivity :
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.VISIBLE
         camViewDepth.visibility = ImageView.GONE
+        trajView.visibility = ImageView.GONE
 
         // Onclicklisteners
         var camViewState = 0
@@ -194,17 +197,26 @@ class MainActivity :
                     camViewColor.visibility = ImageView.GONE
                     camViewFishEye.visibility = ImageView.GONE
                     camViewDepth.visibility = ImageView.VISIBLE
+                    trajView.visibility = ImageView.GONE
                 }
                 2 -> {
                     camViewColor.visibility = ImageView.VISIBLE
                     camViewFishEye.visibility = ImageView.GONE
                     camViewDepth.visibility = ImageView.GONE
+                    trajView.visibility = ImageView.GONE
+                }
+                3 -> {
+                    camViewColor.visibility = ImageView.GONE
+                    camViewFishEye.visibility = ImageView.GONE
+                    camViewDepth.visibility = ImageView.GONE
+                    trajView.visibility = ImageView.VISIBLE
                 }
                 else -> {
                     camViewState = 0
                     camViewColor.visibility = ImageView.GONE
                     camViewFishEye.visibility = ImageView.VISIBLE
                     camViewDepth.visibility = ImageView.GONE
+                    trajView.visibility = ImageView.GONE
                 }
             }
         }
@@ -225,7 +237,7 @@ class MainActivity :
         }
 
         //Helloworld from c++
-        sample_text.text = stringFromJNI()
+//        sample_text.text = stringFromJNI()
     }
 
 
@@ -280,6 +292,16 @@ class MainActivity :
         }
         mOpenCVMain.getNewestFrame(StreamType.DEPTH) {
             runOnUiThread {camViewDepth.setImageBitmap(it)}
+        }
+        runOnUiThread { trajView.setImageBitmap(mOpenCVMain.map.toBitmap()) }
+
+        runOnUiThread {sample_text.text = "Features: ${mOpenCVMain.fishEyeTracker.numOfFeatures}, Expected n.o. feats: ${mOpenCVMain.fishEyeTracker.expectedNumOfFeatures}"}
+        runOnUiThread {
+            try {
+                textView1.text = "Current position: ${VisualOdometry.posHistory.peek().dump()}"
+            } catch (e: NullPointerException) {
+                textView1.text = "null"
+            }
         }
     }
 }

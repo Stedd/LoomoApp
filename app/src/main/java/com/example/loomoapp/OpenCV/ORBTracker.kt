@@ -1,6 +1,7 @@
 package com.example.loomoapp.OpenCV
 
 import android.util.Log
+import org.opencv.calib3d.Calib3d.*
 import org.opencv.core.*
 import org.opencv.features2d.ORB
 import org.opencv.video.Video
@@ -15,27 +16,38 @@ class ORBTracker {
     private var prevPoints = MatOfPoint2f()
     private var pointsOG = MatOfPoint2f()
     private var status = MatOfByte()
-    private var totalReceivedFrames = 0
+    var totalReceivedFrames = 0
+        private set
 
-    private var expectedNumOfFeatures = 0
-    private var minNumOfFeatures = 20
-    private val MIN_NUM_OF_FEATURES = 20
-    private var numOfFeatures = 0
+    private val MIN_NUM_OF_FEATURES = 50
+    var expectedNumOfFeatures = 0
+        private set
+    var minNumOfFeatures = 50
+        private set
+    var numOfFeatures = 0
+        private set
 
     private val prevImg = Mat()
 
     private var pointPair = Pair<MatOfPoint2f, MatOfPoint2f>(pointsOG, points)
 
-//    fun onNewFrame(img: Mat): MatOfKeyPoint {
+
+    private var essentialMatrix = Mat()
+    private var mask = Mat()
+    private var relRotMat = Mat()
+    private var relTranslMat = Mat()
+
+    //    fun onNewFrame(img: Mat): MatOfKeyPoint {
     fun onNewFrame(img: Mat): Pair<MatOfPoint2f, MatOfPoint2f> {
         totalReceivedFrames++
 
-        if(numOfFeatures < minNumOfFeatures) {
+        if (numOfFeatures < minNumOfFeatures) {
             detect(img)
         }
 
         trackFeatures(img)
         img.copyTo(prevImg)
+
 
 //        return keyPoints
         return pointPair
@@ -53,7 +65,9 @@ class ORBTracker {
         points.copyTo(pointsOG)
         points.copyTo(prevPoints)
         numOfFeatures = kpTmp.size
-        expectedNumOfFeatures = ((1 - alpha) * expectedNumOfFeatures + alpha * numOfFeatures).toInt()
+        expectedNumOfFeatures =
+            if (numOfFeatures > expectedNumOfFeatures) numOfFeatures
+            else ((1 - alpha) * expectedNumOfFeatures + alpha * numOfFeatures).toInt()
         minNumOfFeatures = if ((0.5 * expectedNumOfFeatures).toInt() > MIN_NUM_OF_FEATURES) {
             (0.5 * expectedNumOfFeatures).toInt()
         } else {
@@ -69,7 +83,7 @@ class ORBTracker {
         if ((prevImg.empty()) or (prevPoints.size().area() <= 0)) {
             Log.d(
                 TAG,
-                "prevImg empty: ${prevImg.empty()}, or pointsOld size: ${prevPoints.size().area()}"
+                "prevImg empty: ${prevImg.empty()}, or prevPoints size: ${prevPoints.size().area()}"
             )
             img.copyTo(prevImg)
             points.copyTo(prevPoints)
@@ -99,8 +113,10 @@ class ORBTracker {
 
         // Remove points where tracking failed, or where they have gone outside the frame
         val statusList = status.toList()
-        val pointsOldList = prevPoints.toList()
+        val prevPointsList = prevPoints.toList()
         val pointsList = points.toList()
+
+
 //        val tmpStatus = mutableListOf<Byte>()
         val tmpPointsOld = mutableListOf<Point>()
         val tmpPoints = mutableListOf<Point>()
@@ -108,7 +124,7 @@ class ORBTracker {
         val pointsOGList = pointsOG.toList()
         val tmpOGlist = mutableListOf<Point>()
         for ((index, stat) in statusList.withIndex()) {
-            val pt = pointsOldList[index - indexCorrection]
+            val pt = prevPointsList[index - indexCorrection]
             if ((stat.toInt() == 0) or (pt.x < 0) or (pt.y < 0)) {
                 if ((pt.x < 0) or (pt.y < 0)) {
                     statusList[index] = 0.toByte()
@@ -116,23 +132,18 @@ class ORBTracker {
                 indexCorrection++
             } else {
 //                tmpStatus.add(stat)
-                tmpPointsOld.add(pointsOldList[index])
+                tmpPointsOld.add(prevPointsList[index])
                 tmpPoints.add(pointsList[index])
                 tmpOGlist.add(pointsOGList[index])
             }
         }
-        if (pointsList.size != tmpPoints.size) {
-            numOfFeatures = tmpPoints.size
-            status = MatOfByte(*statusList.toByteArray())
-//            status = MatOfByte(*tmpStatus.toByteArray())
-            points = MatOfPoint2f(*tmpPoints.toTypedArray())
-            prevPoints = MatOfPoint2f(*tmpPointsOld.toTypedArray())
-            pointsOG = MatOfPoint2f(*tmpOGlist.toTypedArray())
-            pointPair = Pair(pointsOG, points)
-//            keyPoints = MatOfKeyPoint(*Array<KeyPoint>(numOfFeatures) {
-//                KeyPoint(tmpPoints[it].x.toFloat(), tmpPoints[it].y.toFloat(), 1F)
-//            })
-        }
+        numOfFeatures = tmpPoints.size
+        status = MatOfByte(*statusList.toByteArray())
+        points = MatOfPoint2f(*tmpPoints.toTypedArray())
+        prevPoints = MatOfPoint2f(*tmpPointsOld.toTypedArray())
+        pointsOG = MatOfPoint2f(*tmpOGlist.toTypedArray())
+        pointPair = Pair(pointsOG, points)
+
         points.copyTo(prevPoints)
     }
 
