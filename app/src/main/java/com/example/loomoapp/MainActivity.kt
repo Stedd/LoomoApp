@@ -45,7 +45,8 @@ class MainActivity :
 
     //TODO: Fix LoomoRealSense or OpenCVMain so that ROS publisher gets these vals.
     // These vals are used by ROS publisher, but nothing is assigned to them.
-    // Can probably be fixed by adding a function in the lambda expression in
+    // Can probably be fixed by adding a function in the lambda expression in:
+    // com/example/loomoapp/MainActivity.kt:247
     private val fishEyeByteBuffer = MutableLiveData<ByteBuffer>()
     private val colorByteBuffer = MutableLiveData<ByteBuffer>()
     private val depthByteBuffer = MutableLiveData<ByteBuffer>()
@@ -69,7 +70,7 @@ class MainActivity :
     //Rosbridge
     private lateinit var mBridgeNode: RosBridgeNode
 
-    //Publishers
+    //ROS Publishers
     private lateinit var mRosPublisherThread: LoopedThread
     private lateinit var mRealSensePublisher: RealsensePublisher
     private lateinit var mTFPublisher: TFPublisher
@@ -94,12 +95,7 @@ class MainActivity :
             InetAddressFactory.newNonLoopback().hostAddress,
             masterUri
         )
-        // Note: NTPd on Linux will, by default, not allow NTP queries from the local networks.
-        // Add a rule like this to /etc/ntp.conf:
-        //
-        // restrict 192.168.86.0 mask 255.255.255.0 nomodify notrap nopeer
-        //
-        // Where the IP address is based on your subnet
+
         val ntpTimeProvider = NtpTimeProvider(
             InetAddressFactory.newFromHostString(masterUri.host),
             nodeMainExecutor.scheduledExecutorService
@@ -126,10 +122,9 @@ class MainActivity :
         textView1.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
 
         mRosPublisherThread =
-            LoopedThread(
-                "ROS_Pub_Thread",
-                Process.THREAD_PRIORITY_AUDIO
-            )
+
+        LoopedThread("ROS_Pub_Thread", Process.THREAD_PRIORITY_DEFAULT)
+
         mRosPublisherThread.start()
         mRealSensePublisher =
             RealsensePublisher(
