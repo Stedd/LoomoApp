@@ -181,6 +181,7 @@ class MainActivity :
         camViewFishEye.visibility = ImageView.VISIBLE
         camViewDepth.visibility = ImageView.GONE
         trajView.visibility = ImageView.GONE
+        inferenceView.visibility = ImageView.GONE
 
         // Onclicklisteners
         var camViewState = 0
