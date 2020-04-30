@@ -51,8 +51,8 @@ class OpenCVMain : Service() {
             Log.d("$TAG init", "OpenCV loaded")
         }
 
-        val tinyYoloCfg =  Environment.getExternalStorageDirectory() + "pathToFile"
-        val tinyYoloWight = Environment.getExternalStorageDirectory() + "pathToFile"
+        val tinyYoloCfg =  Environment.getExternalStorageDirectory().toString() + "pathToFile"
+        val tinyYoloWight = Environment.getExternalStorageDirectory().toString() + "pathToFile"
 
         inference.tinyYolo = Dnn.readNetFromDarknet(tinyYoloCfg, tinyYoloWight)
     }
