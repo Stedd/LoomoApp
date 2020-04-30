@@ -16,6 +16,7 @@ import java.util.*
 class MyInferenceKotlin {
 
     //constants
+    private val TAG = "MyInferenceKotlin"
 
 
     //variables
@@ -24,7 +25,7 @@ class MyInferenceKotlin {
 
 
     private val startYolo = true
-    private val tinyYolo: Net = Net()
+    var tinyYolo: Net = Net()
     private val result: List<Mat> = ArrayList(2)
     private val outBlobNames: MutableList<String> = ArrayList(2)
 
@@ -36,6 +37,9 @@ class MyInferenceKotlin {
 
 
 
+//    init {
+//
+//    }
 
 
 
@@ -123,11 +127,7 @@ class MyInferenceKotlin {
 //                    val box = boxesArray[idx]
 //                    val idGuy = clsIds[idx]
 //                    val conf = confs[idx]
-                    val cocoNames =
-                        listOf(
-                            "a person",
-                            "a toothbrush"
-                        )
+                    val cocoNames = listOf("a Loomo")
                     val intConf = (conf * 100).toInt()
                     Imgproc.putText(
                         frame,

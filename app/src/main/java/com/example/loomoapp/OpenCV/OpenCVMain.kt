@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Point
 import android.os.Binder
+import android.os.Environment
 import android.os.IBinder
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
@@ -30,6 +31,7 @@ import org.opencv.core.Mat
 import org.opencv.core.MatOfKeyPoint
 import org.opencv.core.MatOfPoint2f
 import org.opencv.core.Scalar
+import org.opencv.dnn.Dnn
 import org.opencv.imgproc.Imgproc
 import org.opencv.imgproc.Imgproc.COLOR_GRAY2RGBA
 import org.opencv.imgproc.Imgproc.cvtColor
@@ -39,6 +41,7 @@ class OpenCVMain : Service() {
     private val TAG = "OpenCVMain"
 
     private lateinit var mLoaderCallback: BaseLoaderCallback
+    val inference = MyInferenceKotlin()
 
     init {
         //Load OpenCV
@@ -47,6 +50,11 @@ class OpenCVMain : Service() {
         } else {
             Log.d("$TAG init", "OpenCV loaded")
         }
+
+        val tinyYoloCfg =  Environment.getExternalStorageDirectory() + "pathToFile"
+        val tinyYoloWight = Environment.getExternalStorageDirectory() + "pathToFile"
+
+        inference.tinyYolo = Dnn.readNetFromDarknet(tinyYoloCfg, tinyYoloWight)
     }
 
     // Using a custom data class instead of the Pair-type/template for readability
@@ -59,7 +67,6 @@ class OpenCVMain : Service() {
     private var newColorFrames = 0
     private var newDepthFrames = 0
 
-    val inference = MyInferenceKotlin()
 
 
     val fishEyeTracker = ORBTracker()
