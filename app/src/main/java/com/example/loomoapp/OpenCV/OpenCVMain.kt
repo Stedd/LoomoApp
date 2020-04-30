@@ -4,9 +4,11 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Point
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
+import androidx.lifecycle.MutableLiveData
 import com.example.loomoapp.Loomo.LoomoRealSense.COLOR_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.COLOR_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.DEPTH_HEIGHT
@@ -55,6 +57,8 @@ class OpenCVMain : Service() {
     private var newFishEyeFrames = 0
     private var newColorFrames = 0
     private var newDepthFrames = 0
+    private var boxes = 0
+    private var pointId = org.opencv.core.Point //sjekk datatype(construtor til en point)
 
     val fishEyeTracker = ORBTracker()
     var toggle = true
@@ -123,6 +127,7 @@ class OpenCVMain : Service() {
                     )
                 )
                 ++newFishEyeFrames
+                onCameraFrame(fishEyeFrameBuffer.peek().frame)
             }
             StreamType.COLOR -> {
                 colorFrameBuffer.enqueue(
@@ -253,6 +258,21 @@ class OpenCVMain : Service() {
 //        return undistorted
         return img
     }
+
+    fun yoloResults(result: Mat, outBlobNames: String) : (Mat, String) -> {
+
+    }
+
+        fun onCameraFrame(inputFrame: Mat) : Mat {
+            //var frame = inputFrame // få tilgang til fisheyeframe
+
+            var inferenceImage: Bitmap = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT,Bitmap.Config.ARGB_8888)
+            Log.d("Bitmap");
+            inferenceImage.
+
+            // alt det andre som stod i funksjonen
+        }
+
 
 }
 
