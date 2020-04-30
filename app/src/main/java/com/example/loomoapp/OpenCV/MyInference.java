@@ -41,7 +41,6 @@ public class MyInference {
 
 
 
-    @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
         Mat frame = inputFrame.rgba();

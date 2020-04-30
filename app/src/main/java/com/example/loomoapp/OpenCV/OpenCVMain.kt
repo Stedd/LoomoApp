@@ -9,6 +9,7 @@ import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
+import com.example.loomoapp.Inference.MyInferenceKotlin
 import com.example.loomoapp.Loomo.LoomoRealSense.COLOR_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.COLOR_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.DEPTH_HEIGHT
@@ -57,8 +58,9 @@ class OpenCVMain : Service() {
     private var newFishEyeFrames = 0
     private var newColorFrames = 0
     private var newDepthFrames = 0
-    private var boxes = 0
-    private var pointId = org.opencv.core.Point //sjekk datatype(construtor til en point)
+
+    val inference = MyInferenceKotlin()
+
 
     val fishEyeTracker = ORBTracker()
     var toggle = true
@@ -127,7 +129,6 @@ class OpenCVMain : Service() {
                     )
                 )
                 ++newFishEyeFrames
-                onCameraFrame(fishEyeFrameBuffer.peek().frame)
             }
             StreamType.COLOR -> {
                 colorFrameBuffer.enqueue(
@@ -184,30 +185,31 @@ class OpenCVMain : Service() {
     private var processedFishEyeFrame = Mat()
 
     private val foo = NonBlockingInfLoop {
-        if (newFishEyeFrames > 0) {
-//            Log.d(TAG, "Skipped frames: ${newFishEyeFrames-1}")
-            newFishEyeFrames = 0
-            fishEyeFrame = fishEyeFrameBuffer.peek().frame
-            VisualOdometry.onNewFrame(fishEyeFrame)
-            if (toggleOldState != toggle) {
-                toggleOldState = toggle
-                Log.d(
-                    TAG,
-                    "Fisheye Mat() type: ${typeToString(fishEyeFrameBuffer.peek().frame.type())}"
-                )
-                Log.d(
-                    TAG,
-                    "Color Mat() type: ${typeToString(colorFrameBuffer.peek().frame.type())}"
-                )
-                Log.d(
-                    TAG,
-                    "Depth Mat() type: ${typeToString(depthFrameBuffer.peek().frame.type())}"
-                )
-            }
-            VisualOdometry.drawTrajectory().copyTo(map)
-            pointPair = fishEyeTracker.onNewFrame(fishEyeFrame)
-        }
-//            Thread.sleep(2000) // Just for debugging purposes
+        inference.onFisheyeCameraFrame(fishEyeFrameBuffer.peek().frame)
+//        if (newFishEyeFrames > 0) {
+////            Log.d(TAG, "Skipped frames: ${newFishEyeFrames-1}")
+//            newFishEyeFrames = 0
+//            fishEyeFrame = fishEyeFrameBuffer.peek().frame
+//            VisualOdometry.onNewFrame(fishEyeFrame)
+//            if (toggleOldState != toggle) {
+//                toggleOldState = toggle
+//                Log.d(
+//                    TAG,
+//                    "Fisheye Mat() type: ${typeToString(fishEyeFrameBuffer.peek().frame.type())}"
+//                )
+//                Log.d(
+//                    TAG,
+//                    "Color Mat() type: ${typeToString(colorFrameBuffer.peek().frame.type())}"
+//                )
+//                Log.d(
+//                    TAG,
+//                    "Depth Mat() type: ${typeToString(depthFrameBuffer.peek().frame.type())}"
+//                )
+//            }
+//            VisualOdometry.drawTrajectory().copyTo(map)
+//            pointPair = fishEyeTracker.onNewFrame(fishEyeFrame)
+//        }
+////            Thread.sleep(2000) // Just for debugging purposes
     }
 
     val map = Mat.zeros(640, 480, CV_8UC3)
@@ -259,19 +261,19 @@ class OpenCVMain : Service() {
         return img
     }
 
-    fun yoloResults(result: Mat, outBlobNames: String) : (Mat, String) -> {
+//    fun yoloResults(result: Mat, outBlobNames: String) : (Mat, String) -> {
+//
+//    }
 
-    }
-
-        fun onCameraFrame(inputFrame: Mat) : Mat {
-            //var frame = inputFrame // få tilgang til fisheyeframe
-
-            var inferenceImage: Bitmap = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT,Bitmap.Config.ARGB_8888)
-            Log.d("Bitmap");
-            inferenceImage.
-
-            // alt det andre som stod i funksjonen
-        }
+//    fun onCameraFrame(inputFrame: Mat) : Mat {
+//        //var frame = inputFrame // få tilgang til fisheyeframe
+//
+//        var inferenceImage: Bitmap = Bitmap.createBitmap(FISHEYE_WIDTH, FISHEYE_HEIGHT,Bitmap.Config.ARGB_8888)
+//        Log.d( TAG,"Bitmap");
+//        inferenceImage.
+//
+//        // alt det andre som stod i funksjonen
+//    }
 
 
 }

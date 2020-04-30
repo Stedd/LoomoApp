@@ -41,7 +41,7 @@ class MainActivity :
     private val TAG = "MainActivity"
 
     //Declare loomo classes
-    lateinit var mLoomoControl: LoomoControl
+//    lateinit var mLoomoControl: LoomoControl
 
     //TODO: Fix LoomoRealSense or OpenCVMain so that ROS publisher gets these vals.
     // These vals are used by ROS publisher, but nothing is assigned to them.
@@ -68,15 +68,15 @@ class MainActivity :
     private val mDepthStamps: Queue<Long> = ConcurrentLinkedDeque()
 
     //Rosbridge
-    private lateinit var mBridgeNode: RosBridgeNode
-
-    //ROS Publishers
-    private lateinit var mRosPublisherThread: LoopedThread
-    private lateinit var mRealSensePublisher: RealsensePublisher
-    private lateinit var mTFPublisher: TFPublisher
-    private lateinit var mSensorPublisher: SensorPublisher
-    private lateinit var mRosMainPublisher: RosMainPublisher
-    private lateinit var mRosBridgeConsumers: List<RosBridge>
+//    private lateinit var mBridgeNode: RosBridgeNode
+//
+//    //ROS Publishers
+//    private lateinit var mRosPublisherThread: LoopedThread
+//    private lateinit var mRealSensePublisher: RealsensePublisher
+//    private lateinit var mTFPublisher: TFPublisher
+//    private lateinit var mSensorPublisher: SensorPublisher
+//    private lateinit var mRosMainPublisher: RosMainPublisher
+//    private lateinit var mRosBridgeConsumers: List<RosBridge>
 
     private val textView by lazy {
         findViewById<TextView>(R.id.textView)
@@ -110,7 +110,7 @@ class MainActivity :
         Log.d(TAG, "sys: " + Time.fromMillis(System.currentTimeMillis()))
         ntpTimeProvider.startPeriodicUpdates(1, TimeUnit.MINUTES)
         nodeConfiguration.timeProvider = ntpTimeProvider
-        nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
+//        nodeMainExecutor.execute(mBridgeNode, nodeConfiguration)
     }
 
 
@@ -121,20 +121,20 @@ class MainActivity :
         // Hacky trick to make the app fullscreen:
         textView1.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
 
-        mRosPublisherThread =
+//        mRosPublisherThread =
 
         LoopedThread("ROS_Pub_Thread", Process.THREAD_PRIORITY_DEFAULT)
 
-        mRosPublisherThread.start()
-        mRealSensePublisher =
-            RealsensePublisher(
-                mDepthStamps,
-                mDepthRosStamps,
-                mRosPublisherThread
-            )
+//        mRosPublisherThread.start()
+//        mRealSensePublisher =
+//            RealsensePublisher(
+//                mDepthStamps,
+//                mDepthRosStamps,
+//                mRosPublisherThread
+//            )
 
         //Initialize classes
-        mLoomoControl = LoomoControl(LoomoBase, LoomoSensor)
+//        mLoomoControl = LoomoControl(LoomoBase, LoomoSensor)
 
         //Start OpenCV Service
         mOpenCVMain = OpenCVMain()
@@ -144,38 +144,38 @@ class MainActivity :
 
 
         //Publishers
-        mTFPublisher =
-            TFPublisher(
-                mDepthStamps,
-                mDepthRosStamps,
-                LoomoBase,
-                LoomoSensor,
-//                mLoomoRealSense.mVision,
-                LoomoRealSense.mVision,
-                mRosPublisherThread
-            )
-        mSensorPublisher = SensorPublisher(LoomoSensor, mRosPublisherThread)
-        mRosBridgeConsumers = listOf(mRealSensePublisher, mTFPublisher, mSensorPublisher)
-
-        mRosMainPublisher = RosMainPublisher(
-            fishEyeByteBuffer,
-            colorByteBuffer,
-            depthByteBuffer,
-            fishEyeFrameInfo,
-            colorFrameInfo,
-            depthFrameInfo,
-            mRealSensePublisher,
-            mSensorPublisher,
-            mTFPublisher
-        )
-
-        // Start an instance of the RosBridgeNode
-        mBridgeNode = RosBridgeNode()
+//        mTFPublisher =
+//            TFPublisher(
+//                mDepthStamps,
+//                mDepthRosStamps,
+//                LoomoBase,
+//                LoomoSensor,
+////                mLoomoRealSense.mVision,
+//                LoomoRealSense.mVision,
+//                mRosPublisherThread
+//            )
+//        mSensorPublisher = SensorPublisher(LoomoSensor, mRosPublisherThread)
+//        mRosBridgeConsumers = listOf(mRealSensePublisher, mTFPublisher, mSensorPublisher)
+//
+//        mRosMainPublisher = RosMainPublisher(
+//            fishEyeByteBuffer,
+//            colorByteBuffer,
+//            depthByteBuffer,
+//            fishEyeFrameInfo,
+//            colorFrameInfo,
+//            depthFrameInfo,
+//            mRealSensePublisher,
+//            mSensorPublisher,
+//            mTFPublisher
+//        )
+//
+//        // Start an instance of the RosBridgeNode
+//        mBridgeNode = RosBridgeNode()
 
         //Start Ros Activity
 //        mROSMain.initMain()
 
-        mLoomoControl.mControllerThread.start()
+//        mLoomoControl.mControllerThread.start()
 
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.VISIBLE
@@ -242,7 +242,7 @@ class MainActivity :
         mOpenCVMain.resume()
 
 //        mLoomoRealSense.bind(this)
-        LoomoRealSense.bind(this, mRealSensePublisher)
+        LoomoRealSense.bind(this)
 //        mLoomoRealSense.startCameras { streamType, frame ->
         LoomoRealSense.startCameras { streamType, frame ->
             mOpenCVMain.onNewFrame(streamType, frame)
@@ -254,37 +254,40 @@ class MainActivity :
 
         LoomoBase.bind(this)
 
-        UIThreadHandler.postDelayed({
-            mRealSensePublisher.node_started(mBridgeNode)
-            mTFPublisher.node_started(mBridgeNode)
-            mSensorPublisher.node_started(mBridgeNode)
-        }, 10000)
+//        UIThreadHandler.postDelayed({
+//            mRealSensePublisher.node_started(mBridgeNode)
+//            mTFPublisher.node_started(mBridgeNode)
+//            mSensorPublisher.node_started(mBridgeNode)
+//        }, 10000)
 
         super.onResume()
     }
 
 
     override fun onDestroy() {
-        stopThreads()
+//        stopThreads()
         super.onDestroy()
     }
 
     override fun onPause() {
-        stopThreads()
+//        stopThreads()
         super.onPause()
     }
 
-    private fun stopThreads() {
-        mLoomoControl.stopController(this, "App paused, Controller thread stopping")
-    }
+//    private fun stopThreads() {
+//        mLoomoControl.stopController(this, "App paused, Controller thread stopping")
+//    }
 
     private fun updateImgViews() {
         mOpenCVMain.getNewestFrame(StreamType.FISH_EYE) {
             runOnUiThread {camViewFishEye.setImageBitmap(it)}
         }
-        mOpenCVMain.getNewestFrame(StreamType.COLOR) {
-            runOnUiThread {camViewColor.setImageBitmap(it)}
-//            mInferenceMain.newFrame(it)
+//        mOpenCVMain.getNewestFrame(StreamType.COLOR) {
+//            runOnUiThread {camViewColor.setImageBitmap(it)}
+////            mInferenceMain.newFrame(it)
+//        }
+        runOnUiThread {
+            camViewColor.setImageBitmap(mOpenCVMain.inference.inferenceImage.toBitmap())
         }
         mOpenCVMain.getNewestFrame(StreamType.DEPTH) {
             runOnUiThread {camViewDepth.setImageBitmap(it)}

@@ -5,7 +5,7 @@ package com.example.loomoapp.Loomo
 
 import android.content.Context
 import android.util.Log
-import com.example.loomoapp.ROS.RealsensePublisher
+//import com.example.loomoapp.ROS.RealsensePublisher
 import com.segway.robot.sdk.base.bind.ServiceBinder
 import com.segway.robot.sdk.vision.Vision
 import com.segway.robot.sdk.vision.frame.Frame
@@ -42,7 +42,7 @@ object LoomoRealSense {
     private var waitingForServiceToBind = false
 
     //    fun bind(context: Context) {
-    fun bind(context: Context, publisher_: RealsensePublisher) {
+    fun bind(context: Context) {
         if (!mVision.isBind and !waitingForServiceToBind) {
             Log.d(TAG, "Started Vision.bindService")
             waitingForServiceToBind = true
@@ -65,7 +65,7 @@ object LoomoRealSense {
                         if (waitingForServiceToBind) ", but binding is in progress" else ""
             )
         }
-        publisher_.setVision(mVision)
+//        publisher_.setVision(mVision)
     }
 
 
