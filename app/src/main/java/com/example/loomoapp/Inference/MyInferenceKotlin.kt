@@ -4,6 +4,7 @@ import com.example.loomoapp.Loomo.LoomoRealSense.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.FISHEYE_WIDTH
 import org.opencv.core.*
 import org.opencv.core.CvType.CV_8UC1
+import org.opencv.core.CvType.CV_8UC3
 import org.opencv.dnn.Dnn
 import org.opencv.dnn.Net
 import org.opencv.imgproc.Imgproc
@@ -19,7 +20,7 @@ class MyInferenceKotlin {
 
 
     //variables
-    var inferenceImage = Mat.zeros(FISHEYE_WIDTH, FISHEYE_HEIGHT, CV_8UC1)
+    var inferenceImage = Mat.zeros(FISHEYE_HEIGHT, FISHEYE_WIDTH,  CV_8UC3)
         private set
 
    // var firstTimeYolo = false

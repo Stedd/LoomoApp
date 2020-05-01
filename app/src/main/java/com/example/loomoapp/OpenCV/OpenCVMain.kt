@@ -43,6 +43,13 @@ class OpenCVMain : Service() {
     private lateinit var mLoaderCallback: BaseLoaderCallback
     //  lateinit var inference : MyInferenceKotlin
 
+    private var fishEyeFrameBuffer = FrameData(Mat.zeros(FISHEYE_HEIGHT, FISHEYE_WIDTH, CV_8UC1), FrameInfo())
+    private var colorFrameBuffer = FrameData(Mat(), FrameInfo())
+    private var depthFrameBuffer = FrameData(Mat(), FrameInfo())
+    private var newFishEyeFrames = 0
+    private var newColorFrames = 0
+    private var newDepthFrames = 0
+
     private val foo = NonBlockingInfLoop {
         inference.onFisheyeCameraFrame(fishEyeFrameBuffer.frame)
     }
@@ -63,16 +70,6 @@ class OpenCVMain : Service() {
 
     // Using a custom data class instead of the Pair-type/template for readability
     data class FrameData(val frame: Mat, val info: FrameInfo)
-
-    //    private var fishEyeFrameBuffer = RingBuffer<FrameData>(30, true)
-//    private var colorFrameBuffer = RingBuffer<FrameData>(30, true)
-//    private var depthFrameBuffer = RingBuffer<FrameData>(30, true)
-    private var fishEyeFrameBuffer = FrameData(Mat(), FrameInfo())
-    private var colorFrameBuffer = FrameData(Mat(), FrameInfo())
-    private var depthFrameBuffer = FrameData(Mat(), FrameInfo())
-    private var newFishEyeFrames = 0
-    private var newColorFrames = 0
-    private var newDepthFrames = 0
 
 
     val fishEyeTracker = ORBTracker()
