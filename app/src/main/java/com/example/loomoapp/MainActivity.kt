@@ -1,30 +1,35 @@
 package com.example.loomoapp
 
+//import com.example.loomoapp.OpenCV.VisualOdometry
 import android.content.Intent
-import android.os.*
+import android.os.Bundle
+import android.os.Environment
+import android.os.Handler
+import android.os.Process
 import android.util.Log
 import android.util.Pair
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.lifecycle.*
-import com.example.loomoapp.Loomo.*
+import androidx.lifecycle.MutableLiveData
+import com.example.loomoapp.Inference.MyInferenceKotlin
+import com.example.loomoapp.Loomo.LoomoBase
+import com.example.loomoapp.Loomo.LoomoRealSense
+import com.example.loomoapp.Loomo.LoomoSensor
 import com.example.loomoapp.OpenCV.OpenCVMain
-import com.example.loomoapp.OpenCV.VisualOdometry
 import com.example.loomoapp.OpenCV.toBitmap
-import com.example.loomoapp.ROS.*
 import com.example.loomoapp.utils.LoopedThread
-import com.example.loomoapp.utils.NonBlockingInfLoop
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import com.segway.robot.sdk.vision.stream.StreamType
 import kotlinx.android.synthetic.main.activity_main.*
+import org.opencv.dnn.Dnn
+import org.opencv.dnn.Net
 import org.ros.address.InetAddressFactory
 import org.ros.android.AppCompatRosActivity
 import org.ros.message.Time
 import org.ros.node.NodeConfiguration
 import org.ros.node.NodeMainExecutor
 import org.ros.time.NtpTimeProvider
-import java.lang.NullPointerException
 import java.net.URI
 import java.nio.ByteBuffer
 import java.util.*
@@ -34,6 +39,12 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity :
     AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
+
+    val inference = MyInferenceKotlin()
+ //   var firstTimeYolo = false
+ //   var startYOLO = false
+    //var tinyYolo: Net = Net()
+
 
     private val UIThreadHandler = Handler() //Used to post messages to UI Thread
 
@@ -181,7 +192,9 @@ class MainActivity :
         camViewFishEye.visibility = ImageView.VISIBLE
         camViewDepth.visibility = ImageView.GONE
         trajView.visibility = ImageView.GONE
-        inferenceView.visibility = ImageView.GONE
+  //      inferenceView.visibility = ImageView.GONE
+  //      YoloView.visibility = ImageView.GONE
+
 
         // Onclicklisteners
         var camViewState = 0
@@ -230,8 +243,29 @@ class MainActivity :
         btnStopService.setOnClickListener {
             Log.d(TAG, "ServStopBtn clicked")
 //            mRosMainPublisher.publishGraph()
+
+
         }
 
+
+
+        /**
+        btnYOLO.setOnClickListener {
+           Log.d(TAG,"Starting Loomo detection")
+           YoloView.visibility = ImageView.VISIBLE
+
+            if (inference.startYolo == false) {
+                inference.firstTimeYolo = true
+                if (inference.firstTimeYolo == false) {
+                    inference.firstTimeYolo = true
+                    val tinyYoloCfg = Environment.getExternalStorageState().toString() + "dnns/dnns/yolov3-tiny-custom.cfg"
+                    val tinyYoloWeight = Environment.getExternalStorageDirectory().toString() + "dnns/yolov3-tiny-custom_final.weights"
+                    inference.tinyYolo = Dnn.readNetFromDarknet(tinyYoloCfg, tinyYoloWeight)
+               }
+            }
+            else inference.startYolo = false
+        }
+        */
         //Helloworld from c++
 //        sample_text.text = stringFromJNI()
     }
@@ -297,7 +331,7 @@ class MainActivity :
         runOnUiThread {sample_text.text = "Features: ${mOpenCVMain.fishEyeTracker.numOfFeatures}, Expected n.o. feats: ${mOpenCVMain.fishEyeTracker.expectedNumOfFeatures}"}
         runOnUiThread {
             try {
-                textView1.text = "Current position: ${VisualOdometry.posHistory.peek().dump()}"
+       //         textView1.text = "Current position: ${VisualOdometry.posHistory.peek().dump()}"
             } catch (e: NullPointerException) {
                 textView1.text = "null"
             }

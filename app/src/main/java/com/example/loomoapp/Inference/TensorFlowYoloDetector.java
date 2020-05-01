@@ -29,10 +29,13 @@ import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
 import com.example.loomoapp.Inference.env.Logger;
 import com.example.loomoapp.Inference.env.SplitTimer;
 
-import static com.example.loomoapp.Inference.InferenceMain.ENABLE_DEBUG;
-import static com.example.loomoapp.Inference.InferenceMain.MINIMUM_CONFIDENCE;
+//import static com.example.loomoapp.Inference.InferenceMain.ENABLE_DEBUG;
+//import static com.example.loomoapp.Inference.InferenceMain.MINIMUM_CONFIDENCE;
 
 /** An object detector that uses TF and a YOLO model to detect objects. */
+
+/**
+
 public class TensorFlowYoloDetector implements Classifier {
   private static final Logger LOGGER = new Logger();
 
@@ -97,8 +100,11 @@ public class TensorFlowYoloDetector implements Classifier {
   private boolean logStats = false;
 
   private TensorFlowInferenceInterface inferenceInterface;
+ */
 
   /** Initializes a native TensorFlow session for classifying images. */
+
+  /**
   public static Classifier create(
       final AssetManager assetManager,
       final String modelFilename,
@@ -290,3 +296,5 @@ public class TensorFlowYoloDetector implements Classifier {
     inferenceInterface.close();
   }
 }
+
+   */

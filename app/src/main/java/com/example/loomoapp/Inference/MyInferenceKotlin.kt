@@ -6,10 +6,10 @@ import androidx.lifecycle.MutableLiveData
 import com.example.loomoapp.Loomo.LoomoRealSense
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame
 import org.opencv.core.*
+import org.opencv.core.Core.FONT_HERSHEY_SIMPLEX
 import org.opencv.dnn.Dnn
 import org.opencv.dnn.Net
 import org.opencv.imgproc.Imgproc
-import org.opencv.imgproc.Imgproc.FONT_HERSHEY_SIMPLEX
 import org.opencv.utils.Converters
 import java.util.*
 
@@ -23,8 +23,8 @@ class MyInferenceKotlin {
     var inferenceImage = Mat()
         private set
 
-
-    private val startYolo = true
+   // var firstTimeYolo = false
+    var startYolo = false
     var tinyYolo: Net = Net()
     private val result: List<Mat> = ArrayList(2)
     private val outBlobNames: MutableList<String> = ArrayList(2)
@@ -33,14 +33,6 @@ class MyInferenceKotlin {
     private val clsIds: MutableList<Int> = ArrayList()
     private val confs: MutableList<Float> = ArrayList()
     private val rects: MutableList<Rect> = ArrayList()
-
-
-
-
-//    init {
-//
-//    }
-
 
 
     fun onFisheyeCameraFrame(inputFrame: Mat) {
@@ -54,7 +46,7 @@ class MyInferenceKotlin {
 
 
     private fun onCameraFrame(frame: Mat) {
-        if (startYolo == true) {
+        if (startYolo) {
             Imgproc.cvtColor(frame, frame, Imgproc.COLOR_GRAY2RGB)
             val imageBlob = Dnn.blobFromImage(
                 frame,

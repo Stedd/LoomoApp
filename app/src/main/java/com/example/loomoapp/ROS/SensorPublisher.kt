@@ -15,6 +15,9 @@ import sensor_msgs.Range
 /**
  * Created by mfe on 8/3/18.
  */
+
+/**
+
 class SensorPublisher(sensor_: LoomoSensor, private val handlerThread: LoopedThread) : RosBridge {
 
     companion object {
@@ -208,3 +211,5 @@ class SensorPublisher(sensor_: LoomoSensor, private val handlerThread: LoopedThr
 
 
 }
+
+        */

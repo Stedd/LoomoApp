@@ -41,20 +41,17 @@ class OpenCVMain : Service() {
     private val TAG = "OpenCVMain"
 
     private lateinit var mLoaderCallback: BaseLoaderCallback
-    val inference = MyInferenceKotlin()
+  //  lateinit var inference : MyInferenceKotlin
 
     init {
         //Load OpenCV
+
         if (!OpenCVLoader.initDebug()) {
             Log.d("$TAG init", "OpenCV not loaded")
         } else {
             Log.d("$TAG init", "OpenCV loaded")
         }
 
-        val tinyYoloCfg =  Environment.getExternalStorageDirectory().toString() + "pathToFile"
-        val tinyYoloWight = Environment.getExternalStorageDirectory().toString() + "pathToFile"
-
-        inference.tinyYolo = Dnn.readNetFromDarknet(tinyYoloCfg, tinyYoloWight)
     }
 
     // Using a custom data class instead of the Pair-type/template for readability
@@ -72,6 +69,8 @@ class OpenCVMain : Service() {
     val fishEyeTracker = ORBTracker()
     var toggle = true
 
+
+    val inference = MyInferenceKotlin()
 
     override fun onBind(intent: Intent?): IBinder? {
         return Binder()
@@ -98,6 +97,9 @@ class OpenCVMain : Service() {
             Log.d(TAG, "OpenCV library found inside package. Using it!")
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
+        val tinyYoloCfg =  Environment.getExternalStorageDirectory().toString() + "dnns/yolov3-tiny-custom.cfg"
+        val tinyYoloWight = Environment.getExternalStorageDirectory().toString() + "dnns/yolov3-tiny-custom_final.weights"
+        inference.tinyYolo = Dnn.readNetFromDarknet(tinyYoloCfg, tinyYoloWight)
 
 //        val m = Mat(5, 10, CV_8UC1, Scalar(0.0))
 //        Log.d(TAG, "OpenCV Mat: $m")

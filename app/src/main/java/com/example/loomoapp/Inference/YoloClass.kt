@@ -1,5 +1,7 @@
 package com.example.loomoapp.Inference
 
+/**
+
 import android.graphics.Bitmap
 import androidx.lifecycle.MutableLiveData
 import com.example.loomoapp.Loomo.LoomoRealSense
@@ -27,3 +29,5 @@ class YoloClass {
 
 
 }
+
+        */

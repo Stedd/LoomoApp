@@ -1,5 +1,7 @@
 package com.example.loomoapp.OpenCV
 
+/**
+
 import android.util.Log
 import com.example.loomoapp.utils.RingBuffer
 import org.opencv.calib3d.Calib3d.*
@@ -199,3 +201,4 @@ object VisualOdometry {
 //        return MatOfPoint3(*pointList.toTypedArray())
 //    }
 }
+        */

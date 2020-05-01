@@ -1,5 +1,7 @@
 package com.example.loomoapp.Inference
 
+/**
+
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -155,3 +157,5 @@ class InferenceMain : Service() {
         }
     }
 }
+
+        */

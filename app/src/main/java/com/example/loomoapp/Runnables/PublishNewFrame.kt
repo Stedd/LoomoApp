@@ -14,8 +14,8 @@ import com.example.loomoapp.Loomo.LoomoRealSense.DEPTH_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.DEPTH_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.FISHEYE_WIDTH
-import com.example.loomoapp.ROS.RosBridgeNode
-import com.example.loomoapp.ROS.Utils
+//import com.example.loomoapp.ROS.RosBridgeNode
+//import com.example.loomoapp.ROS.Utils
 import com.segway.robot.sdk.vision.calibration.Intrinsic
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import org.jboss.netty.buffer.ChannelBufferOutputStream
@@ -30,7 +30,7 @@ class PublishNewFrame(
     private val source: Int,
     private val byteArray: ByteArray,
     private val info: FrameInfo,
-    private val bridgeNode: RosBridgeNode,
+    //private val bridgeNode: RosBridgeNode,
     private var mDepthRosStamps: Queue<Pair<Long, Time>>,
     private var bufferStream: ChannelBufferOutputStream
 ) : Runnable {
@@ -60,46 +60,46 @@ class PublishNewFrame(
             1 -> {
                 //sensor_msgs/Image Message
                 //https://docs.ros.org/melodic/api/sensor_msgs/html/msg/Image.html
-                image = bridgeNode.mFisheyeCamPubr!!.newMessage()
+       //         image = bridgeNode.mFisheyeCamPubr!!.newMessage()
                 image.width = FISHEYE_WIDTH             //# image width, that is, number of columns
                 image.height = FISHEYE_HEIGHT           //# image height, that is, number of rows
                 image.step = FISHEYE_HEIGHT / 8           //# Full row length in bytes
                 image.encoding = "mono8"
-                image.header.frameId = bridgeNode.FisheyeOpticalFrame
+         //       image.header.frameId = bridgeNode.FisheyeOpticalFrame
 
                 image.data = bufferStream.buffer().copy()
 //                Log.d(TAG, "Publishing FishEye camera frame: " + frame.info.frameNum);
 //                mRealsenseMeta = RealsenseMetadataSource.FISHEYE
                 process_metadata(RealsenseMetadataSource.FISHEYE, info, image.header)
-                bridgeNode.mFisheyeCamPubr!!.publish(image)
+        //        bridgeNode.mFisheyeCamPubr!!.publish(image)
             }
             2 -> {
-                image = bridgeNode.mRsColorPubr!!.newMessage()
+         //       image = bridgeNode.mRsColorPubr!!.newMessage()
                 image.width = COLOR_WIDTH
                 image.height = COLOR_HEIGHT
                 image.step = COLOR_HEIGHT / 8
                 image.encoding = "rgba8"
-                image.header.frameId = bridgeNode.RsColorOpticalFrame
+          //      image.header.frameId = bridgeNode.RsColorOpticalFrame
 
                 image.data = bufferStream.buffer().copy()
 //                Log.d(TAG, "Publishing color camera frame: " + frame.info.frameNum);
 //                mRealsenseMeta = RealsenseMetadataSource.COLOR
                 process_metadata(RealsenseMetadataSource.COLOR, info, image.header)
-                bridgeNode.mRsColorPubr!!.publish(image)
+           //     bridgeNode.mRsColorPubr!!.publish(image)
             }
             3 -> {
-                image = bridgeNode.mRsDepthPubr!!.newMessage()
+        //        image = bridgeNode.mRsDepthPubr!!.newMessage()
                 image.width = DEPTH_WIDTH
                 image.height = DEPTH_HEIGHT
                 image.step = DEPTH_HEIGHT / 8
                 image.encoding = "16u1"
-                image.header.frameId = bridgeNode.RsDepthOpticalFrame
+       //         image.header.frameId = bridgeNode.RsDepthOpticalFrame
 
                 image.data = bufferStream.buffer().copy()
 //                Log.d(TAG, "Publishing Depth camera frame: " + frame.info.frameNum);
 //                mRealsenseMeta = RealsenseMetadataSource.DEPTH
                 process_metadata(RealsenseMetadataSource.DEPTH, info, image.header)
-                bridgeNode.mRsDepthPubr!!.publish(image)
+       //         bridgeNode.mRsDepthPubr!!.publish(image)
             }
             else -> {
             }
@@ -119,17 +119,17 @@ class PublishNewFrame(
             Log.d(TAG, "publishCameraInfo type==1 -> not implemented.")
             return
         } else if (type == 2) {
-            pubr = bridgeNode.mRsColorInfoPubr
+      //      pubr = bridgeNode.mRsColorInfoPubr
 //            intrinsic = mRsColorIntrinsic
             width = 640
             height = 480
         } else {
-            pubr = bridgeNode.mRsDepthInfoPubr
+     //       pubr = bridgeNode.mRsDepthInfoPubr
 //            intrinsic = mRsDepthIntrinsic
             width = 320
             height = 240
         }
-        info = pubr!!.newMessage()
+   //     info = pubr!!.newMessage()
         val k = DoubleArray(9)
         //        # Intrinsic camera matrix for the raw (distorted) images.
 //        #     [fx  0 cx]
@@ -168,13 +168,13 @@ class PublishNewFrame(
         r[0] = 1.0
         r[4] = 1.0
         r[8] = 1.0
-        info.header = header
-        info.width = width
-        info.height = height
-        info.k = k
-        info.p = p
-        info.r = r
-        pubr.publish(info)
+  //      info.header = header
+    //    info.width = width
+     //   info.height = height
+ //       info.k = k
+  //      info.p = p
+ //       info.r = r
+  //      pubr.publish(info)
     }
 
     private fun process_metadata(
@@ -258,24 +258,24 @@ class PublishNewFrame(
         }
         // No metadata for this frame yet
         // Get an appropriate ROS time to match the platform time of this stamp
-        val currentRosTime = bridgeNode.mConnectedNode!!.currentTime
+  //      val currentRosTime = bridgeNode.mConnectedNode!!.currentTime
         val currentSystemTime =
             Time.fromMillis(System.currentTimeMillis())
-        val rosToSystemTimeOffset =
-            currentRosTime.subtract(currentSystemTime)
+  //      val rosToSystemTimeOffset =
+   //         currentRosTime.subtract(currentSystemTime)
         val stampTime =
-            Time.fromNano(Utils.platformStampInNano(frameInfo.platformTimeStamp))
-        val correctedStampTime = stampTime.add(rosToSystemTimeOffset)
+   //         Time.fromNano(Utils.platformStampInNano(frameInfo.platformTimeStamp))
+   //     val correctedStampTime = stampTime.add(rosToSystemTimeOffset)
         // Add the platform stamp / actual ROS time pair to the list of times we want TF data for
 
         // Create Realsense metadata for this frame
-        mRealsenseMeta = RealsenseMetadata()
-        mRealsenseMeta!!.source = source
-        mRealsenseMeta!!.frameNum = currentFrame
-        mRealsenseMeta!!.platformStamp = currentPlatformStamp
-        mRealsenseMeta!!.rosTime = correctedStampTime
+    //    mRealsenseMeta = RealsenseMetadata()
+     //   mRealsenseMeta!!.source = source
+    //    mRealsenseMeta!!.frameNum = currentFrame
+   //     mRealsenseMeta!!.platformStamp = currentPlatformStamp
+     //   mRealsenseMeta!!.rosTime = correctedStampTime
         // Set the image header
-        imageHeader.stamp = correctedStampTime
+     //   imageHeader.stamp = correctedStampTime
         return true
     }
 
