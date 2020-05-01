@@ -4,6 +4,7 @@ import org.opencv.core.*
 import org.opencv.dnn.Dnn
 import org.opencv.dnn.Net
 import org.opencv.imgproc.Imgproc
+import org.opencv.imgproc.Imgproc.COLOR_BGR5652RGB
 import org.opencv.imgproc.Imgproc.FONT_HERSHEY_SIMPLEX
 import org.opencv.utils.Converters
 import java.util.*
@@ -36,6 +37,7 @@ class MyInferenceKotlin {
 
         onCameraFrame(inferenceImage)
     }
+
 
 
 

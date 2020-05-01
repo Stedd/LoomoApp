@@ -18,7 +18,7 @@ import com.example.loomoapp.Loomo.LoomoRealSense.DEPTH_WIDTH
 import com.example.loomoapp.Loomo.LoomoRealSense.FISHEYE_HEIGHT
 import com.example.loomoapp.Loomo.LoomoRealSense.FISHEYE_WIDTH
 import com.example.loomoapp.utils.NonBlockingInfLoop
-import com.example.loomoapp.utils.RingBuffer
+//import com.example.loomoapp.utils.RingBuffer
 import com.segway.robot.sdk.vision.frame.Frame
 import com.segway.robot.sdk.vision.frame.FrameInfo
 import com.segway.robot.sdk.vision.stream.StreamType
@@ -41,10 +41,10 @@ class OpenCVMain : Service() {
     private val TAG = "OpenCVMain"
 
     private lateinit var mLoaderCallback: BaseLoaderCallback
-  //  lateinit var inference : MyInferenceKotlin
+    //  lateinit var inference : MyInferenceKotlin
 
     private val foo = NonBlockingInfLoop {
-        inference.onFisheyeCameraFrame(fishEyeFrameBuffer.peek().frame)
+        inference.onFisheyeCameraFrame(fishEyeFrameBuffer.frame)
     }
 
     init {
@@ -64,15 +64,15 @@ class OpenCVMain : Service() {
     // Using a custom data class instead of the Pair-type/template for readability
     data class FrameData(val frame: Mat, val info: FrameInfo)
 
-    private var fishEyeFrameBuffer = RingBuffer<FrameData>(30, true)
-    private var colorFrameBuffer = RingBuffer<FrameData>(30, true)
-    private var depthFrameBuffer = RingBuffer<FrameData>(30, true)
+    //    private var fishEyeFrameBuffer = RingBuffer<FrameData>(30, true)
+//    private var colorFrameBuffer = RingBuffer<FrameData>(30, true)
+//    private var depthFrameBuffer = RingBuffer<FrameData>(30, true)
+    private var fishEyeFrameBuffer = FrameData(Mat(), FrameInfo())
+    private var colorFrameBuffer = FrameData(Mat(), FrameInfo())
+    private var depthFrameBuffer = FrameData(Mat(), FrameInfo())
     private var newFishEyeFrames = 0
     private var newColorFrames = 0
     private var newDepthFrames = 0
-
-    private var fisheyeframe = FrameData(Mat(), FrameInfo())
-
 
 
     val fishEyeTracker = ORBTracker()
@@ -104,8 +104,8 @@ class OpenCVMain : Service() {
             Log.d(TAG, "OpenCV library found inside package. Using it!")
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
-        val tinyYoloCfg =  Environment.getExternalStorageDirectory().toString() + "dnns/yolov3-tiny-custom.cfg"
-        val tinyYoloWight = Environment.getExternalStorageDirectory().toString() + "dnns/yolov3-tiny-custom_final.weights"
+        val tinyYoloCfg = "/storage/sdcard0/dnns/yolov3-tiny-custom.cfg"
+        val tinyYoloWight = "/storage/sdcard0/dnns/yolov3-tiny-custom_final.weights"
         inference.tinyYolo = Dnn.readNetFromDarknet(tinyYoloCfg, tinyYoloWight)
         foo.resume()
 
@@ -137,36 +137,32 @@ class OpenCVMain : Service() {
 //        val tic = System.currentTimeMillis()
         when (streamType) {
             StreamType.FISH_EYE -> {
-                fishEyeFrameBuffer.enqueue(
-                    FrameData(
-                        frame.byteBuffer.toMat(
-                            FISHEYE_WIDTH, FISHEYE_HEIGHT,
-                            CV_8UC1
-                        ), frame.info
-                    )
+                fishEyeFrameBuffer = FrameData(
+                    frame.byteBuffer.toMat(
+                        FISHEYE_WIDTH, FISHEYE_HEIGHT,
+                        CV_8UC1
+                    ), frame.info
                 )
                 ++newFishEyeFrames
             }
             StreamType.COLOR -> {
-                colorFrameBuffer.enqueue(
-                    FrameData(
-                        frame.byteBuffer.toMat(
-                            COLOR_WIDTH, COLOR_HEIGHT,
-                            CV_8UC4
-                        ), frame.info
-                    )
+                colorFrameBuffer = FrameData(
+                    frame.byteBuffer.toMat(
+                        COLOR_WIDTH, COLOR_HEIGHT,
+                        CV_8UC4
+                    ), frame.info
+
                 )
                 ++newColorFrames
             }
             StreamType.DEPTH -> {
-                depthFrameBuffer.enqueue(
-                    FrameData(
-                        frame.byteBuffer.toMat(
-                            DEPTH_WIDTH, DEPTH_HEIGHT,
+                depthFrameBuffer = FrameData(
+                    frame.byteBuffer.toMat(
+                        DEPTH_WIDTH, DEPTH_HEIGHT,
 //                            CV_16UC1
-                            CV_8UC2
-                        ), frame.info
-                    )
+                        CV_8UC2
+                    ), frame.info
+
                 )
                 ++newDepthFrames
             }
@@ -183,10 +179,10 @@ class OpenCVMain : Service() {
         val frame: Mat? = when (streamType) {
             StreamType.FISH_EYE -> {
                 if (toggle) drawStuff(fishEyeFrame)
-                else fishEyeFrameBuffer.peek().frame
+                else fishEyeFrameBuffer.frame
             }
-            StreamType.COLOR -> colorFrameBuffer.peek().frame
-            StreamType.DEPTH -> depthFrameBuffer.peek().frame
+            StreamType.COLOR -> colorFrameBuffer.frame
+            StreamType.DEPTH -> depthFrameBuffer.frame
             else -> throw IllegalStreamTypeException("Non recognized stream type in getNewestFrame()")
         }
         if (frame == null) {
