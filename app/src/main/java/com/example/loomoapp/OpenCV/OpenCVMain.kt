@@ -177,10 +177,7 @@ class OpenCVMain : Service() {
 
     fun getNewestFrame(streamType: Int, callback: (Bitmap) -> Unit) {
         val frame: Mat? = when (streamType) {
-            StreamType.FISH_EYE -> {
-                if (toggle) drawStuff(fishEyeFrame)
-                else fishEyeFrameBuffer.frame
-            }
+            StreamType.FISH_EYE -> fishEyeFrameBuffer.frame
             StreamType.COLOR -> colorFrameBuffer.frame
             StreamType.DEPTH -> depthFrameBuffer.frame
             else -> throw IllegalStreamTypeException("Non recognized stream type in getNewestFrame()")

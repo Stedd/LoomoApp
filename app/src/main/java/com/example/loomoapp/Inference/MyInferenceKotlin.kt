@@ -36,9 +36,9 @@ class MyInferenceKotlin {
 
     fun onFisheyeCameraFrame(inputFrame: Mat) {
 
-        inferenceImage = inputFrame.clone()
+//        inferenceImage = inputFrame.clone()
 
-        onCameraFrame(inferenceImage)
+        onCameraFrame(inputFrame)
     }
 
 
@@ -47,9 +47,9 @@ class MyInferenceKotlin {
 
     private fun onCameraFrame(frame: Mat) {
         if (startYolo) {
-            Imgproc.cvtColor(frame, frame, Imgproc.COLOR_GRAY2RGB)
+            Imgproc.cvtColor(frame, inferenceImage, Imgproc.COLOR_GRAY2RGB)
             val imageBlob = Dnn.blobFromImage(
-                frame,
+                inferenceImage,
                 0.00392,
                 Size(416.0, 416.0),
                 Scalar(0.0, 0.0, 0.0),  /*swapRB*/
@@ -82,10 +82,10 @@ class MyInferenceKotlin {
                     val confidence = mm.maxVal.toFloat()
                     val classIdPoint = mm.maxLoc
                     if (confidence > confThreshold) {
-                        val centerX = (row[0, 0][0] * frame.cols()).toInt()
-                        val centerY = (row[0, 1][0] * frame.rows()).toInt()
-                        val width = (row[0, 2][0] * frame.cols()).toInt()
-                        val height = (row[0, 3][0] * frame.rows()).toInt()
+                        val centerX = (row[0, 0][0] * inferenceImage.cols()).toInt()
+                        val centerY = (row[0, 1][0] * inferenceImage.rows()).toInt()
+                        val width = (row[0, 2][0] * inferenceImage.cols()).toInt()
+                        val height = (row[0, 3][0] * inferenceImage.rows()).toInt()
                         val left = centerX - width / 2
                         val top = centerY - height / 2
                         clsIds.add(classIdPoint.x.toInt())
@@ -122,7 +122,7 @@ class MyInferenceKotlin {
                     val cocoNames = listOf("a Loomo")
                     val intConf = (conf * 100).toInt()
                     Imgproc.putText(
-                        frame,
+                        inferenceImage,
                         cocoNames[idGuy].toString() + " " + intConf + "%",
                         box.tl(),
                         FONT_HERSHEY_SIMPLEX,
@@ -130,7 +130,7 @@ class MyInferenceKotlin {
                         Scalar(255.0, 255.0, 0.0),
                         2
                     )
-                    Imgproc.rectangle(frame, box.tl(), box.br(), Scalar(255.0, 0.0, 0.0), 2)
+                    Imgproc.rectangle(inferenceImage, box.tl(), box.br(), Scalar(255.0, 0.0, 0.0), 2)
                 }
             }
         }
