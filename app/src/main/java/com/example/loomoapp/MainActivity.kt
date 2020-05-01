@@ -191,7 +191,6 @@ class MainActivity :
         camViewColor.visibility = ImageView.GONE
         camViewFishEye.visibility = ImageView.VISIBLE
         camViewDepth.visibility = ImageView.GONE
-        trajView.visibility = ImageView.GONE
   //      inferenceView.visibility = ImageView.GONE
   //      YoloView.visibility = ImageView.GONE
 
@@ -206,26 +205,22 @@ class MainActivity :
                     camViewColor.visibility = ImageView.GONE
                     camViewFishEye.visibility = ImageView.GONE
                     camViewDepth.visibility = ImageView.VISIBLE
-                    trajView.visibility = ImageView.GONE
+                    sample_text.text = "Depth camera"
                 }
                 2 -> {
                     camViewColor.visibility = ImageView.VISIBLE
                     camViewFishEye.visibility = ImageView.GONE
                     camViewDepth.visibility = ImageView.GONE
-                    trajView.visibility = ImageView.GONE
-                }
-                3 -> {
-                    camViewColor.visibility = ImageView.GONE
-                    camViewFishEye.visibility = ImageView.GONE
-                    camViewDepth.visibility = ImageView.GONE
-                    trajView.visibility = ImageView.VISIBLE
+                    sample_text.text = "Inference view"
+
                 }
                 else -> {
                     camViewState = 0
                     camViewColor.visibility = ImageView.GONE
                     camViewFishEye.visibility = ImageView.VISIBLE
                     camViewDepth.visibility = ImageView.GONE
-                    trajView.visibility = ImageView.GONE
+                    sample_text.text = "Fisheye camera"
+
                 }
             }
         }
@@ -326,7 +321,6 @@ class MainActivity :
         mOpenCVMain.getNewestFrame(StreamType.DEPTH) {
             runOnUiThread {camViewDepth.setImageBitmap(it)}
         }
-        runOnUiThread { trajView.setImageBitmap(mOpenCVMain.map.toBitmap()) }
 
         runOnUiThread {sample_text.text = "Features: ${mOpenCVMain.fishEyeTracker.numOfFeatures}, Expected n.o. feats: ${mOpenCVMain.fishEyeTracker.expectedNumOfFeatures}"}
         runOnUiThread {
