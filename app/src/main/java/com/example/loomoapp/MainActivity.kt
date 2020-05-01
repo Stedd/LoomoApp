@@ -322,14 +322,14 @@ class MainActivity :
             runOnUiThread {camViewDepth.setImageBitmap(it)}
         }
 
-        runOnUiThread {sample_text.text = "Features: ${mOpenCVMain.fishEyeTracker.numOfFeatures}, Expected n.o. feats: ${mOpenCVMain.fishEyeTracker.expectedNumOfFeatures}"}
-        runOnUiThread {
-            try {
-       //         textView1.text = "Current position: ${VisualOdometry.posHistory.peek().dump()}"
-            } catch (e: NullPointerException) {
-                textView1.text = "null"
-            }
-        }
+//        runOnUiThread {sample_text.text = "Features: ${mOpenCVMain.fishEyeTracker.numOfFeatures}, Expected n.o. feats: ${mOpenCVMain.fishEyeTracker.expectedNumOfFeatures}"}
+//        runOnUiThread {
+//            try {
+//       //         textView1.text = "Current position: ${VisualOdometry.posHistory.peek().dump()}"
+//            } catch (e: NullPointerException) {
+//                textView1.text = "null"
+//            }
+//        }
     }
 }
 
