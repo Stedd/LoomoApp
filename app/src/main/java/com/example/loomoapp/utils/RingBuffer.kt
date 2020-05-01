@@ -6,11 +6,12 @@ package com.example.loomoapp.utils
 // cause a NPE if they are called on an empty buffer. They will also probably
 // do the same if the template-type 'T' is nullable
 class RingBuffer<T>(val maxSize: Int = 10, val allowOverwrite: Boolean = false) {
-    private val array = mutableListOf<T?>().apply {
-        for (index in 0 until maxSize) {
-            add(null)
-        }
-    }
+//    private val array = mutableListOf<T?>().apply {
+//        for (index in 0 until maxSize) {
+//            add(null)
+//        }
+//    }
+    private lateinit var array: MutableList<T>
 
     var head = 0        // Head: 'oldest' entry (read index)
         private set
@@ -39,7 +40,8 @@ class RingBuffer<T>(val maxSize: Int = 10, val allowOverwrite: Boolean = false) 
             ++itemsInQueue
         }
 
-        array[tail] = item
+        if (array.size < maxSize) array.add( item )
+        else array[tail] = item
 
         return this
     }
@@ -65,7 +67,7 @@ class RingBuffer<T>(val maxSize: Int = 10, val allowOverwrite: Boolean = false) 
         } else {
             maxSize - (offset - tail)
         }
-        return array[index]!!
+        return array[index]
     }
     fun peekHead(): T = array[head]!!
 

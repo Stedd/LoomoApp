@@ -1,15 +1,10 @@
 package com.example.loomoapp.Inference
 
-import android.graphics.Bitmap
-import androidx.core.graphics.set
-import androidx.lifecycle.MutableLiveData
-import com.example.loomoapp.Loomo.LoomoRealSense
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame
 import org.opencv.core.*
-import org.opencv.core.Core.FONT_HERSHEY_SIMPLEX
 import org.opencv.dnn.Dnn
 import org.opencv.dnn.Net
 import org.opencv.imgproc.Imgproc
+import org.opencv.imgproc.Imgproc.FONT_HERSHEY_SIMPLEX
 import org.opencv.utils.Converters
 import java.util.*
 

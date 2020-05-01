@@ -43,9 +43,13 @@ class OpenCVMain : Service() {
     private lateinit var mLoaderCallback: BaseLoaderCallback
   //  lateinit var inference : MyInferenceKotlin
 
-    init {
-        //Load OpenCV
+    private val foo = NonBlockingInfLoop {
+        inference.onFisheyeCameraFrame(fishEyeFrameBuffer.peek().frame)
+    }
 
+    init {
+        foo.pause()
+        //Load OpenCV
         if (!OpenCVLoader.initDebug()) {
             Log.d("$TAG init", "OpenCV not loaded")
         } else {
@@ -53,6 +57,9 @@ class OpenCVMain : Service() {
         }
 
     }
+
+    val inference = MyInferenceKotlin()
+
 
     // Using a custom data class instead of the Pair-type/template for readability
     data class FrameData(val frame: Mat, val info: FrameInfo)
@@ -64,13 +71,13 @@ class OpenCVMain : Service() {
     private var newColorFrames = 0
     private var newDepthFrames = 0
 
+    private var fisheyeframe = FrameData(Mat(), FrameInfo())
+
 
 
     val fishEyeTracker = ORBTracker()
     var toggle = true
 
-
-    val inference = MyInferenceKotlin()
 
     override fun onBind(intent: Intent?): IBinder? {
         return Binder()
@@ -100,6 +107,7 @@ class OpenCVMain : Service() {
         val tinyYoloCfg =  Environment.getExternalStorageDirectory().toString() + "dnns/yolov3-tiny-custom.cfg"
         val tinyYoloWight = Environment.getExternalStorageDirectory().toString() + "dnns/yolov3-tiny-custom_final.weights"
         inference.tinyYolo = Dnn.readNetFromDarknet(tinyYoloCfg, tinyYoloWight)
+        foo.resume()
 
 //        val m = Mat(5, 10, CV_8UC1, Scalar(0.0))
 //        Log.d(TAG, "OpenCV Mat: $m")
@@ -193,8 +201,7 @@ class OpenCVMain : Service() {
     private var fishEyeFrame = Mat()
     private var processedFishEyeFrame = Mat()
 
-    private val foo = NonBlockingInfLoop {
-        inference.onFisheyeCameraFrame(fishEyeFrameBuffer.peek().frame)
+
 //        if (newFishEyeFrames > 0) {
 ////            Log.d(TAG, "Skipped frames: ${newFishEyeFrames-1}")
 //            newFishEyeFrames = 0
@@ -219,7 +226,7 @@ class OpenCVMain : Service() {
 //            pointPair = fishEyeTracker.onNewFrame(fishEyeFrame)
 //        }
 ////            Thread.sleep(2000) // Just for debugging purposes
-    }
+//    }
 
     val map = Mat.zeros(640, 480, CV_8UC3)
 //    private val bar = NonBlockingInfLoop {

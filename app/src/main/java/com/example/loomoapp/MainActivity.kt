@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit
 class MainActivity :
     AppCompatRosActivity("LoomoROS", "LoomoROS", URI.create("http://192.168.2.31:11311/")) {
 
-    val inference = MyInferenceKotlin()
+//    val inference = MyInferenceKotlin()
  //   var firstTimeYolo = false
  //   var startYOLO = false
     //var tinyYolo: Net = Net()
