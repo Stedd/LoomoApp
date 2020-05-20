@@ -43,12 +43,6 @@ class OpenCVMain : Service() {
     private lateinit var mLoaderCallback: BaseLoaderCallback
     //  lateinit var inference : MyInferenceKotlin
 
-    private var fishEyeFrameBuffer = FrameData(Mat.zeros(FISHEYE_HEIGHT, FISHEYE_WIDTH, CV_8UC1), FrameInfo())
-    private var colorFrameBuffer = FrameData(Mat(), FrameInfo())
-    private var depthFrameBuffer = FrameData(Mat(), FrameInfo())
-    private var newFishEyeFrames = 0
-    private var newColorFrames = 0
-    private var newDepthFrames = 0
 
     private val foo = NonBlockingInfLoop {
         inference.onFisheyeCameraFrame(fishEyeFrameBuffer.frame)
@@ -64,6 +58,13 @@ class OpenCVMain : Service() {
         }
 
     }
+    private var fishEyeFrameBuffer = FrameData(Mat.zeros(FISHEYE_HEIGHT, FISHEYE_WIDTH, CV_8UC1), FrameInfo())
+    private var colorFrameBuffer = FrameData(Mat(), FrameInfo())
+    private var depthFrameBuffer = FrameData(Mat(), FrameInfo())
+    private var newFishEyeFrames = 0
+    private var newColorFrames = 0
+    private var newDepthFrames = 0
+
 
     val inference = MyInferenceKotlin()
 
@@ -102,7 +103,7 @@ class OpenCVMain : Service() {
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
         val tinyYoloCfg = "/storage/sdcard0/dnns/yolov3-tiny-custom.cfg"
-        val tinyYoloWight = "/storage/sdcard0/dnns/yolov3-tiny-custom_final.weights"
+        val tinyYoloWight = "/storage/sdcard0/dnns/yolov3-tiny-custom_best.weights"
         inference.tinyYolo = Dnn.readNetFromDarknet(tinyYoloCfg, tinyYoloWight)
         foo.resume()
 
