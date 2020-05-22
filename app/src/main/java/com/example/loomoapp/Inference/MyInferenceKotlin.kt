@@ -29,8 +29,13 @@ class MyInferenceKotlin {
     // var firstTimeYolo = false
     var startYolo = true
     var tinyYolo: Net = Net()
-    private val result: List<Mat> = ArrayList(2)
-    private val outBlobNames = mutableListOf<String>("", "")
+    // for yolov3:
+    //private val result: List<Mat> = ArrayList(2)
+    //private val outBlobNames = mutableListOf<String>("", "")
+    // for yolov2
+    private val result: List<Mat> = ArrayList(1)
+    private val outBlobNames = mutableListOf<String>("")
+
     // private val outBlobNames: MutableList<String> = ArrayList(2)
 
     private val confThreshold = 0.1f
@@ -70,10 +75,11 @@ class MyInferenceKotlin {
             tinyYolo.setInput(imageBlob)
 
 
-//            outBlobNames.add(0, "yolo_16")
-//            outBlobNames.add(1, "yolo_23")
-            outBlobNames[0] = "yolo_16"
-            outBlobNames[1] = "yolo_23"
+            // for yolov3
+           // outBlobNames[0] = "yolo_16"
+           // outBlobNames[1] = "yolo_23"
+            // for yolov2
+            outBlobNames[0] = "detection_out"
             tinyYolo.forward(result, outBlobNames)
 
            // Log.d(TAG, "tinyyolo: ${tinyYolo} , nativeObjAddr: ${tinyYolo.nativeObjAddr} ,unnconnectedoutlayers: ${tinyYolo.unconnectedOutLayers} , unnconnectedOutputlayersNames ${tinyYolo.unconnectedOutLayersNames}")

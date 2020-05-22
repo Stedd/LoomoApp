@@ -102,8 +102,8 @@ class OpenCVMain : Service() {
             Log.d(TAG, "OpenCV library found inside package. Using it!")
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
         }
-        val tinyYoloCfg = "/storage/sdcard0/dnns/yolov3-tiny-custom.cfg"
-        val tinyYoloWight = "/storage/sdcard0/dnns/yolov3-tiny-custom_best.weights"
+        val tinyYoloCfg = "/storage/sdcard0/dnns/yolov2-tiny-custom.cfg"
+        val tinyYoloWight = "/storage/sdcard0/dnns/yolov2-tiny-custom_best.weights"
         inference.tinyYolo = Dnn.readNetFromDarknet(tinyYoloCfg, tinyYoloWight)
         foo.resume()
 
